@@ -4313,7 +4313,24 @@ elif app_mode == "👥 Gestão de Alunos":
                             data_aval['nome'] = data_pei.get('nome') or data_caso.get('nome', '')
                             data_aval['nasc'] = data_pei.get('nasc') or data_caso.get('d_nasc', '')
                             data_aval['ano_esc'] = data_pei.get('ano_esc') or data_caso.get('ano_esc', '')
-                            data_aval['defic_chk'] = data_pei.get('diag_tipo', [])
+                            
+                            # --- CORREÇÃO 1: FILTRAGEM INTELIGENTE DE DIAGNÓSTICO ---
+                            diag_tipo_pei = data_pei.get('diag_tipo', [])
+                            # Mantém apenas os que batem exatamente com as opções da avaliação
+                            data_aval['defic_chk'] = [d for d in diag_tipo_pei if d in defs_opts]
+                            
+                            # Puxa os textos descritivos do PEI para o campo "Outra"
+                            descricoes_outras = []
+                            if "Deficiência" in diag_tipo_pei and data_pei.get('defic_txt'):
+                                descricoes_outras.append(data_pei.get('defic_txt'))
+                            if "Transtorno do Neurodesenvolvimento" in diag_tipo_pei and data_pei.get('neuro_txt'):
+                                descricoes_outras.append(data_pei.get('neuro_txt'))
+                            if "Transtornos Aprendizagem" in diag_tipo_pei and data_pei.get('aprend_txt'):
+                                descricoes_outras.append(data_pei.get('aprend_txt'))
+                            
+                            if descricoes_outras:
+                                data_aval['defic_outra'] = " / ".join(descricoes_outras)
+                            # --------------------------------------------------------
                             
                             aspectos = []
                             if data_pei.get('prof_poli'): aspectos.append(f"Polivalente: {data_pei.get('prof_poli')}")
@@ -4336,12 +4353,21 @@ elif app_mode == "👥 Gestão de Alunos":
                 data_aval['ano_esc'] = c_ano.text_input("Ano Escolaridade", value=data_aval.get('ano_esc', ''), disabled=is_monitor)
                 
                 st.markdown("**Deficiências (Marque as opções):**")
-                data_aval['defic_chk'] = st.multiselect("Selecione:", defs_opts, default=data_aval.get('defic_chk', []), disabled=is_monitor)
+                
+                # --- CORREÇÃO 2: BLINDAGEM DO WIDGET MULTISELECT ---
+                valores_salvos = data_aval.get('defic_chk', [])
+                if not isinstance(valores_salvos, list): 
+                    valores_salvos = []
+                # Garante que os defaults passados ao Streamlit existam em defs_opts
+                valores_validos = [v for v in valores_salvos if v in defs_opts]
+                
+                data_aval['defic_chk'] = st.multiselect("Selecione:", defs_opts, default=valores_validos, disabled=is_monitor)
+                # ---------------------------------------------------
+                
                 data_aval['defic_outra'] = st.text_input("Outra:", value=data_aval.get('defic_outra', ''), disabled=is_monitor)
                 
                 st.markdown("---")
                 st.markdown("### Aspectos Gerais da Vida Escolar")
-                data_aval['aspectos_gerais'] = st.text_area("Relatar data matrícula, plano atendimento, docentes, AEE, PDI...", value=data_aval.get('aspectos_gerais', ''), height=100, disabled=is_monitor)
                 
                 with st.expander("Parte I - Habilidades de Vida Diária", expanded=True):
                     c_a, c_h = st.columns(2)
@@ -5200,6 +5226,7 @@ elif app_mode == "👥 Gestão de Alunos":
 
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
+
 
 
 
