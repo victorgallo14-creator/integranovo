@@ -1655,15 +1655,24 @@ elif app_mode == "👥 Gestão de Alunos":
                     data['flex_matrix'][disc]['conteudo'] = c2.checkbox("Sim", key=f"flex_c_{disc}", value=data['flex_matrix'][disc]['conteudo'], disabled=is_monitor)
                     data['flex_matrix'][disc]['metodologia'] = c3.checkbox("Sim", key=f"flex_m_{disc}", value=data['flex_matrix'][disc]['metodologia'], disabled=is_monitor)
 
+                # --- ABA 6: METAS E FLEXIBILIZAÇÃO (TRECHO CORRIGIDO) ---
+
                 st.divider()
                 st.subheader("7.2 Plano de Ensino Anual")
                 trimestres = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
-                if 'plano_ensino_tri' not in data: data['plano_ensino_tri'] = {}
+                
+                # Garante que a estrutura base do plano de ensino exista no dicionário
+                if 'plano_ensino_tri' not in data: 
+                    data['plano_ensino_tri'] = {}
 
                 for tri in trimestres:
                     st.markdown(f"### 🗓️ {tri}")
-                    if tri not in data['plano_ensino_tri']: data['plano_ensino_tri'][tri] = {}
                     
+                    # Se o trimestre não existir no dado carregado, cria o dicionário para ele
+                    if tri not in data['plano_ensino_tri']: 
+                        data['plano_ensino_tri'][tri] = {}
+                    
+                    # Loop das disciplinas dentro do trimestre
                     for disc in disciplinas_flex:
                         with st.expander(f"{tri} - {disc}", expanded=False):
                             if disc not in data['plano_ensino_tri'][tri]:
@@ -1671,12 +1680,27 @@ elif app_mode == "👥 Gestão de Alunos":
                             
                             p_ref = data['plano_ensino_tri'][tri][disc]
                             
-                            p_ref['obj'] = st.text_area(f"Objetivos ({disc})", value=p_ref['obj'], key=f"obj_{tri}_{disc}", disabled=is_monitor)
-                            p_ref['cont'] = st.text_area(f"Conteúdos ({disc})", value=p_ref['cont'], key=f"cont_{tri}_{disc}", disabled=is_monitor)
-                            p_ref['met'] = st.text_area(f"Metodologia ({disc})", value=p_ref['met'], key=f"met_{tri}_{disc}", disabled=is_monitor)
+                            # Carregamento e atualização dos campos das disciplinas
+                            p_ref['obj'] = st.text_area(f"Objetivos ({disc})", value=p_ref.get('obj', ''), key=f"obj_{tri}_{disc}", disabled=is_monitor)
+                            p_ref['cont'] = st.text_area(f"Conteúdos ({disc})", value=p_ref.get('cont', ''), key=f"cont_{tri}_{disc}", disabled=is_monitor)
+                            p_ref['met'] = st.text_area(f"Metodologia ({disc})", value=p_ref.get('met', ''), key=f"met_{tri}_{disc}", disabled=is_monitor)
 
+                    # --- CORREÇÃO DA OBSERVAÇÃO ---
+                    # 1. Primeiro buscamos o valor que JÁ EXISTE no banco de dados
+                    valor_salvo_obs = data['plano_ensino_tri'][tri].get('obs', '')
+                    
+                    # 2. Renderizamos o text_area usando o valor salvo
+                    # Usamos uma key única para garantir que o Streamlit não confunda os estados
+                    obs_editada = st.text_area(
+                        f"Obs/Recomendações {tri}:", 
+                        value=valor_salvo_obs, 
+                        key=f"obs_input_field_{tri}", 
+                        disabled=is_monitor
+                    )
+                    
+                    # 3. Atualizamos o dicionário 'data' com o que está no campo (seja o salvo ou o novo digitado)
+                    data['plano_ensino_tri'][tri]['obs'] = obs_editada
                     st.markdown("---")
-                    data['plano_ensino_tri'][tri]['obs'] = st.text_area(f"Obs/Recomendações {tri}:", value=data['plano_ensino_tri'][tri].get('obs', ''), key=f"obs_{tri}", disabled=is_monitor)
 
                 st.markdown("Considerações finais:")
                 data['plano_obs_geral'] = st.text_area("", value=data.get('plano_obs_geral', ''), key="obs_geral_pei", disabled=is_monitor)
@@ -5226,6 +5250,7 @@ elif app_mode == "👥 Gestão de Alunos":
 
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
+
 
 
 
