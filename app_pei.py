@@ -1365,6 +1365,7 @@ elif app_mode == "👥 Gestão de Alunos":
                         format="DD/MM/YYYY", 
                         disabled=is_monitor,
                         key=key_data # <--- Mudança crucial aqui
+                    )
                     
                     c3, c4 = st.columns(2)
                     data['idade'] = c3.text_input("Idade", value=data.get('idade', ''), disabled=is_monitor)
@@ -5260,6 +5261,7 @@ elif app_mode == "👥 Gestão de Alunos":
 
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
+
 
 
 
