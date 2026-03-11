@@ -857,7 +857,8 @@ with st.sidebar:
         app_mode = "Atas_Conselho" # Trava o sistema antigo em background
         
         st.markdown('<p class="section-label">📌 Documentos</p>', unsafe_allow_html=True)
-        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas"], label_visibility="collapsed")
+        # --- NOVO: ADICIONADO O BOTÃO DE CONFIGURAÇÕES ---
+        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "⚙️ Configurações"], label_visibility="collapsed")
         
         st.markdown('<p class="section-label">🏫 Modalidade</p>', unsafe_allow_html=True)
         modalidade_ata = st.selectbox("Nível", ["Ensino Fundamental", "Educação Infantil", "EJA"], label_visibility="collapsed")
@@ -5299,6 +5300,36 @@ elif app_mode == "👥 Gestão de Alunos":
 # ==============================================================================
 elif modulo_atuacao == "🏫 Ensino Regular":
     
+    # ==============================================================================
+    # TELA DE CONFIGURAÇÕES (GESTOR)
+    # ==============================================================================
+    if app_mode_regular == "⚙️ Configurações":
+        st.markdown('<div class="header-box"><div class="header-title">Configurações do Ensino Regular</div><div class="header-subtitle">Atualização Anual de Textos e Resoluções</div></div>', unsafe_allow_html=True)
+        
+        st.info("💡 O texto salvo aqui será utilizado automaticamente no cabeçalho de todas as novas Atas geradas pelo sistema.")
+        
+        # Lê a configuração atual do banco de dados
+        df_config = safe_read("Config_Ata", ["chave", "valor"])
+        
+        # O texto padrão atualizado para 2026 que você me pediu
+        texto_padrao = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+        
+        current_text = texto_padrao
+        if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+            current_text = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
+            
+        novo_texto_base = st.text_area("Texto Base da Síntese Avaliativa (Legislações)", value=current_text, height=200)
+        
+        if st.button("💾 Salvar Configurações", type="primary"):
+            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+                df_config.loc[df_config["chave"] == "texto_base_ata", "valor"] = novo_texto_base
+            else:
+                novo_registro = pd.DataFrame([{"chave": "texto_base_ata", "valor": novo_texto_base}])
+                df_config = pd.concat([df_config, novo_registro], ignore_index=True)
+            
+            safe_update("Config_Ata", df_config)
+            st.success("✅ Texto base atualizado com sucesso! Todas as próximas Atas já sairão com essa nova redação.")
+    
     if app_mode_regular == "📝 Nova Ata de Conselho":
         st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Ciclo / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
         
@@ -5646,4 +5677,5 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
