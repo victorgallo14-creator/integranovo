@@ -823,12 +823,35 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.divider()
-    # 3. NAVEGAÇÃO PRINCIPAL
-    app_mode = st.radio("Navegação", ["📊 Painel de Gestão", "👥 Gestão de Alunos"], label_visibility="collapsed")
+    
+    # 3. MÓDULO DE ATUAÇÃO E NAVEGAÇÃO
+    st.markdown('<p class="section-label">⚙️ Módulo de Atuação</p>', unsafe_allow_html=True)
+    modulo_atuacao = st.radio(
+        "Módulo", 
+        ["🧠 Educação Especial Inclusiva", "🏫 Ensino Regular"], 
+        label_visibility="collapsed"
+    )
 
+    st.divider()
+
+    # Variáveis padrão de controle do sistema
     selected_student = "-- Novo Registro --"
-    pei_level = "Fundamental" # Default
+    pei_level = "Fundamental" 
     doc_mode = "Dashboard"
+
+    # --- NAVEGAÇÃO CONDICIONAL BASEADA NO MÓDULO ---
+    if modulo_atuacao == "🧠 Educação Especial Inclusiva":
+        st.markdown('<p class="section-label">📌 Navegação</p>', unsafe_allow_html=True)
+        app_mode = st.radio("Navegação", ["📊 Painel de Gestão", "👥 Gestão de Alunos"], label_visibility="collapsed")
+
+    elif modulo_atuacao == "🏫 Ensino Regular":
+        app_mode = "Atas_Conselho" # Trava o sistema antigo em background
+        
+        st.markdown('<p class="section-label">📌 Documentos</p>', unsafe_allow_html=True)
+        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas"], label_visibility="collapsed")
+        
+        st.markdown('<p class="section-label">🏫 Modalidade</p>', unsafe_allow_html=True)
+        modalidade_ata = st.selectbox("Nível", ["Ensino Fundamental", "Educação Infantil", "EJA"], label_visibility="collapsed")
 
 
 # --- SEÇÃO GESTÃO DE ALUNOS ---
@@ -5262,6 +5285,124 @@ elif app_mode == "👥 Gestão de Alunos":
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
 
+# ==============================================================================
+# VIEW: ENSINO REGULAR (ATAS DE CONSELHO)
+# ==============================================================================
+elif modulo_atuacao == "🏫 Ensino Regular":
+    
+    if app_mode_regular == "📝 Nova Ata de Conselho":
+        st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Ciclo / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
+        
+        if modalidade_ata == "Ensino Fundamental":
+            # Inicializa dados na sessão para a Ata
+            if 'data_ata_ef' not in st.session_state:
+                st.session_state.data_ata_ef = {
+                    'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": False, "M": False, "H": False, "G": False, "C": False, "A": False, "EF": False}]),
+                    'basico': pd.DataFrame([{"Estudante": "", "Ações (LP e Mat)": ""}])
+                }
+            
+            data_ata = st.session_state.data_ata_ef
+            
+            tabs = st.tabs(["1. Identificação", "2. Síntese Avaliativa", "3. Plano de Ação", "4. Observações", "5. Emissão PDF"])
+            
+            # --- ABA 1: IDENTIFICAÇÃO ---
+            with tabs[0]:
+                st.subheader("Dados da Unidade e Ciclo")
+                c1, c2, c3 = st.columns([2, 1, 1])
+                data_ata['escola'] = c1.text_input("Unidade Escolar [cite: 1]", value="CEIEF Rafael Affonso Leite")
+                data_ata['trimestre'] = c2.selectbox("Trimestre [cite: 3]", ["1º Trimestre", "2º Trimestre", "3º Trimestre"])
+                data_ata['ano_letivo'] = c3.text_input("Ano Letivo [cite: 3]", value=str(date.today().year))
+                
+                c4, c5 = st.columns(2)
+                data_ata['turma'] = c4.text_input("Turma/Ano (Ex: 3º Ano A)")
+                data_ata['ciclo'] = c5.selectbox("Ciclo", ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"])
+
+            # --- ABA 2: SÍNTESE AVALIATIVA ---
+            with tabs[1]:
+                st.subheader("Síntese Avaliativa da Classe")
+                st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual. ")
+                
+                c_lp, c_mat = st.columns(2)
+                data_ata['sin_lp'] = c_lp.text_area("Língua Portuguesa ", height=120)
+                data_ata['sin_mat'] = c_mat.text_area("Matemática ", height=120)
+                
+                c_h, c_g = st.columns(2)
+                data_ata['sin_hist'] = c_h.text_area("História ", height=120)
+                data_ata['sin_geo'] = c_g.text_area("Geografia ", height=120)
+                
+                c_c, c_a = st.columns(2)
+                data_ata['sin_cien'] = c_c.text_area("Ciências ", height=120)
+                data_ata['sin_arte'] = c_a.text_area("Arte ", height=120)
+                
+                data_ata['sin_ef'] = st.text_area("Educação Física ", height=120)
+
+            # --- ABA 3: PLANO DE AÇÃO ---
+            with tabs[2]:
+                st.subheader("Plano de Ação (Abaixo do Básico)")
+                st.caption("Marque as disciplinas em que o estudante apresentou desempenho Abaixo do Básico. ")
+                
+                # Tabela Interativa (Data Editor)
+                data_ata['abaixo_basico'] = st.data_editor(
+                    data_ata['abaixo_basico'],
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                st.markdown("**Propostas de Recuperação (Descreva as ações): [cite: 6]**")
+                for i in range(1, 6):
+                    data_ata[f'prop_{i}'] = st.text_input(f"{i}. [cite: 7, 8, 9, 10, 11]", key=f"prop_{i}")
+                
+                st.divider()
+                st.subheader("Plano de Ação (Básico) [cite: 12]")
+                st.caption("Ações nas áreas de LP e Matemática vinculadas aos estudantes com desempenho básico. [cite: 13]")
+                
+                data_ata['basico'] = st.data_editor(
+                    data_ata['basico'],
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+            # --- ABA 4: OBSERVAÇÕES ---
+            with tabs[3]:
+                st.subheader("3. Observações [cite: 14]")
+                
+                st.markdown("**a) Paralisações e Suspensões [cite: 15, 16]**")
+                c_o1, c_o2, c_o3 = st.columns([2, 1, 1])
+                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação (Ex: 10, 11 e 12 de março) [cite: 15]")
+                data_ata['obs_dias_previstos'] = c_o2.number_input("Dias Previstos", min_value=0)
+                data_ata['obs_dias_dados'] = c_o3.number_input("Dias Dados", min_value=0)
+                data_ata['obs_reposicao'] = st.text_input("Observação sobre reposição (Ex: Serão repostos no decorrer do ano) [cite: 16]")
+                
+                st.divider()
+                st.markdown("**b) Estudantes Matriculados Tardiamente [cite: 17]**")
+                # Outra tabela dinâmica para matrículas tardias
+                if 'mat_tardia' not in st.session_state.data_ata_ef:
+                    st.session_state.data_ata_ef['mat_tardia'] = pd.DataFrame([{"Estudante": "", "Data Matrícula": "", "Total Frequência (Dias)": ""}])
+                
+                data_ata['mat_tardia'] = st.data_editor(
+                    st.session_state.data_ata_ef['mat_tardia'],
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+            # --- ABA 5: EMISSÃO PDF ---
+            with tabs[4]:
+                st.subheader("Finalização e Assinaturas")
+                st.info("No PDF gerado, será incluído o espaço para assinatura de todos os participantes (Direção, Prof. Coordenador, Docentes Polivalentes e Especialistas). [cite: 18, 19]")
+                
+                if st.button("💾 Salvar Rascunho da Ata", use_container_width=True):
+                    # Aqui você chamará sua função de banco de dados (ex: safe_update para a aba "Atas_Conselho")
+                    st.success("Ata salva com sucesso no banco de dados!")
+                
+                if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
+                    st.warning("A geração de PDF para a Ata de Conselho está sendo configurada. Em breve o layout oficial da SME será impresso aqui!")
+                    # Aqui entraremos com a customização da classe OfficialPDF para desenhar a Ata.
+
+        else:
+            st.info(f"O formulário para **{modalidade_ata}** está em desenvolvimento. Por enquanto, utilize o modelo do Ensino Fundamental.")
 
 
 
