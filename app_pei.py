@@ -5503,11 +5503,41 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                         pdf.ln(5)
                         
-                        # --- SÍNTESE AVALIATIVA - BORDAS BLINDADAS (CORRIGIDAS) ---
+                        if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
+                    try:
+                        pdf = OfficialPDF('P', 'mm', 'A4')
+                        pdf.doc_type = "Ata" 
+                        pdf.set_margins(15, 35, 15)
+                        pdf.set_auto_page_break(auto=True, margin=20)
+                        pdf.add_page()
+                        
+                        # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
+                        pdf.set_font("Arial", "B", 10)
+                        escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
+                        
+                        trimestre = data_ata.get('trimestre', '').upper()
+                        ano = data_ata.get('ano_letivo', '')
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
+                        
+                        turma = data_ata.get('turma', '')
+                        ciclo = data_ata.get('ciclo', '')
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
+                        pdf.ln(5)
+                        
+                        # ==============================================================================
+                        # INÍCIO DA SUPER CAIXA (BORDAS CONTÍNUAS)
+                        # ==============================================================================
+                        
+                        # --- 1. SÍNTESE AVALIATIVA ---
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.set_x(15)
-                        pdf.cell(180, 6, "SÍNTESE AVALIATIVA", 1, 1, 'C', True)
+                        # LTR (Left, Top, Right) - Abre a tampa superior da super caixa
+                        pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                         
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
                         if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
@@ -5515,9 +5545,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         else:
                             texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
                         
-                        # Espaçamento manual com borda impressa (Garante a continuidade da linha)
                         pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1)
+                        pdf.cell(180, 2, "", "LR", 1) # Espaço interno contínuo
                         
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
@@ -5550,35 +5579,39 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         for i, (nome, texto) in enumerate(disciplinas):
                             linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
                             
+                            if i < len(disciplinas) - 1:
+                                linha_texto += "\n"
+                            
                             pdf.set_x(15)
                             pdf.multi_cell(180, 5, clean_pdf_text(linha_texto), "LR", 'J')
-                            
-                            if i < len(disciplinas) - 1:
-                                # Preenche os espaços em branco com a borda para não "cortar" a linha
-                                pdf.set_x(15)
-                                pdf.cell(180, 5, "", "LR", 1)
-                            else:
-                                # A última matéria fecha a caixa na parte de baixo
-                                pdf.set_x(15)
-                                pdf.cell(180, 4, "", "LRB", 1)
                         
-                        # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
-                        pdf.ln(5)
+                        # --- 2. PLANO DE AÇÃO (DENTRO DA CAIXA) ---
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, "", "LR", 1) # Espaço com borda
+                        
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.write(5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho "))
+                        pdf.cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho"), "LR", 1, 'L')
                         pdf.set_font("Arial", "", 10)
-                        pdf.write(5, clean_pdf_text("(considerar os conteúdos previstos para o ano de escolaridade na atribuição de conceitos):\n\n"))
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text("(considerar os conteúdos previstos para o ano de escolaridade na atribuição de conceitos):"), "LR", 1, 'L')
+                        
+                        pdf.set_x(15)
+                        pdf.cell(180, 3, "", "LR", 1)
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.write(5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico: "))
+                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico:"), "LR", 1, 'L')
                         pdf.set_font("Arial", "", 10)
-                        pdf.write(5, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)\n"))
-                        pdf.ln(2)
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)"), "LR", 1, 'L')
                         
+                        pdf.set_x(15)
+                        pdf.cell(180, 2, "", "LR", 1)
+                        
+                        # Tabela Abaixo do Básico (Se encaixa perfeitamente nas bordas 180mm)
                         pdf.set_font("Arial", "B", 10)
                         col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
                         headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
@@ -5592,8 +5625,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         if isinstance(lista_abaixo, pd.DataFrame): lista_abaixo = lista_abaixo.to_dict('records')
                             
                         def truncate_str(texto, max_w):
-                            while pdf.get_string_width(texto) > max_w - 2:
-                                texto = texto[:-1]
+                            while pdf.get_string_width(texto) > max_w - 2: texto = texto[:-1]
                             return texto
 
                         for row in lista_abaixo:
@@ -5613,25 +5645,29 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.cell(col_w[8], 6, check(row.get('LT')), 1, 0, 'C')
                                 pdf.cell(col_w[9], 6, check(row.get('LIBRAS')), 1, 1, 'C')
                         
-                        # --- PROPOSTAS DE RECUPERAÇÃO ---
-                        pdf.ln(2)
+                        pdf.set_x(15)
+                        pdf.cell(180, 3, "", "LR", 1) # Espaço
+                        
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)"), 0, 'L')
+                        pdf.multi_cell(180, 5, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)"), "LR", 'L')
                         for i in range(1, 6):
                             prop = data_ata.get(f'prop_{i}', '')
                             if prop: 
                                 pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"{i}. {prop}"), 0, 'L')
+                                pdf.multi_cell(180, 5, clean_pdf_text(f"{i}. {prop}"), "LR", 'L')
 
-                        # --- PLANO DE AÇÃO (BÁSICO) ---
-                        pdf.ln(5)
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, "", "LR", 1) # Espaço
+                        
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), 0, 1, 'L')
-                        pdf.ln(2)
+                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), "LR", 1, 'L')
+                        
+                        pdf.set_x(15)
+                        pdf.cell(180, 2, "", "LR", 1) # Espaço
                         
                         pdf.set_font("Arial", "B", 10)
                         y = pdf.get_y()
@@ -5678,18 +5714,23 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'L')
                                 pdf.set_xy(15, y + h_row)
 
-                        # --- OBSERVAÇÕES ---
-                        pdf.ln(5)
+                        # --- 3. OBSERVAÇÕES (DENTRO DA CAIXA) ---
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, "", "LR", 1) # Espaço
+                        
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(180, 6, clean_pdf_text("3. Observações:"), 0, 1, 'L')
+                        pdf.cell(180, 6, clean_pdf_text("3. Observações:"), "LR", 1, 'L')
                         pdf.set_font("Arial", "", 10)
+                        
                         obs_paral = f"a) Devido à paralisação ocorrida nos dias {data_ata.get('obs_paral_dias', '___')}, dos {data_ata.get('obs_dias_previstos', '___')} dias letivos previstos, {data_ata.get('obs_dias_dados', '___')} foram realmente dados. {data_ata.get('obs_reposicao', '')}"
                         pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text(obs_paral), 0, 'L')
-                        pdf.ln(1)
+                        pdf.multi_cell(180, 5, clean_pdf_text(obs_paral), "LR", 'L')
+                        
+                        pdf.set_x(15)
+                        pdf.cell(180, 2, "", "LR", 1) # Espaço
                         
                         lista_tardia = data_ata.get('mat_tardia', [])
                         if isinstance(lista_tardia, pd.DataFrame): lista_tardia = lista_tardia.to_dict('records')
@@ -5701,13 +5742,20 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 if est_tardio:
                                     texto_tardio = f"b) O estudante {est_tardio} foi matriculado nesta sala em {row.get('Data Matrícula')}. Portanto, obteve um total de frequência de {row.get('Total Frequência (Dias)')} dias letivos."
                                     pdf.set_x(15)
-                                    pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), 0, 'L')
-                                    pdf.ln(1)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), "LR", 'L')
                         else:
                             pdf.set_x(15)
-                            pdf.cell(180, 5, "b) Sem matrículas tardias registradas no período.", 0, 1)
+                            pdf.cell(180, 5, "b) Sem matrículas tardias registradas no período.", "LR", 1)
 
-                        # --- ASSINATURAS ---
+                        # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
+                        pdf.set_x(15)
+                        pdf.cell(180, 3, "", "LRB", 1) # Left, Right, BOTTOM
+                        
+                        # ==============================================================================
+                        # FIM DA SUPER CAIXA
+                        # ==============================================================================
+
+                        # --- ASSINATURAS (FORA DA CAIXA) ---
                         pdf.ln(5)
                         if pdf.get_y() > 220: pdf.add_page()
                         
@@ -5809,3 +5857,4 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             
             safe_update("Config_Ata", df_config)
             st.success("✅ Texto base atualizado!")
+
