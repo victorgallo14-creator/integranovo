@@ -5768,7 +5768,8 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
-# ==============================================================================
+
+    # ==============================================================================
     # TELA DE HISTÓRICO DE ATAS
     # ==============================================================================
     if app_mode_regular == "📂 Histórico de Atas":
@@ -5835,6 +5836,7 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         st.success(f"Ata '{ata_excluir}' excluída do sistema!")
                         time.sleep(1)
                         st.rerun()
+
 
 
 
