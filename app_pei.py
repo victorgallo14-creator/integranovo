@@ -603,7 +603,7 @@ if st.session_state.authenticated:
             <div style='background-color: #eff6ff; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
                 <h1 style='font-size: 50px; margin: 0;'>🏫</h1>
                 <h3 style='color: #1d4ed8;'>Ensino Regular</h3>
-                <p style='font-size: 14px; color: #1e3a8a; min-height: 45px;'>Atas de Conselho de Ciclo, controle de avaliações e legislações.</p>
+                <p style='font-size: 14px; color: #1e3a8a; min-height: 45px;'>Atas de Conselho de Ciclo e outros documentos.</p>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -5715,6 +5715,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
