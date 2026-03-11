@@ -5347,47 +5347,15 @@ elif app_mode == "👥 Gestão de Alunos":
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
 
-# ==============================================================================
-# VIEW: ENSINO REGULAR (ATAS DE CONSELHO)
-# ==============================================================================
 elif modulo_atuacao == "🏫 Ensino Regular":
     
     # ==============================================================================
-    # TELA DE CONFIGURAÇÕES (GESTOR)
+    # 1. TELA: NOVA ATA DE CONSELHO
     # ==============================================================================
-    if app_mode_regular == "⚙️ Configurações":
-        st.markdown('<div class="header-box"><div class="header-title">Configurações do Ensino Regular</div><div class="header-subtitle">Atualização Anual de Textos e Resoluções</div></div>', unsafe_allow_html=True)
-        
-        st.info("💡 O texto salvo aqui será utilizado automaticamente no cabeçalho de todas as novas Atas geradas pelo sistema.")
-        
-        # Lê a configuração atual do banco de dados
-        df_config = safe_read("Config_Ata", ["chave", "valor"])
-        
-        # O texto padrão atualizado para 2026 que você me pediu
-        texto_padrao = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
-        
-        current_text = texto_padrao
-        if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
-            current_text = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
-            
-        novo_texto_base = st.text_area("Texto Base da Síntese Avaliativa (Legislações)", value=current_text, height=200)
-        
-        if st.button("💾 Salvar Configurações", type="primary"):
-            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
-                df_config.loc[df_config["chave"] == "texto_base_ata", "valor"] = novo_texto_base
-            else:
-                novo_registro = pd.DataFrame([{"chave": "texto_base_ata", "valor": novo_texto_base}])
-                df_config = pd.concat([df_config, novo_registro], ignore_index=True)
-            
-            safe_update("Config_Ata", df_config)
-            st.success("✅ Texto base atualizado com sucesso! Todas as próximas Atas já sairão com essa nova redação.")
-
-
-if app_mode_regular == "📝 Nova Ata de Conselho":
+    if app_mode_regular == "📝 Nova Ata de Conselho":
         st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Ciclo / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
         
         if modalidade_ata == "Ensino Fundamental":
-            # Inicializa dados na sessão para a Ata
             if 'data_ata_ef' not in st.session_state:
                 st.session_state.data_ata_ef = {
                     'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": False, "M": False, "H": False, "G": False, "C": False, "A": False, "EF": False, "LT": False, "LIBRAS": False}]),
@@ -5395,10 +5363,8 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                 }
             
             data_ata = st.session_state.data_ata_ef
-            
             tabs = st.tabs(["1. Identificação", "2. Síntese Avaliativa", "3. Plano de Ação", "4. Observações", "5. Emissão PDF"])
             
-            # --- ABA 1: IDENTIFICAÇÃO ---
             with tabs[0]:
                 st.subheader("Dados da Unidade e Ciclo")
                 c1, c2, c3 = st.columns([2, 1, 1])
@@ -5417,7 +5383,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                 ciclo_idx = ciclo_opts.index(data_ata.get('ciclo', "Ciclo I (1º ao 3º ano)")) if data_ata.get('ciclo') in ciclo_opts else 0
                 data_ata['ciclo'] = c5.selectbox("Ciclo", ciclo_opts, index=ciclo_idx)
 
-            # --- ABA 2: SÍNTESE AVALIATIVA ---
             with tabs[1]:
                 st.subheader("Síntese Avaliativa da Classe")
                 st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual.")
@@ -5440,16 +5405,11 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                 
                 data_ata['sin_libras'] = st.text_area("Libras", value=data_ata.get('sin_libras', ''), height=120)
 
-            # --- ABA 3: PLANO DE AÇÃO ---
             with tabs[2]:
                 st.subheader("Plano de Ação (Abaixo do Básico)")
-                st.caption("💡 **DICA:** Clique na última linha vazia da tabela para adicionar um novo aluno.")
-                
-                # Garante colunas novas caso a ata seja antiga
                 if "LT" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LT"] = False
                 if "LIBRAS" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LIBRAS"] = False
                 
-                # Configuração forçada do Editor para permitir marcação
                 config_abaixo = {
                     "Estudante": st.column_config.TextColumn("Estudante", required=True),
                     "LP": st.column_config.CheckboxColumn("LP", default=False),
@@ -5463,56 +5423,30 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                     "LIBRAS": st.column_config.CheckboxColumn("LIB", default=False)
                 }
                 
-                # Tabela Interativa
-                data_ata['abaixo_basico'] = st.data_editor(
-                    data_ata['abaixo_basico'],
-                    column_config=config_abaixo,
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    hide_index=True
-                )
+                data_ata['abaixo_basico'] = st.data_editor(data_ata['abaixo_basico'], column_config=config_abaixo, num_rows="dynamic", use_container_width=True, hide_index=True)
                 
-                st.markdown("**Propostas de Recuperação (Descreva as ações):**")
+                st.markdown("**Propostas de Recuperação:**")
                 for i in range(1, 6):
                     data_ata[f'prop_{i}'] = st.text_input(f"{i}.", value=data_ata.get(f'prop_{i}', ''), key=f"prop_{i}")
                 
                 st.divider()
                 st.subheader("Plano de Ação (Básico)")
-                st.caption("💡 **DICA:** Clique na última linha vazia para adicionar um novo estudante.")
-                
-                data_ata['basico'] = st.data_editor(
-                    data_ata['basico'],
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    hide_index=True
-                )
+                data_ata['basico'] = st.data_editor(data_ata['basico'], num_rows="dynamic", use_container_width=True, hide_index=True)
 
-            # --- ABA 4: OBSERVAÇÕES ---
             with tabs[3]:
                 st.subheader("3. Observações")
-                
-                st.markdown("**a) Paralisações e Suspensões**")
                 c_o1, c_o2, c_o3 = st.columns([2, 1, 1])
-                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação (Ex: 10, 11 e 12 de março)", value=data_ata.get('obs_paral_dias', ''))
+                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação", value=data_ata.get('obs_paral_dias', ''))
                 data_ata['obs_dias_previstos'] = c_o2.text_input("Dias Previstos", value=str(data_ata.get('obs_dias_previstos', '')))
                 data_ata['obs_dias_dados'] = c_o3.text_input("Dias Dados", value=str(data_ata.get('obs_dias_dados', '')))
                 data_ata['obs_reposicao'] = st.text_input("Observação sobre reposição", value=data_ata.get('obs_reposicao', ''))
                 
                 st.divider()
                 st.markdown("**b) Estudantes Matriculados Tardiamente**")
-                st.caption("💡 **DICA:** Clique na última linha vazia para adicionar.")
-                
                 if 'mat_tardia' not in st.session_state.data_ata_ef:
                     st.session_state.data_ata_ef['mat_tardia'] = pd.DataFrame([{"Estudante": "", "Data Matrícula": "", "Total Frequência (Dias)": ""}])
-                
-                data_ata['mat_tardia'] = st.data_editor(
-                    st.session_state.data_ata_ef['mat_tardia'],
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    hide_index=True
-                )
+                data_ata['mat_tardia'] = st.data_editor(st.session_state.data_ata_ef['mat_tardia'], num_rows="dynamic", use_container_width=True, hide_index=True)
 
-            # --- ABA 5: EMISSÃO PDF ---
             with tabs[4]:
                 st.subheader("Finalização e Assinaturas")
                 
@@ -5527,24 +5461,18 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         
                         novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
                         id_ata = f"{data_ata.get('turma', 'SemTurma')} - {data_ata.get('trimestre', 'SemTri')} ({modalidade_ata})"
-                        
                         df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
                         
                         if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
                             df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
                         else:
-                            novo_registro = {
-                                "id_ata": id_ata, 
-                                "modalidade": modalidade_ata, 
-                                "turma": data_ata.get('turma', ''), 
-                                "dados_json": novo_json
-                            }
+                            novo_registro = {"id_ata": id_ata, "modalidade": modalidade_ata, "turma": data_ata.get('turma', ''), "dados_json": novo_json}
                             df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
                         
                         safe_update("Atas_Conselho", df_atas)
-                        st.success(f"✅ Ata da turma {data_ata.get('turma')} salva com sucesso no banco de dados!")
+                        st.success(f"✅ Ata salva com sucesso!")
                     except Exception as e:
-                        st.error(f"Erro ao salvar: Verifique se a aba 'Atas_Conselho' existe. Detalhe: {e}")
+                        st.error(f"Erro ao salvar: {e}")
 
                 if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
                     try:
@@ -5554,7 +5482,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         pdf.set_auto_page_break(auto=True, margin=20)
                         pdf.add_page()
                         
-                        # --- CABEÇALHO ---
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 6, f"Unidade Escolar: {clean_pdf_text(data_ata.get('escola', ''))}", 0, 1, 'L')
                         pdf.cell(0, 6, "REGISTRO E CONTROLE DO ACOMPANHAMENTO ESCOLAR", 0, 1, 'C')
@@ -5562,17 +5489,15 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         pdf.cell(0, 6, f"Turma: {clean_pdf_text(data_ata.get('turma', ''))} | Ciclo: {clean_pdf_text(data_ata.get('ciclo', ''))}", 0, 1, 'C')
                         pdf.ln(5)
                         
-                        # --- SÍNTESE AVALIATIVA ---
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.cell(0, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                         
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
-                        texto_base_pdf = "Com base: na Resolução SME..." 
                         if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
                             texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
                         else:
-                            texto_base_pdf = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+                            texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
                         
                         pdf.set_font("Arial", "", 12)
                         pdf.multi_cell(0, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
@@ -5582,7 +5507,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         pdf.set_font("Arial", "B", 9)
                         pdf.multi_cell(0, 4, clean_pdf_text(texto_sint), "LR", 'J')
                         
-                        # LISTA ATUALIZADA COM LT E LIBRAS
                         disciplinas = [
                             ("Língua Portuguesa", data_ata.get('sin_lp', '')),
                             ("Matemática", data_ata.get('sin_mat', '')),
@@ -5603,7 +5527,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         
                         pdf.cell(0, 4, "", "LRB", 1)
                         
-                        # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
                         if pdf.get_y() > 230: pdf.add_page()
                         
@@ -5618,7 +5541,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         pdf.write(6, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)\n"))
                         
                         pdf.set_font("Arial", "B", 8)
-                        # REDIMENSIONAMENTO PARA CABER 10 COLUNAS NO A4
                         col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
                         headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
                         for i, h in enumerate(headers):
@@ -5627,8 +5549,7 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         
                         pdf.set_font("Arial", "", 8)
                         lista_abaixo = data_ata.get('abaixo_basico', [])
-                        if isinstance(lista_abaixo, pd.DataFrame):
-                            lista_abaixo = lista_abaixo.to_dict('records')
+                        if isinstance(lista_abaixo, pd.DataFrame): lista_abaixo = lista_abaixo.to_dict('records')
                             
                         for row in lista_abaixo:
                             estudante = str(row.get('Estudante', '')).strip()
@@ -5650,10 +5571,8 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         pdf.write(6, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)\n"))
                         for i in range(1, 6):
                             prop = data_ata.get(f'prop_{i}', '')
-                            if prop:
-                                pdf.cell(0, 5, clean_pdf_text(f"{i}. {prop}"), 0, 1)
+                            if prop: pdf.cell(0, 5, clean_pdf_text(f"{i}. {prop}"), 0, 1)
 
-                        # --- PLANO DE AÇÃO (BÁSICO) ---
                         pdf.ln(5)
                         if pdf.get_y() > 230: pdf.add_page()
                         
@@ -5669,13 +5588,12 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         
                         pdf.rect(x+60, y, 120, 10)
                         pdf.set_xy(x+60, y+1)
-                        pdf.multi_cell(120, 4, clean_pdf_text("Descrever de forma sucinta as ações que serão desenvolvidas nas áreas de Língua Portuguesa e de Matemática vinculadas a esse resultado."), 0, 'C')
+                        pdf.multi_cell(120, 4, clean_pdf_text("Descrever de forma sucinta as ações que serão desenvolvidas nas áreas de Língua Portuguesa e Matemática."), 0, 'C')
                         pdf.set_xy(x, y+10)
                         
                         pdf.set_font("Arial", "", 8)
                         lista_basico = data_ata.get('basico', [])
-                        if isinstance(lista_basico, pd.DataFrame):
-                            lista_basico = lista_basico.to_dict('records')
+                        if isinstance(lista_basico, pd.DataFrame): lista_basico = lista_basico.to_dict('records')
                             
                         for row in lista_basico:
                             estudante = str(row.get('Estudante', '')).strip()
@@ -5683,7 +5601,6 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                                 x = pdf.get_x()
                                 y = pdf.get_y()
                                 texto_acao = str(row.get('Ações (LP e Mat)', ''))
-                                
                                 linhas = int(pdf.get_string_width(clean_pdf_text(texto_acao)) / 115) + 1
                                 linhas += texto_acao.count('\n')
                                 h_row = max(6, linhas * 5 + 2)
@@ -5694,29 +5611,24 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                                 
                                 pdf.rect(x, y, 60, h_row)
                                 pdf.rect(x+60, y, 120, h_row)
-                                
                                 pdf.set_xy(x, y)
                                 pdf.multi_cell(60, 5, clean_pdf_text(estudante), 0, 'L')
                                 pdf.set_xy(x+60, y)
                                 pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'L')
                                 pdf.set_xy(x, y + h_row)
 
-                        # --- OBSERVAÇÕES ---
                         pdf.ln(5)
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 6, clean_pdf_text("3. Observações:"), 0, 1, 'L')
-                        
                         pdf.set_font("Arial", "", 9)
                         obs_paral = f"a) Devido à paralisação ocorrida nos dias {data_ata.get('obs_paral_dias', '___')}, dos {data_ata.get('obs_dias_previstos', '___')} dias letivos previstos, {data_ata.get('obs_dias_dados', '___')} foram realmente dados. {data_ata.get('obs_reposicao', '')}"
                         pdf.multi_cell(0, 5, clean_pdf_text(obs_paral), 0, 'L')
                         pdf.ln(1)
                         
                         lista_tardia = data_ata.get('mat_tardia', [])
-                        if isinstance(lista_tardia, pd.DataFrame):
-                            lista_tardia = lista_tardia.to_dict('records')
-                            
+                        if isinstance(lista_tardia, pd.DataFrame): lista_tardia = lista_tardia.to_dict('records')
                         est_tardios = [str(r.get('Estudante', '')).strip() for r in lista_tardia if str(r.get('Estudante', '')).strip()]
                         
                         if len(est_tardios) > 0:
@@ -5729,77 +5641,60 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                         else:
                             pdf.cell(0, 5, "b) Sem matrículas tardias registradas no período.", 0, 1)
 
-                        # --- ASSINATURAS ---
                         pdf.ln(5)
                         if pdf.get_y() > 220: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 9)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.cell(0, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 1, 1, 'C', True)
-                        
                         pdf.set_font("Arial", "", 8)
-                        texto_assinaturas = "(Direção, Prof. Coordenador, todos os Docentes Polivalentes que atuam no ciclo ( I: 1º ao 3ºano ou II : 4º e 5º ano), Professores Especialistas de Arte, Educação Física e Educação Especial."
+                        texto_assinaturas = "(Direção, Prof. Coordenador, todos os Docentes Polivalentes, Professores Especialistas e Ed. Especial."
                         pdf.multi_cell(0, 5, clean_pdf_text(texto_assinaturas), 1, 'L')
                         
                         pdf.ln(10)
                         y_sig = pdf.get_y()
                         pdf.line(20, y_sig, 80, y_sig); pdf.set_xy(20, y_sig); pdf.cell(60, 5, clean_pdf_text("Direção"), 0, 0, 'C')
                         pdf.line(120, y_sig, 180, y_sig); pdf.set_xy(120, y_sig); pdf.cell(60, 5, clean_pdf_text("Coordenação Pedagógica"), 0, 1, 'C')
-                        
                         pdf.ln(15)
                         y_sig = pdf.get_y()
                         pdf.line(20, y_sig, 80, y_sig); pdf.set_xy(20, y_sig); pdf.cell(60, 5, clean_pdf_text("Prof. Polivalente"), 0, 0, 'C')
                         pdf.line(120, y_sig, 180, y_sig); pdf.set_xy(120, y_sig); pdf.cell(60, 5, clean_pdf_text("Prof. Arte"), 0, 1, 'C')
-                        
                         pdf.ln(15)
                         y_sig = pdf.get_y()
                         pdf.line(20, y_sig, 80, y_sig); pdf.set_xy(20, y_sig); pdf.cell(60, 5, clean_pdf_text("Prof. Ed. Física"), 0, 0, 'C')
                         pdf.line(120, y_sig, 180, y_sig); pdf.set_xy(120, y_sig); pdf.cell(60, 5, clean_pdf_text("Prof. Ed. Especial"), 0, 1, 'C')
 
                         st.session_state.pdf_bytes_ata = get_pdf_bytes(pdf)
-                        st.success("✅ PDF gerado com sucesso! Clique no botão abaixo para concluir o download.")
-                        
+                        st.success("✅ PDF gerado com sucesso!")
                     except Exception as e:
                         st.error(f"Erro ao desenhar o PDF: {e}")
 
                 if 'pdf_bytes_ata' in st.session_state:
                     turma_limpa = str(data_ata.get('turma', 'Turma')).replace('/', '-').replace('\\', '-')
                     trimestre_limpo = str(data_ata.get('trimestre', 'Trimestre')).replace('/', '-')
-                    nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
-                    
-                    st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+                    st.download_button("📥 BAIXAR ATA", st.session_state.pdf_bytes_ata, f"Ata_{turma_limpa}_{trimestre_limpo}.pdf", "application/pdf", type="primary")
 
-# ==============================================================================
-    # TELA DE HISTÓRICO DE ATAS
+    # ==============================================================================
+    # 2. TELA: HISTÓRICO DE ATAS
     # ==============================================================================
     if app_mode_regular == "📂 Histórico de Atas":
-        st.markdown('<div class="header-box"><div class="header-title">Histórico de Atas</div><div class="header-subtitle">Consulta e Gerenciamento de Atas Salvas</div></div>', unsafe_allow_html=True)
-        
-        # Lê o banco de dados das Atas
+        st.markdown('<div class="header-box"><div class="header-title">Histórico de Atas</div></div>', unsafe_allow_html=True)
         df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
         
         if df_atas.empty:
-            st.info("📂 Nenhuma ata foi salva no banco de dados ainda. Vá em 'Nova Ata de Conselho' para criar a primeira!")
+            st.info("Nenhuma ata salva ainda.")
         else:
-            st.success(f"✅ Encontradas {len(df_atas)} ata(s) salva(s) no sistema.")
-            
-            # Exibir uma tabela simplificada e bonita
             df_display = df_atas[["id_ata", "modalidade", "turma"]].copy()
             df_display.columns = ["ID / Título da Ata", "Modalidade", "Turma"]
             st.dataframe(df_display, use_container_width=True, hide_index=True)
             
             st.divider()
-            
-            # --- ÁREA DE CARREGAMENTO PARA EDIÇÃO/IMPRESSÃO ---
-            st.subheader("🔄 Carregar Ata Existente")
-            st.caption("Selecione uma ata salva para carregar os dados de volta. Assim você pode editá-la ou gerar o PDF novamente.")
-            
+            st.subheader("🔄 Carregar Ata")
             c_sel, c_btn = st.columns([3, 1])
             ata_selecionada = c_sel.selectbox("Selecione a Ata:", df_atas["id_ata"].tolist(), label_visibility="collapsed")
             
             if c_btn.button("Carregar Dados", type="primary", use_container_width=True):
                 dados_row = df_atas[df_atas["id_ata"] == ata_selecionada].iloc[0]
-                
                 try:
                     dados_json = json.loads(dados_row["dados_json"])
                     for key in ['abaixo_basico', 'basico', 'mat_tardia']:
@@ -5808,39 +5703,28 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                             
                     if dados_row["modalidade"] == "Ensino Fundamental":
                         st.session_state.data_ata_ef = dados_json
-                    
-                    st.success(f"Ata '{ata_selecionada}' carregada com sucesso! Vá para a aba '📝 Nova Ata de Conselho' para visualizar.")
+                    st.success(f"Ata '{ata_selecionada}' carregada! Vá para 'Nova Ata' para visualizar.")
                 except Exception as e:
-                    st.error(f"Erro ao carregar os dados da ata: {e}")
+                    st.error(f"Erro ao carregar: {e}")
             
             st.divider()
-            
-            # --- ZONA DE PERIGO: EXCLUIR ATA ---
             if not is_monitor:
-                with st.expander("⚠️ Zona de Perigo - Excluir Ata"):
-                    st.warning("Atenção: A exclusão é permanente e não pode ser desfeita.")
+                with st.expander("⚠️ Excluir Ata"):
                     c_del_sel, c_del_btn = st.columns([3, 1])
-                    ata_excluir = c_del_sel.selectbox("Selecione a Ata para excluir:", df_atas["id_ata"].tolist(), key="del_ata_sel", label_visibility="collapsed")
-                    
-                    if c_del_btn.button("🗑️ Excluir Ata", type="secondary", use_container_width=True):
-                        df_new = df_atas[df_atas["id_ata"] != ata_excluir]
-                        safe_update("Atas_Conselho", df_new)
-                        st.success(f"Ata '{ata_excluir}' excluída do sistema!")
-                        time.sleep(1)
-                        st.rerun()
+                    ata_excluir = c_del_sel.selectbox("Ata:", df_atas["id_ata"].tolist(), key="del_ata_sel", label_visibility="collapsed")
+                    if c_del_btn.button("🗑️ Excluir", type="secondary", use_container_width=True):
+                        safe_update("Atas_Conselho", df_atas[df_atas["id_ata"] != ata_excluir])
+                        st.success("Excluída!")
+                        time.sleep(1); st.rerun()
 
     # ==============================================================================
-    # TELA DE CONFIGURAÇÕES (GESTOR)
+    # 3. TELA: CONFIGURAÇÕES
     # ==============================================================================
     if app_mode_regular == "⚙️ Configurações":
-        st.markdown('<div class="header-box"><div class="header-title">Configurações do Ensino Regular</div><div class="header-subtitle">Atualização Anual de Textos e Resoluções</div></div>', unsafe_allow_html=True)
-        
-        st.info("💡 O texto salvo aqui será utilizado automaticamente no cabeçalho de todas as novas Atas geradas pelo sistema.")
-        
+        st.markdown('<div class="header-box"><div class="header-title">Configurações do Ensino Regular</div></div>', unsafe_allow_html=True)
         df_config = safe_read("Config_Ata", ["chave", "valor"])
         
-        texto_padrao = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
-        
+        texto_padrao = "Com base: na Resolução SME nº 07/2024..."
         current_text = texto_padrao
         if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
             current_text = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
@@ -5855,15 +5739,7 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                 df_config = pd.concat([df_config, novo_registro], ignore_index=True)
             
             safe_update("Config_Ata", df_config)
-            st.success("✅ Texto base atualizado com sucesso! Todas as próximas Atas já sairão com essa nova redação.")
-
-
-
-
-
-
-
-
+            st.success("✅ Texto base atualizado!")
 
 
 
