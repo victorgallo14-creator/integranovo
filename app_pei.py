@@ -911,7 +911,7 @@ with st.sidebar:
         app_mode = "Atas_Conselho" # Trava o sistema antigo em background
         
         st.markdown('<p class="section-label">📌 Documentos</p>', unsafe_allow_html=True)
-        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "⚙️ Configurações"], label_visibility="collapsed")
+        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "Agendamento Informática", "⚙️ Configurações"], label_visibility="collapsed")
         
         st.markdown('<p class="section-label">🏫 Modalidade</p>', unsafe_allow_html=True)
         modalidade_ata = st.selectbox("Nível", ["Ensino Fundamental", "Educação Infantil", "EJA"], label_visibility="collapsed")
@@ -5832,3 +5832,72 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             
             safe_update("Config_Ata", df_config)
             st.success("✅ Texto base atualizado!")
+
+# ==============================================================================
+# MÓDULO 4: AGENDAMENTO SALA DE INFORMÁTICA (NOVO)
+# ==============================================================================
+
+elif st.session_state.doc_option == "Agendamento Informática":
+    st.markdown('<div class="header-box"><div class="header-title">💻 Agendamento - Sala de Informática</div></div>', unsafe_allow_html=True)
+    st.markdown("Reserve a sala de computadores para a sua turma do Ensino Regular.")
+    st.divider()
+
+    try:
+        df_agendamentos = conn.read(worksheet="Agendamentos", usecols=[0, 1, 2, 3])
+        if df_agendamentos.empty:
+            df_agendamentos = pd.DataFrame(columns=["Data", "Horario", "Professor", "Turma"])
+    except Exception as e:
+        st.warning("⚠️ Aba 'Agendamentos' não encontrada. Crie uma aba na planilha com as colunas: Data, Horario, Professor, Turma.")
+        df_agendamentos = pd.DataFrame(columns=["Data", "Horario", "Professor", "Turma"])
+
+    col_form, col_view = st.columns([1, 1.2], gap="large")
+
+    with col_view:
+        st.subheader("📅 Grade do Dia")
+        data_selecionada = st.date_input("Escolha a data para visualizar/agendar:", format="DD/MM/YYYY")
+        data_str = data_selecionada.strftime("%d/%m/%Y")
+        
+        df_dia = df_agendamentos[df_agendamentos["Data"] == data_str]
+        
+        if df_dia.empty:
+            st.info(f"A sala de informática está totalmente livre no dia {data_str}.")
+        else:
+            st.dataframe(df_dia[["Horario", "Professor", "Turma"]], use_container_width=True, hide_index=True)
+
+    with col_form:
+        st.subheader("Novo Agendamento")
+        horarios_escola = [
+            "07:00 - 07:50", "07:50 - 08:40", "08:40 - 09:30", "09:30 - 10:20", "10:20 - 11:10", "11:10 - 12:00",
+            "12:30 - 13:20", "13:20 - 14:10", "14:10 - 15:00", "15:00 - 15:50", "15:50 - 16:40", "16:40 - 17:30"
+        ]
+        
+        horarios_ocupados = df_dia["Horario"].tolist() if not df_dia.empty else []
+        horarios_disponiveis = [h for h in horarios_escola if h not in horarios_ocupados]
+
+        with st.form("form_agendamento", clear_on_submit=True):
+            professor = st.text_input("Nome do Professor(a)", placeholder="Ex: Prof. Silva")
+            turma = st.text_input("Turma", placeholder="Ex: 6º Ano A")
+            
+            if not horarios_disponiveis:
+                st.error("Todos os horários estão lotados para este dia!")
+                horario_escolhido = None
+            else:
+                horario_escolhido = st.selectbox("Horário Disponível", horarios_disponiveis)
+            
+            submit_agendamento = st.form_submit_button("💾 Confirmar Reserva", use_container_width=True)
+
+            if submit_agendamento:
+                if not professor or not turma:
+                    st.error("Por favor, preencha o Nome e a Turma.")
+                elif not horario_escolhido:
+                    st.error("Selecione um horário válido.")
+                else:
+                    novo_registro = pd.DataFrame([{"Data": data_str, "Horario": horario_escolhido, "Professor": professor, "Turma": turma}])
+                    df_atualizado = pd.concat([df_agendamentos, novo_registro], ignore_index=True)
+                    try:
+                        conn.update(worksheet="Agendamentos", data=df_atualizado)
+                        st.success(f"✅ Sala reservada com sucesso para {turma} às {horario_escolhido}!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao salvar: {e}")
+
