@@ -629,6 +629,11 @@ st.markdown("""
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .stApp { background-color: #f8fafc; }
     
+    /* --- CORREÇÃO: PUXA O CONTEÚDO PARA CIMA --- */
+    .block-container {
+        padding-top: 1.5rem !important; /* Reduz o espaço em branco no topo */
+    }
+    
     /* Melhoria da Sidebar */
     [data-testid="stSidebar"] [data-testid="stImage"] {
         display: flex;
@@ -5717,6 +5722,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
