@@ -5503,31 +5503,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                         pdf.ln(5)
                         
-                        if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
-                    try:
-                        pdf = OfficialPDF('P', 'mm', 'A4')
-                        pdf.doc_type = "Ata" 
-                        pdf.set_margins(15, 35, 15)
-                        pdf.set_auto_page_break(auto=True, margin=20)
-                        pdf.add_page()
-                        
-                        # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
-                        pdf.set_font("Arial", "B", 10)
-                        escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
-                        
-                        trimestre = data_ata.get('trimestre', '').upper()
-                        ano = data_ata.get('ano_letivo', '')
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
-                        
-                        turma = data_ata.get('turma', '')
-                        ciclo = data_ata.get('ciclo', '')
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
-                        pdf.ln(5)
-                        
                         # ==============================================================================
                         # INÍCIO DA SUPER CAIXA (BORDAS CONTÍNUAS)
                         # ==============================================================================
@@ -5857,4 +5832,3 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             
             safe_update("Config_Ata", df_config)
             st.success("✅ Texto base atualizado!")
-
