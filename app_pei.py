@@ -911,7 +911,7 @@ with st.sidebar:
         app_mode = "Atas_Conselho" # Trava o sistema antigo em background
         
         st.markdown('<p class="section-label">📌 Documentos</p>', unsafe_allow_html=True)
-        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "Agendamento Informática", "⚙️ Configurações"], label_visibility="collapsed")
+        app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "💻 Agendamento Informática", "⚙️ Configurações"], label_visibility="collapsed")
         
         st.markdown('<p class="section-label">🏫 Modalidade</p>', unsafe_allow_html=True)
         modalidade_ata = st.selectbox("Nível", ["Ensino Fundamental", "Educação Infantil", "EJA"], label_visibility="collapsed")
@@ -5900,4 +5900,5 @@ elif st.session_state.doc_option == "Agendamento Informática":
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao salvar: {e}")
+
 
