@@ -5487,33 +5487,26 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_fill_color(220, 220, 220)
                         pdf.cell(0, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                         
-                        texto_base = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2025 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2025, produzido no Conselho de Ciclo do 3º trimestre de 2024; na avaliação diagnóstica elaborada em fevereiro de 2025 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2025. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
-                        pdf.set_font("Arial", "", 8)
-                        pdf.multi_cell(0, 4, clean_pdf_text(texto_base), "LR", 'J')
+                        # 1. Busca o texto atualizado do banco de dados na hora de gerar
+                        df_config = safe_read("Config_Ata", ["chave", "valor"])
+                        texto_base_pdf = "Com base: na Resolução SME..." # fallback de segurança
+                        if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+                            texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
+                        else:
+                            # Se a aba estiver vazia, usa o seu texto 2026 por padrão
+                            texto_base_pdf = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+                        
+                        # 2. Fonte 12 para o Texto Base e entrelinha maior (5) para caber bem
+                        pdf.set_font("Arial", "", 12)
+                        pdf.multi_cell(0, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
                         
                         pdf.cell(0, 3, "", "LR", 1)
                         
                         texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no primeiro trimestre:"
+                        
+                        # 3. Volta a fonte para 9 no restante do texto
                         pdf.set_font("Arial", "B", 9)
                         pdf.multi_cell(0, 4, clean_pdf_text(texto_sint), "LR", 'J')
-                        
-                        disciplinas = [
-                            ("Língua Portuguesa", data_ata.get('sin_lp', '')),
-                            ("Matemática", data_ata.get('sin_mat', '')),
-                            ("História", data_ata.get('sin_hist', '')),
-                            ("Geografia", data_ata.get('sin_geo', '')),
-                            ("Ciências", data_ata.get('sin_cien', '')),
-                            ("Arte", data_ata.get('sin_arte', '')),
-                            ("Educação Física", data_ata.get('sin_ef', ''))
-                        ]
-                        
-                        pdf.set_font("Arial", "", 9)
-                        for nome, texto in disciplinas:
-                            pdf.cell(0, 4, "", "LR", 1) 
-                            linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
-                            pdf.multi_cell(0, 5, clean_pdf_text(linha_texto), "LR", 'L')
-                        
-                        pdf.cell(0, 4, "", "LRB", 1)
                         
                         # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
@@ -5677,5 +5670,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
