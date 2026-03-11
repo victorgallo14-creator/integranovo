@@ -5489,22 +5489,26 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
                         pdf.set_font("Arial", "B", 10)
                         escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
-                        pdf.cell(0, 6, clean_pdf_text(escola_nome), 0, 1, 'C')
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
                         
                         trimestre = data_ata.get('trimestre', '').upper()
                         ano = data_ata.get('ano_letivo', '')
-                        pdf.cell(0, 6, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
                         
                         turma = data_ata.get('turma', '')
                         ciclo = data_ata.get('ciclo', '')
-                        pdf.cell(0, 6, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                         pdf.ln(5)
                         
-                        # --- SÍNTESE AVALIATIVA SEM BURACOS NAS LATERAIS ---
+                        # --- SÍNTESE AVALIATIVA ---
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.set_x(15)
-                        pdf.cell(0, 6, "SÍNTESE AVALIATIVA", 1, 1, 'C', True)
+                        # O 180 trava a largura matemática absoluta (210 - 15 - 15)
+                        pdf.cell(180, 6, "SÍNTESE AVALIATIVA", 1, 1, 'C', True)
                         
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
                         if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
@@ -5514,12 +5518,13 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
-                        pdf.multi_cell(0, 5, clean_pdf_text(texto_base_pdf + "\n"), "LR", 'J')
+                        # Com o "\n" no final ele garante o respiro interno e o desenho correto da borda contínua
+                        pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf + "\n"), "LR", 'J')
                         
-                        texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no trimestre atual:"
+                        texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no trimestre atual:\n"
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.multi_cell(0, 5, clean_pdf_text(texto_sint + "\n"), "LR", 'J')
+                        pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
                         
                         disciplinas = [
                             ("Língua Portuguesa", data_ata.get('sin_lp', '')),
@@ -5537,29 +5542,30 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         for i, (nome, texto) in enumerate(disciplinas):
                             linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
                             borda = "LR" if i < len(disciplinas) - 1 else "LRB"
+                            # Se não for o último, adicionamos 2 enters para criar o espaço igual ao da foto mantendo a borda conectada
                             if i < len(disciplinas) - 1:
+                                linha_texto += "\n\n"
+                            else:
                                 linha_texto += "\n"
+                                
                             pdf.set_x(15)
-                            pdf.multi_cell(0, 5, clean_pdf_text(linha_texto), borda, 'J')
+                            pdf.multi_cell(180, 5, clean_pdf_text(linha_texto), borda, 'J')
                         
-                        # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) - BLINDADO ---
+                        # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(0, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho"), 0, 1, 'L')
+                        pdf.write(5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho "))
                         pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.cell(0, 5, clean_pdf_text("(considerar os conteúdos previstos para o ano de escolaridade na atribuição de conceitos):"), 0, 1, 'L')
-                        pdf.ln(3)
+                        pdf.write(5, clean_pdf_text("(considerar os conteúdos previstos para o ano de escolaridade na atribuição de conceitos):\n\n"))
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(0, 5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico:"), 0, 1, 'L')
+                        pdf.write(5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico: "))
                         pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.cell(0, 5, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)"), 0, 1, 'L')
+                        pdf.write(5, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)\n"))
                         pdf.ln(2)
                         
                         pdf.set_font("Arial", "B", 10)
@@ -5574,12 +5580,20 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         lista_abaixo = data_ata.get('abaixo_basico', [])
                         if isinstance(lista_abaixo, pd.DataFrame): lista_abaixo = lista_abaixo.to_dict('records')
                             
+                        # Função de segurança para truncar nomes muito longos e evitar vazamento de célula
+                        def truncate_str(texto, max_w):
+                            while pdf.get_string_width(texto) > max_w - 2:
+                                texto = texto[:-1]
+                            return texto
+
                         for row in lista_abaixo:
                             estudante = str(row.get('Estudante', '')).strip()
                             if estudante: 
                                 pdf.set_x(15)
+                                # Corta o nome caso seja imenso e ameace quebrar o desenho da tabela
+                                estudante_seguro = truncate_str(estudante, col_w[0])
                                 def check(val): return "X" if val else ""
-                                pdf.cell(col_w[0], 6, clean_pdf_text(estudante), 1, 0, 'L')
+                                pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
                                 pdf.cell(col_w[1], 6, check(row.get('LP')), 1, 0, 'C')
                                 pdf.cell(col_w[2], 6, check(row.get('M')), 1, 0, 'C')
                                 pdf.cell(col_w[3], 6, check(row.get('H')), 1, 0, 'C')
@@ -5590,24 +5604,24 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.cell(col_w[8], 6, check(row.get('LT')), 1, 0, 'C')
                                 pdf.cell(col_w[9], 6, check(row.get('LIBRAS')), 1, 1, 'C')
                         
-                        # --- PROPOSTAS (CORREÇÃO DE TEXTO VAZANDO) ---
+                        # --- PROPOSTAS DE RECUPERAÇÃO ---
                         pdf.ln(2)
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
-                        pdf.multi_cell(0, 5, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)"), 0, 'L')
+                        pdf.multi_cell(180, 5, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)"), 0, 'L')
                         for i in range(1, 6):
                             prop = data_ata.get(f'prop_{i}', '')
                             if prop: 
                                 pdf.set_x(15)
-                                pdf.multi_cell(0, 5, clean_pdf_text(f"{i}. {prop}"), 0, 'L')
+                                pdf.multi_cell(180, 5, clean_pdf_text(f"{i}. {prop}"), 0, 'L')
 
-                        # --- PLANO DE AÇÃO (BÁSICO) - COORDENADAS TRAVADAS ---
+                        # --- PLANO DE AÇÃO (BÁSICO) ---
                         pdf.ln(5)
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(0, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), 0, 1, 'L')
+                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), 0, 1, 'L')
                         pdf.ln(2)
                         
                         pdf.set_font("Arial", "B", 10)
@@ -5631,7 +5645,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 y = pdf.get_y()
                                 texto_acao = str(row.get('Ações (LP e Mat)', ''))
                                 
-                                # Cálculo de altura protegendo contra texto vazado
                                 linhas_acao = 0
                                 for par in texto_acao.split('\n'):
                                     w_str = pdf.get_string_width(clean_pdf_text(par))
@@ -5662,11 +5675,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(0, 6, clean_pdf_text("3. Observações:"), 0, 1, 'L')
+                        pdf.cell(180, 6, clean_pdf_text("3. Observações:"), 0, 1, 'L')
                         pdf.set_font("Arial", "", 10)
                         obs_paral = f"a) Devido à paralisação ocorrida nos dias {data_ata.get('obs_paral_dias', '___')}, dos {data_ata.get('obs_dias_previstos', '___')} dias letivos previstos, {data_ata.get('obs_dias_dados', '___')} foram realmente dados. {data_ata.get('obs_reposicao', '')}"
                         pdf.set_x(15)
-                        pdf.multi_cell(0, 5, clean_pdf_text(obs_paral), 0, 'L')
+                        pdf.multi_cell(180, 5, clean_pdf_text(obs_paral), 0, 'L')
                         pdf.ln(1)
                         
                         lista_tardia = data_ata.get('mat_tardia', [])
@@ -5679,11 +5692,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 if est_tardio:
                                     texto_tardio = f"b) O estudante {est_tardio} foi matriculado nesta sala em {row.get('Data Matrícula')}. Portanto, obteve um total de frequência de {row.get('Total Frequência (Dias)')} dias letivos."
                                     pdf.set_x(15)
-                                    pdf.multi_cell(0, 5, clean_pdf_text(texto_tardio), 0, 'L')
+                                    pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), 0, 'L')
                                     pdf.ln(1)
                         else:
                             pdf.set_x(15)
-                            pdf.cell(0, 5, "b) Sem matrículas tardias registradas no período.", 0, 1)
+                            pdf.cell(180, 5, "b) Sem matrículas tardias registradas no período.", 0, 1)
 
                         # --- ASSINATURAS ---
                         pdf.ln(5)
@@ -5692,11 +5705,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.set_x(15)
-                        pdf.cell(0, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 1, 1, 'C', True)
+                        pdf.cell(180, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 1, 1, 'C', True)
                         pdf.set_font("Arial", "", 10)
                         texto_assinaturas = "(Direção, Prof. Coordenador, todos os Docentes Polivalentes, Professores Especialistas e Ed. Especial."
                         pdf.set_x(15)
-                        pdf.multi_cell(0, 5, clean_pdf_text(texto_assinaturas), 1, 'L')
+                        pdf.multi_cell(180, 5, clean_pdf_text(texto_assinaturas), 1, 'L')
                         
                         pdf.ln(10)
                         y_sig = pdf.get_y()
