@@ -260,6 +260,7 @@ class OfficialPDF(FPDF):
         super().__init__(orientation, unit, format)
         self.signature_info = None # Texto da assinatura
         self.doc_uuid = None
+        self.doc_type = None
 
     def header(self):
         # TIMBRADO DE FUNDO EXCLUSIVO PARA A ATA
@@ -279,46 +280,48 @@ class OfficialPDF(FPDF):
             self.signature_info = f"Assinado por {len(names)} pessoas: {names_str}"
         else:
             self.signature_info = "Documento gerado sem assinaturas digitais."
+            
     def footer(self):
-        self.set_y(-25)
-        self.set_font('Arial', '', 8)
-        self.set_text_color(80, 80, 80)
-        
-        # Bloco de Assinatura Digital
-        if self.doc_uuid:
-            # Posicionamento dinâmico baseado na altura da página
-            # Garante que funciona corretamente tanto em Retrato quanto em Paisagem
-            box_h = 9  # Altura reduzida para ~2 linhas
-            margin_bottom = 22 # Distância da borda inferior
+        # O rodapé padrão só aparece se NÃO for a Ata
+        if self.doc_type != "Ata":
+            self.set_y(-25)
+            self.set_font('Arial', '', 8)
+            self.set_text_color(80, 80, 80)
             
-            y_box = self.h - margin_bottom 
-            x_box = 10
-            w_box = self.w - 20 # Largura total (menos margens laterais de 10mm)
+            # Bloco de Assinatura Digital
+            if self.doc_uuid:
+                # Posicionamento dinâmico baseado na altura da página
+                box_h = 9  # Altura reduzida para ~2 linhas
+                margin_bottom = 22 # Distância da borda inferior
+                
+                y_box = self.h - margin_bottom 
+                x_box = 10
+                w_box = self.w - 20 # Largura total (menos margens laterais de 10mm)
 
-            # Caixa cinza claro para validação
-            self.set_fill_color(245, 245, 245)
-            self.rect(x_box, y_box, w_box, box_h, 'F')
-            
-            # Texto
-            self.set_xy(x_box + 2, y_box + 1.5)
-            self.set_font('Arial', 'B', 7)
-            if self.signature_info:
-                self.cell(0, 3, clean_pdf_text(self.signature_info), 0, 1, 'L')
-            else:
-                self.ln(3) # Espaço caso não tenha texto de assinatura
-            
-            self.set_x(x_box + 2)
-            self.set_font('Arial', '', 7)
-            link_txt = f"Para verificar a validade das assinaturas, acesse https://integra.streamlit.app e informe o código {self.doc_uuid}"
-            self.cell(0, 3, clean_pdf_text(link_txt), 0, 1, 'L')
+                # Caixa cinza claro para validação
+                self.set_fill_color(245, 245, 245)
+                self.rect(x_box, y_box, w_box, box_h, 'F')
+                
+                # Texto
+                self.set_xy(x_box + 2, y_box + 1.5)
+                self.set_font('Arial', 'B', 7)
+                if self.signature_info:
+                    self.cell(0, 3, clean_pdf_text(self.signature_info), 0, 1, 'L')
+                else:
+                    self.ln(3) # Espaço caso não tenha texto de assinatura
+                
+                self.set_x(x_box + 2)
+                self.set_font('Arial', '', 7)
+                link_txt = f"Para verificar a validade das assinaturas, acesse https://integra.streamlit.app e informe o código {self.doc_uuid}"
+                self.cell(0, 3, clean_pdf_text(link_txt), 0, 1, 'L')
 
-        # Endereço Padrão (Abaixo da caixa)
-        self.set_y(-10)
-        self.set_font('Arial', '', 8)
-        addr = "Secretaria Municipal de Educação | Centro de Formação do Professor - Limeira-SP"
-        self.cell(0, 5, clean_pdf_text(addr), 0, 0, 'C')
-        self.set_font('Arial', 'I', 8)
-        self.cell(0, 5, clean_pdf_text(f'Página {self.page_no()}'), 0, 0, 'R')
+            # Endereço Padrão (Abaixo da caixa)
+            self.set_y(-10)
+            self.set_font('Arial', '', 8)
+            addr = "Secretaria Municipal de Educação | Centro de Formação do Professor - Limeira-SP"
+            self.cell(0, 5, clean_pdf_text(addr), 0, 0, 'C')
+            self.set_font('Arial', 'I', 8)
+            self.cell(0, 5, clean_pdf_text(f'Página {self.page_no()}'), 0, 0, 'R')
 
     def section_title(self, title, width=0):
         self.set_font('Arial', 'B', 12); self.set_fill_color(240, 240, 240)
@@ -455,9 +458,6 @@ def login():
             
         # --- LADO DIREITO (FORMULÁRIO BRANCO) ---
         with c_form:
-            # CORREÇÃO: Removemos a wrapper div manual (.login-form-box) que causava o problema.
-            # O estilo agora é aplicado ao container da coluna via CSS acima.
-            
             # Abas de Login e Validação
             tab_login, tab_validar = st.tabs(["🔐 Acesso ao Sistema", "✅ Validar Documento"])
             
@@ -564,8 +564,56 @@ def login():
         # Interrompe o carregamento do restante do app até que o login seja feito
         st.stop()
 
+
+# --- INICIALIZAÇÃO DO CONTROLE DE MÓDULO (PORTAL) ---
+if "modulo_atuacao" not in st.session_state:
+    st.session_state.modulo_atuacao = None
+
+
 # --- ATIVAÇÃO DO LOGIN ---
 login()
+
+
+# ==============================================================================
+# TELA DE PORTAL (ESCOLHA DO MÓDULO APÓS LOGIN)
+# ==============================================================================
+if st.session_state.authenticated:
+    if st.session_state.modulo_atuacao is None:
+        st.markdown("<br><br><br>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #1e293b;'>Seja bem-vindo(a)! Escolha seu ambiente de trabalho:</h2>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+        
+        with col2:
+            st.markdown("""
+            <div style='background-color: #f0fdf4; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #22c55e; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
+                <h1 style='font-size: 50px; margin: 0;'>🧠</h1>
+                <h3 style='color: #15803d;'>Educação Especial Inclusiva</h3>
+                <p style='font-size: 14px; color: #166534; min-height: 45px;'>Gestão de PEI, PDI, Estudos de Caso e relatórios de alunos de inclusão.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.write("")
+            if st.button("Acessar Educação Especial", type="primary", use_container_width=True, key="btn_ee"):
+                st.session_state.modulo_atuacao = "🧠 Educação Especial Inclusiva"
+                st.rerun()
+                
+        with col3:
+            st.markdown("""
+            <div style='background-color: #eff6ff; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
+                <h1 style='font-size: 50px; margin: 0;'>🏫</h1>
+                <h3 style='color: #1d4ed8;'>Ensino Regular</h3>
+                <p style='font-size: 14px; color: #1e3a8a; min-height: 45px;'>Atas de Conselho de Ciclo, controle de avaliações e legislações.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.write("")
+            if st.button("Acessar Ensino Regular", type="primary", use_container_width=True, key="btn_er"):
+                st.session_state.modulo_atuacao = "🏫 Ensino Regular"
+                st.rerun()
+                
+        # st.stop() bloqueia o carregamento da sidebar até a pessoa clicar num botão
+        st.stop() 
+
 
 # --- DEFINIÇÃO DE PERMISSÕES ---
 user_role = st.session_state.get('user_role', 'professor')
@@ -616,7 +664,6 @@ st.markdown("""
         border-left: 6px solid #2563eb; /* Borda lateral azul */
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         margin-bottom: 2rem;
-        /* Margem negativa removida pois o header agora é display:none */
         margin-top: 0px; 
     }
     
@@ -626,23 +673,23 @@ st.markdown("""
 /* Dashboard Cards */
     .metric-card {
         background-color: white;
-        padding: 1rem 0.2rem; /* Reduzimos o padding lateral para o texto caber */
+        padding: 1rem 0.2rem;
         border-radius: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #e2e8f0;
         text-align: center;
-        white-space: nowrap; /* Impede terminantemente que o texto quebre de linha */
-        overflow: hidden; /* Garante que não vaze do card */
-        text-overflow: ellipsis; /* Coloca "..." se a tela for minúscula */
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
     }
     .metric-value {
-        font-size: 1.8rem; /* Ligeiramente menor para ficar elegante */
+        font-size: 1.8rem; 
         font-weight: 700;
         line-height: 1.2;
     }
     .metric-label {
         color: #64748b;
-        font-size: 0.72rem; /* Fonte ajustada para caber em 5 colunas */
+        font-size: 0.72rem; 
         font-weight: 600;
         text-transform: uppercase;
         margin-top: 5px;
@@ -654,14 +701,13 @@ st.markdown("""
     /* --- MEDIA QUERIES PARA MOBILE --- */
     @media (max-width: 991px) {
         .header-box {
-            margin-top: 10px !important; /* Reseta a margem no mobile */
+            margin-top: 10px !important; 
             padding: 1.5rem !important;
         }
         .header-title {
             font-size: 1.5rem !important;
         }
         
-        /* Ajustes gerais de espaçamento */
         .stBlock {
             padding-top: 1rem;
         }
@@ -816,7 +862,7 @@ with st.sidebar:
 
     # 1. TÍTULO
     st.markdown('<div class="sidebar-title">SISTEMA INTEGRA</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-sub">Gestão de Ed. Especial</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-sub">Gestão Escolar</div>', unsafe_allow_html=True)
 
     # 2. USUÁRIO
     nome_prof = st.session_state.get('usuario_nome', 'Usuário')
@@ -833,13 +879,14 @@ with st.sidebar:
     
     st.divider()
     
-    # 3. MÓDULO DE ATUAÇÃO E NAVEGAÇÃO
-    st.markdown('<p class="section-label">⚙️ Módulo de Atuação</p>', unsafe_allow_html=True)
-    modulo_atuacao = st.radio(
-        "Módulo", 
-        ["🧠 Educação Especial Inclusiva", "🏫 Ensino Regular"], 
-        label_visibility="collapsed"
-    )
+    # 3. MÓDULO DE ATUAÇÃO
+    modulo_atuacao = st.session_state.modulo_atuacao
+    
+    # Exibe em qual módulo estamos e cria um botão para voltar ao Portal
+    st.markdown(f'<p class="section-label" style="color:#2563eb; font-weight:bold; text-align:center;">{modulo_atuacao}</p>', unsafe_allow_html=True)
+    if st.button("🔄 Trocar Ambiente", use_container_width=True):
+        st.session_state.modulo_atuacao = None
+        st.rerun()
 
     st.divider()
 
@@ -857,7 +904,6 @@ with st.sidebar:
         app_mode = "Atas_Conselho" # Trava o sistema antigo em background
         
         st.markdown('<p class="section-label">📌 Documentos</p>', unsafe_allow_html=True)
-        # --- NOVO: ADICIONADO O BOTÃO DE CONFIGURAÇÕES ---
         app_mode_regular = st.radio("Documentos", ["📝 Nova Ata de Conselho", "📂 Histórico de Atas", "⚙️ Configurações"], label_visibility="collapsed")
         
         st.markdown('<p class="section-label">🏫 Modalidade</p>', unsafe_allow_html=True)
@@ -876,8 +922,8 @@ with st.sidebar:
         selected_student = st.selectbox(
             "Estudante", 
             lista_nomes,
-            index=None, # <-- Faz o selectbox iniciar vazio (sem selecionar o 1º da lista)
-            placeholder="🔍 Selecione ou digite o nome do aluno...", # <-- O texto que vai aparecer
+            index=None, 
+            placeholder="🔍 Selecione ou digite o nome...", 
             key="aluno_selecionado",
             on_change=carregar_dados_aluno,
             label_visibility="collapsed"
@@ -900,7 +946,6 @@ with st.sidebar:
         # Auto-seleção de documento
         default_doc_idx = 0
         if selected_student != "-- Novo Registro --":
-            # Just simple heuristic
             pass
 
         st.markdown('<p class="section-label">📂 Tipo de Documento</p>', unsafe_allow_html=True)
@@ -5670,6 +5715,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
