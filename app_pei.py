@@ -5837,7 +5837,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 # MÓDULO 4: AGENDAMENTO SALA DE INFORMÁTICA (NOVO)
 # ==============================================================================
 
-elif app_mode_regular == "💻 Agendamento Informática":
+
+    elif app_mode_regular == "💻 Agendamento Informática":
     st.markdown('<div class="header-box"><div class="header-title">💻 Agendamento - Sala de Informática</div></div>', unsafe_allow_html=True)
     st.markdown("Reserve a sala de computadores para a sua turma do Ensino Regular.")
     st.divider()
@@ -5963,3 +5964,4 @@ elif app_mode_regular == "💻 Agendamento Informática":
                         st.rerun()
                     except Exception as e:
                         st.error(f"Erro ao salvar: {e}")
+
