@@ -5381,15 +5381,16 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             
             safe_update("Config_Ata", df_config)
             st.success("✅ Texto base atualizado com sucesso! Todas as próximas Atas já sairão com essa nova redação.")
-    
-    if app_mode_regular == "📝 Nova Ata de Conselho":
+
+
+if app_mode_regular == "📝 Nova Ata de Conselho":
         st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Ciclo / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
         
         if modalidade_ata == "Ensino Fundamental":
             # Inicializa dados na sessão para a Ata
             if 'data_ata_ef' not in st.session_state:
                 st.session_state.data_ata_ef = {
-                    'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": False, "M": False, "H": False, "G": False, "C": False, "A": False, "EF": False}]),
+                    'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": False, "M": False, "H": False, "G": False, "C": False, "A": False, "EF": False, "LT": False, "LIBRAS": False}]),
                     'basico': pd.DataFrame([{"Estudante": "", "Ações (LP e Mat)": ""}])
                 }
             
@@ -5401,53 +5402,83 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             with tabs[0]:
                 st.subheader("Dados da Unidade e Ciclo")
                 c1, c2, c3 = st.columns([2, 1, 1])
-                data_ata['escola'] = c1.text_input("Unidade Escolar [cite: 1]", value="CEIEF Rafael Affonso Leite")
-                data_ata['trimestre'] = c2.selectbox("Trimestre [cite: 3]", ["1º Trimestre", "2º Trimestre", "3º Trimestre"])
-                data_ata['ano_letivo'] = c3.text_input("Ano Letivo [cite: 3]", value=str(date.today().year))
+                data_ata['escola'] = c1.text_input("Unidade Escolar", value=data_ata.get('escola', "CEIEF Rafael Affonso Leite"))
+                
+                tri_opts = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
+                tri_idx = tri_opts.index(data_ata.get('trimestre', "1º Trimestre")) if data_ata.get('trimestre') in tri_opts else 0
+                data_ata['trimestre'] = c2.selectbox("Trimestre", tri_opts, index=tri_idx)
+                
+                data_ata['ano_letivo'] = c3.text_input("Ano Letivo", value=data_ata.get('ano_letivo', str(date.today().year)))
                 
                 c4, c5 = st.columns(2)
-                data_ata['turma'] = c4.text_input("Turma/Ano (Ex: 3º Ano A)")
-                data_ata['ciclo'] = c5.selectbox("Ciclo", ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"])
+                data_ata['turma'] = c4.text_input("Turma/Ano (Ex: 3º Ano A)", value=data_ata.get('turma', ''))
+                
+                ciclo_opts = ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"]
+                ciclo_idx = ciclo_opts.index(data_ata.get('ciclo', "Ciclo I (1º ao 3º ano)")) if data_ata.get('ciclo') in ciclo_opts else 0
+                data_ata['ciclo'] = c5.selectbox("Ciclo", ciclo_opts, index=ciclo_idx)
 
             # --- ABA 2: SÍNTESE AVALIATIVA ---
             with tabs[1]:
                 st.subheader("Síntese Avaliativa da Classe")
-                st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual. ")
+                st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual.")
                 
                 c_lp, c_mat = st.columns(2)
-                data_ata['sin_lp'] = c_lp.text_area("Língua Portuguesa ", height=120)
-                data_ata['sin_mat'] = c_mat.text_area("Matemática ", height=120)
+                data_ata['sin_lp'] = c_lp.text_area("Língua Portuguesa", value=data_ata.get('sin_lp', ''), height=120)
+                data_ata['sin_mat'] = c_mat.text_area("Matemática", value=data_ata.get('sin_mat', ''), height=120)
                 
                 c_h, c_g = st.columns(2)
-                data_ata['sin_hist'] = c_h.text_area("História ", height=120)
-                data_ata['sin_geo'] = c_g.text_area("Geografia ", height=120)
+                data_ata['sin_hist'] = c_h.text_area("História", value=data_ata.get('sin_hist', ''), height=120)
+                data_ata['sin_geo'] = c_g.text_area("Geografia", value=data_ata.get('sin_geo', ''), height=120)
                 
                 c_c, c_a = st.columns(2)
-                data_ata['sin_cien'] = c_c.text_area("Ciências ", height=120)
-                data_ata['sin_arte'] = c_a.text_area("Arte ", height=120)
+                data_ata['sin_cien'] = c_c.text_area("Ciências", value=data_ata.get('sin_cien', ''), height=120)
+                data_ata['sin_arte'] = c_a.text_area("Arte", value=data_ata.get('sin_arte', ''), height=120)
                 
-                data_ata['sin_ef'] = st.text_area("Educação Física ", height=120)
+                c_ef, c_lt = st.columns(2)
+                data_ata['sin_ef'] = c_ef.text_area("Educação Física", value=data_ata.get('sin_ef', ''), height=120)
+                data_ata['sin_lt'] = c_lt.text_area("Linguagens e Tecnologias", value=data_ata.get('sin_lt', ''), height=120)
+                
+                data_ata['sin_libras'] = st.text_area("Libras", value=data_ata.get('sin_libras', ''), height=120)
 
             # --- ABA 3: PLANO DE AÇÃO ---
             with tabs[2]:
                 st.subheader("Plano de Ação (Abaixo do Básico)")
-                st.caption("Marque as disciplinas em que o estudante apresentou desempenho Abaixo do Básico. ")
+                st.caption("💡 **DICA:** Clique na última linha vazia da tabela para adicionar um novo aluno.")
                 
-                # Tabela Interativa (Data Editor)
+                # Garante colunas novas caso a ata seja antiga
+                if "LT" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LT"] = False
+                if "LIBRAS" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LIBRAS"] = False
+                
+                # Configuração forçada do Editor para permitir marcação
+                config_abaixo = {
+                    "Estudante": st.column_config.TextColumn("Estudante", required=True),
+                    "LP": st.column_config.CheckboxColumn("LP", default=False),
+                    "M": st.column_config.CheckboxColumn("M", default=False),
+                    "H": st.column_config.CheckboxColumn("H", default=False),
+                    "G": st.column_config.CheckboxColumn("G", default=False),
+                    "C": st.column_config.CheckboxColumn("C", default=False),
+                    "A": st.column_config.CheckboxColumn("A", default=False),
+                    "EF": st.column_config.CheckboxColumn("EF", default=False),
+                    "LT": st.column_config.CheckboxColumn("LT", default=False),
+                    "LIBRAS": st.column_config.CheckboxColumn("LIB", default=False)
+                }
+                
+                # Tabela Interativa
                 data_ata['abaixo_basico'] = st.data_editor(
                     data_ata['abaixo_basico'],
+                    column_config=config_abaixo,
                     num_rows="dynamic",
                     use_container_width=True,
                     hide_index=True
                 )
                 
-                st.markdown("**Propostas de Recuperação (Descreva as ações): [cite: 6]**")
+                st.markdown("**Propostas de Recuperação (Descreva as ações):**")
                 for i in range(1, 6):
-                    data_ata[f'prop_{i}'] = st.text_input(f"{i}. [cite: 7, 8, 9, 10, 11]", key=f"prop_{i}")
+                    data_ata[f'prop_{i}'] = st.text_input(f"{i}.", value=data_ata.get(f'prop_{i}', ''), key=f"prop_{i}")
                 
                 st.divider()
-                st.subheader("Plano de Ação (Básico) [cite: 12]")
-                st.caption("Ações nas áreas de LP e Matemática vinculadas aos estudantes com desempenho básico. [cite: 13]")
+                st.subheader("Plano de Ação (Básico)")
+                st.caption("💡 **DICA:** Clique na última linha vazia para adicionar um novo estudante.")
                 
                 data_ata['basico'] = st.data_editor(
                     data_ata['basico'],
@@ -5458,18 +5489,19 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
             # --- ABA 4: OBSERVAÇÕES ---
             with tabs[3]:
-                st.subheader("3. Observações [cite: 14]")
+                st.subheader("3. Observações")
                 
-                st.markdown("**a) Paralisações e Suspensões [cite: 15, 16]**")
+                st.markdown("**a) Paralisações e Suspensões**")
                 c_o1, c_o2, c_o3 = st.columns([2, 1, 1])
-                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação (Ex: 10, 11 e 12 de março) [cite: 15]")
-                data_ata['obs_dias_previstos'] = c_o2.number_input("Dias Previstos", min_value=0)
-                data_ata['obs_dias_dados'] = c_o3.number_input("Dias Dados", min_value=0)
-                data_ata['obs_reposicao'] = st.text_input("Observação sobre reposição (Ex: Serão repostos no decorrer do ano) [cite: 16]")
+                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação (Ex: 10, 11 e 12 de março)", value=data_ata.get('obs_paral_dias', ''))
+                data_ata['obs_dias_previstos'] = c_o2.text_input("Dias Previstos", value=str(data_ata.get('obs_dias_previstos', '')))
+                data_ata['obs_dias_dados'] = c_o3.text_input("Dias Dados", value=str(data_ata.get('obs_dias_dados', '')))
+                data_ata['obs_reposicao'] = st.text_input("Observação sobre reposição", value=data_ata.get('obs_reposicao', ''))
                 
                 st.divider()
-                st.markdown("**b) Estudantes Matriculados Tardiamente [cite: 17]**")
-                # Outra tabela dinâmica para matrículas tardias
+                st.markdown("**b) Estudantes Matriculados Tardiamente**")
+                st.caption("💡 **DICA:** Clique na última linha vazia para adicionar.")
+                
                 if 'mat_tardia' not in st.session_state.data_ata_ef:
                     st.session_state.data_ata_ef['mat_tardia'] = pd.DataFrame([{"Estudante": "", "Data Matrícula": "", "Total Frequência (Dias)": ""}])
                 
@@ -5480,13 +5512,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     hide_index=True
                 )
 
-# --- ABA 5: EMISSÃO PDF ---
+            # --- ABA 5: EMISSÃO PDF ---
             with tabs[4]:
                 st.subheader("Finalização e Assinaturas")
                 
                 if st.button("💾 Salvar Ata", use_container_width=True, type="secondary"):
                     try:
-                        # Prepara os dados convertendo tabelas para dicionários
                         dados_para_salvar = {}
                         for key, value in data_ata.items():
                             if isinstance(value, pd.DataFrame):
@@ -5518,10 +5549,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
                     try:
                         pdf = OfficialPDF('P', 'mm', 'A4')
-                        # --- ATIVA O TIMBRADO DE FUNDO EXCLUSIVO DA ATA ---
                         pdf.doc_type = "Ata" 
-                        
-                        # Define as margens (Esquerda:15, Topo:35, Direita:15) 
                         pdf.set_margins(15, 35, 15)
                         pdf.set_auto_page_break(auto=True, margin=20)
                         pdf.add_page()
@@ -5539,26 +5567,41 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_fill_color(220, 220, 220)
                         pdf.cell(0, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                         
-                        # 1. Busca o texto atualizado do banco de dados na hora de gerar
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
-                        texto_base_pdf = "Com base: na Resolução SME..." # fallback de segurança
+                        texto_base_pdf = "Com base: na Resolução SME..." 
                         if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
                             texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
                         else:
-                            # Se a aba estiver vazia, usa o seu texto 2026 por padrão
                             texto_base_pdf = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
                         
-                        # 2. Fonte 12 para o Texto Base e entrelinha maior (5) para caber bem
                         pdf.set_font("Arial", "", 12)
                         pdf.multi_cell(0, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
-                        
                         pdf.cell(0, 3, "", "LR", 1)
                         
                         texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no primeiro trimestre:"
-                        
-                        # 3. Volta a fonte para 9 no restante do texto
                         pdf.set_font("Arial", "B", 9)
                         pdf.multi_cell(0, 4, clean_pdf_text(texto_sint), "LR", 'J')
+                        
+                        # LISTA ATUALIZADA COM LT E LIBRAS
+                        disciplinas = [
+                            ("Língua Portuguesa", data_ata.get('sin_lp', '')),
+                            ("Matemática", data_ata.get('sin_mat', '')),
+                            ("História", data_ata.get('sin_hist', '')),
+                            ("Geografia", data_ata.get('sin_geo', '')),
+                            ("Ciências", data_ata.get('sin_cien', '')),
+                            ("Arte", data_ata.get('sin_arte', '')),
+                            ("Educação Física", data_ata.get('sin_ef', '')),
+                            ("Linguagens e Tecnologias", data_ata.get('sin_lt', '')),
+                            ("Libras", data_ata.get('sin_libras', ''))
+                        ]
+                        
+                        pdf.set_font("Arial", "", 9)
+                        for nome, texto in disciplinas:
+                            pdf.cell(0, 4, "", "LR", 1) 
+                            linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
+                            pdf.multi_cell(0, 5, clean_pdf_text(linha_texto), "LR", 'L')
+                        
+                        pdf.cell(0, 4, "", "LRB", 1)
                         
                         # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
@@ -5575,8 +5618,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.write(6, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)\n"))
                         
                         pdf.set_font("Arial", "B", 8)
-                        col_w = [75, 15, 15, 15, 15, 15, 15, 15]
-                        headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF"]
+                        # REDIMENSIONAMENTO PARA CABER 10 COLUNAS NO A4
+                        col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
+                        headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
                         for i, h in enumerate(headers):
                             pdf.cell(col_w[i], 6, h, 1, 0, 'C')
                         pdf.ln()
@@ -5597,7 +5641,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.cell(col_w[4], 6, check(row.get('G')), 1, 0, 'C')
                                 pdf.cell(col_w[5], 6, check(row.get('C')), 1, 0, 'C')
                                 pdf.cell(col_w[6], 6, check(row.get('A')), 1, 0, 'C')
-                                pdf.cell(col_w[7], 6, check(row.get('EF')), 1, 1, 'C')
+                                pdf.cell(col_w[7], 6, check(row.get('EF')), 1, 0, 'C')
+                                pdf.cell(col_w[8], 6, check(row.get('LT')), 1, 0, 'C')
+                                pdf.cell(col_w[9], 6, check(row.get('LIBRAS')), 1, 1, 'C')
                         
                         pdf.ln(2)
                         pdf.set_font("Arial", "", 9)
@@ -5722,7 +5768,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
-
 # ==============================================================================
     # TELA DE HISTÓRICO DE ATAS
     # ==============================================================================
@@ -5790,6 +5835,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         st.success(f"Ata '{ata_excluir}' excluída do sistema!")
                         time.sleep(1)
                         st.rerun()
+
 
 
 
