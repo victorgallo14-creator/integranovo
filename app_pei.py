@@ -5769,7 +5769,7 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
 
-    # ==============================================================================
+# ==============================================================================
     # TELA DE HISTÓRICO DE ATAS
     # ==============================================================================
     if app_mode_regular == "📂 Histórico de Atas":
@@ -5798,30 +5798,24 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
             ata_selecionada = c_sel.selectbox("Selecione a Ata:", df_atas["id_ata"].tolist(), label_visibility="collapsed")
             
             if c_btn.button("Carregar Dados", type="primary", use_container_width=True):
-                # Encontra a linha da ata selecionada no banco
                 dados_row = df_atas[df_atas["id_ata"] == ata_selecionada].iloc[0]
                 
                 try:
-                    # Converte o texto JSON de volta para dicionário
                     dados_json = json.loads(dados_row["dados_json"])
-                    
-                    # Converte as listas de volta para Tabelas Editáveis (DataFrames do Pandas)
                     for key in ['abaixo_basico', 'basico', 'mat_tardia']:
                         if key in dados_json and isinstance(dados_json[key], list):
                             dados_json[key] = pd.DataFrame(dados_json[key])
                             
-                    # Salva na memória do sistema e avisa o usuário
                     if dados_row["modalidade"] == "Ensino Fundamental":
                         st.session_state.data_ata_ef = dados_json
                     
-                    st.success(f"Ata '{ata_selecionada}' carregada com sucesso! Vá para a aba '📝 Nova Ata de Conselho' para visualizar ou baixar o PDF.")
+                    st.success(f"Ata '{ata_selecionada}' carregada com sucesso! Vá para a aba '📝 Nova Ata de Conselho' para visualizar.")
                 except Exception as e:
                     st.error(f"Erro ao carregar os dados da ata: {e}")
             
             st.divider()
             
             # --- ZONA DE PERIGO: EXCLUIR ATA ---
-            # Apenas Docentes/Gestores podem excluir (Monitores não)
             if not is_monitor:
                 with st.expander("⚠️ Zona de Perigo - Excluir Ata"):
                     st.warning("Atenção: A exclusão é permanente e não pode ser desfeita.")
@@ -5829,13 +5823,39 @@ if app_mode_regular == "📝 Nova Ata de Conselho":
                     ata_excluir = c_del_sel.selectbox("Selecione a Ata para excluir:", df_atas["id_ata"].tolist(), key="del_ata_sel", label_visibility="collapsed")
                     
                     if c_del_btn.button("🗑️ Excluir Ata", type="secondary", use_container_width=True):
-                        # Filtra removendo a ata escolhida
                         df_new = df_atas[df_atas["id_ata"] != ata_excluir]
-                        # Atualiza o banco
                         safe_update("Atas_Conselho", df_new)
                         st.success(f"Ata '{ata_excluir}' excluída do sistema!")
                         time.sleep(1)
                         st.rerun()
+
+    # ==============================================================================
+    # TELA DE CONFIGURAÇÕES (GESTOR)
+    # ==============================================================================
+    if app_mode_regular == "⚙️ Configurações":
+        st.markdown('<div class="header-box"><div class="header-title">Configurações do Ensino Regular</div><div class="header-subtitle">Atualização Anual de Textos e Resoluções</div></div>', unsafe_allow_html=True)
+        
+        st.info("💡 O texto salvo aqui será utilizado automaticamente no cabeçalho de todas as novas Atas geradas pelo sistema.")
+        
+        df_config = safe_read("Config_Ata", ["chave", "valor"])
+        
+        texto_padrao = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+        
+        current_text = texto_padrao
+        if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+            current_text = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
+            
+        novo_texto_base = st.text_area("Texto Base da Síntese Avaliativa (Legislações)", value=current_text, height=200)
+        
+        if st.button("💾 Salvar Configurações", type="primary"):
+            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+                df_config.loc[df_config["chave"] == "texto_base_ata", "valor"] = novo_texto_base
+            else:
+                novo_registro = pd.DataFrame([{"chave": "texto_base_ata", "valor": novo_texto_base}])
+                df_config = pd.concat([df_config, novo_registro], ignore_index=True)
+            
+            safe_update("Config_Ata", df_config)
+            st.success("✅ Texto base atualizado com sucesso! Todas as próximas Atas já sairão com essa nova redação.")
 
 
 
