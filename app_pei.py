@@ -261,6 +261,15 @@ class OfficialPDF(FPDF):
         self.signature_info = None # Texto da assinatura
         self.doc_uuid = None
 
+    def header(self):
+        # TIMBRADO DE FUNDO EXCLUSIVO PARA A ATA
+        if self.doc_type == "Ata":
+            try:
+                # NOME DO FICHEIRO CORRIGIDO PARA "image.png"
+                self.image("image.png", x=0, y=0, w=210, h=297)
+            except Exception as e:
+                pass # Se a imagem não for encontrada, gera sem quebrar o sistema
+
     def set_signature_footer(self, signatures_list, doc_uuid):
         """Prepara o texto de validação para o rodapé"""
         self.doc_uuid = doc_uuid
@@ -5610,3 +5619,4 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
