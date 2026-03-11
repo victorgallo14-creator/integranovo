@@ -5388,60 +5388,53 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     hide_index=True
                 )
 
-            # --- ABA 5: EMISSÃO PDF ---
+           # --- ABA 5: EMISSÃO PDF ---
             with tabs[4]:
                 st.subheader("Finalização e Assinaturas")
-                st.info("No PDF gerado, será incluído o espaço para assinatura de todos os participantes (Direção, Prof. Coordenador, Docentes Polivalentes e Especialistas). [cite: 18, 19]")
                 
-                if st.button("💾 Salvar Rascunho da Ata", use_container_width=True):
-                    # Aqui você chamará sua função de banco de dados (ex: safe_update para a aba "Atas_Conselho")
-                    st.success("Ata salva com sucesso no banco de dados!")
-                
+                if st.button("💾 Salvar Ata", use_container_width=True, type="secondary"):
+                    try:
+                        # 1. Prepara os dados: o JSON não aceita DataFrame nativo, precisamos converter as tabelas para dicionários
+                        dados_para_salvar = {}
+                        for key, value in data_ata.items():
+                            if isinstance(value, pd.DataFrame):
+                                dados_para_salvar[key] = value.to_dict(orient='records')
+                            else:
+                                dados_para_salvar[key] = value
+                        
+                        novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
+                        
+                        # Cria um ID único para a ata (Ex: 3º Ano A - 1º Trimestre (Ensino Fundamental))
+                        id_ata = f"{data_ata.get('turma', 'SemTurma')} - {data_ata.get('trimestre', 'SemTri')} ({modalidade_ata})"
+                        
+                        # 2. Ler o banco e salvar
+                        df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
+                        
+                        # Lógica de atualização vs Inserção
+                        if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
+                            df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
+                        else:
+                            novo_registro = {
+                                "id_ata": id_ata, 
+                                "modalidade": modalidade_ata, 
+                                "turma": data_ata.get('turma', ''), 
+                                "dados_json": novo_json
+                            }
+                            df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
+                        
+                        safe_update("Atas_Conselho", df_atas)
+                        st.success(f"✅ Ata da turma {data_ata.get('turma')} salva com sucesso no banco de dados!")
+                    except Exception as e:
+                        st.error(f"Erro ao salvar no servidor. Verifique se a aba 'Atas_Conselho' existe na planilha. Detalhe: {e}")
+
                 if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
-                    st.warning("A geração de PDF para a Ata de Conselho está sendo configurada. Em breve o layout oficial da SME será impresso aqui!")
-                    # Aqui entraremos com a customização da classe OfficialPDF para desenhar a Ata.
-
-        else:
-            st.info(f"O formulário para **{modalidade_ata}** está em desenvolvimento. Por enquanto, utilize o modelo do Ensino Fundamental.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    pdf = OfficialPDF('P', 'mm', 'A4')
+                    pdf.add_page()
+                    pdf.set_margins(15, 15, 15)
+                    
+                    # --- CABEÇALHO ---
+                    pdf.set_font("Arial", "B", 10)
+                    pdf.cell(0, 6, f"Unidade Escolar: {clean_pdf_text(data_ata.get('escola', ''))}", 0, 1, 'L')
+                    pdf.cell(0, 6, "REGISTRO E CONTROLE DO ACOMPANHAMENTO ESCOLAR", 0, 1, 'C')
+                    pdf.cell(0, 6, f"{clean_pdf_text(modalidade_ata.upper())} - CONSELHO DE CICLO/TERMO - {clean_pdf_text(data_ata.get('trimestre', '').upper())} DE {clean_pdf_text(data_ata.get('ano_letivo', ''))}", 0, 1, 'C')
+                    pdf.cell(0, 6, f"Turma: {clean_pdf_text(data_ata.get('turma', ''))} | Ciclo: {clean_pdf_text(data_ata.get('ciclo', ''))}", 0, 1, 'C')
