@@ -589,8 +589,8 @@ if st.session_state.authenticated:
         with col2:
             st.markdown("""
             <div style='background-color: #eff6ff; padding: 35px 20px; border-radius: 12px; text-align: center; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
-                <h1 style='font-size: 55px; margin: 0; margin-bottom: 15px;'>🏫</h1>
-                <h3 style='color: #1d4ed8; margin: 0;'>Ensino Regular</h3>
+                <div style='font-size: 55px; margin-bottom: 15px;'>🏫</div>
+                <div style='color: #1d4ed8; font-size: 24px; font-weight: 700; margin: 0;'>Ensino Regular</div>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -602,8 +602,8 @@ if st.session_state.authenticated:
         with col3:
             st.markdown("""
             <div style='background-color: #f0fdf4; padding: 35px 20px; border-radius: 12px; text-align: center; border: 2px solid #22c55e; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
-                <h1 style='font-size: 55px; margin: 0; margin-bottom: 15px;'>🧠</h1>
-                <h3 style='color: #15803d; margin: 0;'>Educação Especial Inclusiva</h3>
+                <div style='font-size: 55px; margin-bottom: 15px;'>🧠</div>
+                <div style='color: #15803d; font-size: 24px; font-weight: 700; margin: 0;'>Educação Especial Inclusiva</div>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -5715,6 +5715,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
