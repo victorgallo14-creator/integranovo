@@ -5503,11 +5503,10 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                         pdf.ln(5)
                         
-                        # --- SÍNTESE AVALIATIVA ---
+                        # --- SÍNTESE AVALIATIVA - BORDAS BLINDADAS (CORRIGIDAS) ---
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.set_x(15)
-                        # O 180 trava a largura matemática absoluta (210 - 15 - 15)
                         pdf.cell(180, 6, "SÍNTESE AVALIATIVA", 1, 1, 'C', True)
                         
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
@@ -5516,15 +5515,24 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         else:
                             texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
                         
+                        # Espaçamento manual com borda impressa (Garante a continuidade da linha)
+                        pdf.set_x(15)
+                        pdf.cell(180, 2, "", "LR", 1)
+                        
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
-                        # Com o "\n" no final ele garante o respiro interno e o desenho correto da borda contínua
-                        pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf + "\n"), "LR", 'J')
+                        pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
                         
-                        texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no trimestre atual:\n"
+                        pdf.set_x(15)
+                        pdf.cell(180, 4, "", "LR", 1)
+                        
+                        texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no trimestre atual:"
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
                         pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
+                        
+                        pdf.set_x(15)
+                        pdf.cell(180, 4, "", "LR", 1)
                         
                         disciplinas = [
                             ("Língua Portuguesa", data_ata.get('sin_lp', '')),
@@ -5541,15 +5549,18 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_font("Arial", "", 10)
                         for i, (nome, texto) in enumerate(disciplinas):
                             linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
-                            borda = "LR" if i < len(disciplinas) - 1 else "LRB"
-                            # Se não for o último, adicionamos 2 enters para criar o espaço igual ao da foto mantendo a borda conectada
-                            if i < len(disciplinas) - 1:
-                                linha_texto += "\n\n"
-                            else:
-                                linha_texto += "\n"
-                                
+                            
                             pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(linha_texto), borda, 'J')
+                            pdf.multi_cell(180, 5, clean_pdf_text(linha_texto), "LR", 'J')
+                            
+                            if i < len(disciplinas) - 1:
+                                # Preenche os espaços em branco com a borda para não "cortar" a linha
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, "", "LR", 1)
+                            else:
+                                # A última matéria fecha a caixa na parte de baixo
+                                pdf.set_x(15)
+                                pdf.cell(180, 4, "", "LRB", 1)
                         
                         # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
@@ -5580,7 +5591,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         lista_abaixo = data_ata.get('abaixo_basico', [])
                         if isinstance(lista_abaixo, pd.DataFrame): lista_abaixo = lista_abaixo.to_dict('records')
                             
-                        # Função de segurança para truncar nomes muito longos e evitar vazamento de célula
                         def truncate_str(texto, max_w):
                             while pdf.get_string_width(texto) > max_w - 2:
                                 texto = texto[:-1]
@@ -5590,7 +5600,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             estudante = str(row.get('Estudante', '')).strip()
                             if estudante: 
                                 pdf.set_x(15)
-                                # Corta o nome caso seja imenso e ameace quebrar o desenho da tabela
                                 estudante_seguro = truncate_str(estudante, col_w[0])
                                 def check(val): return "X" if val else ""
                                 pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
