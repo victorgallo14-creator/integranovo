@@ -585,12 +585,25 @@ if st.session_state.authenticated:
         
         col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
         
+        # --- BOTÃO 1: ENSINO REGULAR (ESQUERDA) ---
         with col2:
             st.markdown("""
-            <div style='background-color: #f0fdf4; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #22c55e; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
-                <h1 style='font-size: 50px; margin: 0;'>🧠</h1>
-                <h3 style='color: #15803d;'>Educação Especial Inclusiva</h3>
-                <p style='font-size: 14px; color: #166534; min-height: 45px;'>Gestão de PEI, PDI, Estudos de Caso e relatórios de alunos de inclusão.</p>
+            <div style='background-color: #eff6ff; padding: 35px 20px; border-radius: 12px; text-align: center; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
+                <h1 style='font-size: 55px; margin: 0; margin-bottom: 15px;'>🏫</h1>
+                <h3 style='color: #1d4ed8; margin: 0;'>Ensino Regular</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            st.write("")
+            if st.button("Acessar Ensino Regular", type="primary", use_container_width=True, key="btn_er"):
+                st.session_state.modulo_atuacao = "🏫 Ensino Regular"
+                st.rerun()
+
+        # --- BOTÃO 2: EDUCAÇÃO ESPECIAL (DIREITA) ---
+        with col3:
+            st.markdown("""
+            <div style='background-color: #f0fdf4; padding: 35px 20px; border-radius: 12px; text-align: center; border: 2px solid #22c55e; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
+                <h1 style='font-size: 55px; margin: 0; margin-bottom: 15px;'>🧠</h1>
+                <h3 style='color: #15803d; margin: 0;'>Educação Especial Inclusiva</h3>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -598,21 +611,8 @@ if st.session_state.authenticated:
                 st.session_state.modulo_atuacao = "🧠 Educação Especial Inclusiva"
                 st.rerun()
                 
-        with col3:
-            st.markdown("""
-            <div style='background-color: #eff6ff; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
-                <h1 style='font-size: 50px; margin: 0;'>🏫</h1>
-                <h3 style='color: #1d4ed8;'>Ensino Regular</h3>
-                <p style='font-size: 14px; color: #1e3a8a; min-height: 45px;'>Atas de Conselho de Ciclo e outros documentos.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            st.write("")
-            if st.button("Acessar Ensino Regular", type="primary", use_container_width=True, key="btn_er"):
-                st.session_state.modulo_atuacao = "🏫 Ensino Regular"
-                st.rerun()
-                
         # st.stop() bloqueia o carregamento da sidebar até a pessoa clicar num botão
-        st.stop() 
+        st.stop()
 
 
 # --- DEFINIÇÃO DE PERMISSÕES ---
@@ -5715,6 +5715,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
