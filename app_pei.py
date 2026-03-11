@@ -5723,6 +5723,75 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
 
+# ==============================================================================
+    # TELA DE HISTÓRICO DE ATAS
+    # ==============================================================================
+    if app_mode_regular == "📂 Histórico de Atas":
+        st.markdown('<div class="header-box"><div class="header-title">Histórico de Atas</div><div class="header-subtitle">Consulta e Gerenciamento de Atas Salvas</div></div>', unsafe_allow_html=True)
+        
+        # Lê o banco de dados das Atas
+        df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
+        
+        if df_atas.empty:
+            st.info("📂 Nenhuma ata foi salva no banco de dados ainda. Vá em 'Nova Ata de Conselho' para criar a primeira!")
+        else:
+            st.success(f"✅ Encontradas {len(df_atas)} ata(s) salva(s) no sistema.")
+            
+            # Exibir uma tabela simplificada e bonita
+            df_display = df_atas[["id_ata", "modalidade", "turma"]].copy()
+            df_display.columns = ["ID / Título da Ata", "Modalidade", "Turma"]
+            st.dataframe(df_display, use_container_width=True, hide_index=True)
+            
+            st.divider()
+            
+            # --- ÁREA DE CARREGAMENTO PARA EDIÇÃO/IMPRESSÃO ---
+            st.subheader("🔄 Carregar Ata Existente")
+            st.caption("Selecione uma ata salva para carregar os dados de volta. Assim você pode editá-la ou gerar o PDF novamente.")
+            
+            c_sel, c_btn = st.columns([3, 1])
+            ata_selecionada = c_sel.selectbox("Selecione a Ata:", df_atas["id_ata"].tolist(), label_visibility="collapsed")
+            
+            if c_btn.button("Carregar Dados", type="primary", use_container_width=True):
+                # Encontra a linha da ata selecionada no banco
+                dados_row = df_atas[df_atas["id_ata"] == ata_selecionada].iloc[0]
+                
+                try:
+                    # Converte o texto JSON de volta para dicionário
+                    dados_json = json.loads(dados_row["dados_json"])
+                    
+                    # Converte as listas de volta para Tabelas Editáveis (DataFrames do Pandas)
+                    for key in ['abaixo_basico', 'basico', 'mat_tardia']:
+                        if key in dados_json and isinstance(dados_json[key], list):
+                            dados_json[key] = pd.DataFrame(dados_json[key])
+                            
+                    # Salva na memória do sistema e avisa o usuário
+                    if dados_row["modalidade"] == "Ensino Fundamental":
+                        st.session_state.data_ata_ef = dados_json
+                    
+                    st.success(f"Ata '{ata_selecionada}' carregada com sucesso! Vá para a aba '📝 Nova Ata de Conselho' para visualizar ou baixar o PDF.")
+                except Exception as e:
+                    st.error(f"Erro ao carregar os dados da ata: {e}")
+            
+            st.divider()
+            
+            # --- ZONA DE PERIGO: EXCLUIR ATA ---
+            # Apenas Docentes/Gestores podem excluir (Monitores não)
+            if not is_monitor:
+                with st.expander("⚠️ Zona de Perigo - Excluir Ata"):
+                    st.warning("Atenção: A exclusão é permanente e não pode ser desfeita.")
+                    c_del_sel, c_del_btn = st.columns([3, 1])
+                    ata_excluir = c_del_sel.selectbox("Selecione a Ata para excluir:", df_atas["id_ata"].tolist(), key="del_ata_sel", label_visibility="collapsed")
+                    
+                    if c_del_btn.button("🗑️ Excluir Ata", type="secondary", use_container_width=True):
+                        # Filtra removendo a ata escolhida
+                        df_new = df_atas[df_atas["id_ata"] != ata_excluir]
+                        # Atualiza o banco
+                        safe_update("Atas_Conselho", df_new)
+                        st.success(f"Ata '{ata_excluir}' excluída do sistema!")
+                        time.sleep(1)
+                        st.rerun()
+
+
 
 
 
