@@ -579,9 +579,11 @@ login()
 # ==============================================================================
 if st.session_state.authenticated:
     if st.session_state.modulo_atuacao is None:
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: #1e293b;'>Seja bem-vindo(a)! Escolha seu ambiente de trabalho:</h2>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        # Removido os <br> para o conteúdo subir e ficar mais centralizado
+        st.write("") 
+        
+        # Título alterado para <div> para não aparecer o ícone de link
+        st.markdown("<div style='text-align: center; color: #1e293b; font-size: 32px; font-weight: bold; margin-bottom: 40px;'>Seja bem-vindo(a)! Escolha seu ambiente de trabalho:</div>", unsafe_allow_html=True)
         
         col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
         
@@ -5715,6 +5717,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     nome_arq = f"Ata_{turma_limpa}_{trimestre_limpo}.pdf".replace(" ", "_")
                     
                     st.download_button("📥 BAIXAR ATA EM PDF", st.session_state.pdf_bytes_ata, nome_arq, "application/pdf", type="primary")
+
 
 
 
