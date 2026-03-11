@@ -5388,7 +5388,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     hide_index=True
                 )
 
-           # --- ABA 5: EMISSÃO PDF ---
+# --- ABA 5: EMISSÃO PDF ---
             with tabs[4]:
                 st.subheader("Finalização e Assinaturas")
                 
@@ -5426,8 +5426,17 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
                     try:
                         pdf = OfficialPDF('P', 'mm', 'A4')
+                        # --- ATIVA O TIMBRADO DE FUNDO EXCLUSIVO DA ATA ---
+                        pdf.doc_type = "Ata" 
+                        
+                        # Define as margens (Esquerda:15, Topo:35, Direita:15) 
+                        # O topo com 35 impede que o texto seja escrito por cima da logo
+                        pdf.set_margins(15, 35, 15)
+                        
+                        # Margem de quebra de página (20mm) impede de cobrir o rodapé da imagem
+                        pdf.set_auto_page_break(auto=True, margin=20)
+                        
                         pdf.add_page()
-                        pdf.set_margins(15, 15, 15)
                         
                         # --- CABEÇALHO ---
                         pdf.set_font("Arial", "B", 10)
@@ -5462,7 +5471,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         
                         # --- PLANO DE AÇÃO (ABAIXO DO BÁSICO) ---
                         pdf.ln(5)
-                        if pdf.get_y() > 240: pdf.add_page()
+                        if pdf.get_y() > 230: pdf.add_page()
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 8, clean_pdf_text("PLANO DE AÇÃO: Estudantes com desempenho Abaixo do Básico"), 1, 1, 'C', True)
                         
@@ -5503,7 +5512,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                         # --- PLANO DE AÇÃO (BÁSICO) ---
                         pdf.ln(5)
-                        if pdf.get_y() > 240: pdf.add_page()
+                        if pdf.get_y() > 230: pdf.add_page()
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 8, clean_pdf_text("PLANO DE AÇÃO: Estudantes com desempenho Básico"), 1, 1, 'C', True)
                         
@@ -5528,7 +5537,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 linhas += texto_acao.count('\n')
                                 h_row = max(6, linhas * 5 + 2)
                                 
-                                if y + h_row > 270:
+                                # Evita que a caixa de texto passe para o rodapé timbrado
+                                if y + h_row > 265:
                                     pdf.add_page()
                                     y = pdf.get_y()
                                 
@@ -5543,7 +5553,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                         # --- OBSERVAÇÕES ---
                         pdf.ln(5)
-                        if pdf.get_y() > 240: pdf.add_page()
+                        if pdf.get_y() > 230: pdf.add_page()
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 8, clean_pdf_text("3. OBSERVAÇÕES"), 1, 1, 'L', True)
                         pdf.set_font("Arial", "", 9)
@@ -5564,7 +5574,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                         # --- ASSINATURAS ---
                         pdf.ln(15)
-                        if pdf.get_y() > 230: pdf.add_page()
+                        if pdf.get_y() > 220: pdf.add_page()
                         pdf.set_font("Arial", "B", 9)
                         pdf.cell(0, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 0, 1, 'C')
                         pdf.set_font("Arial", "I", 8)
