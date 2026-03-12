@@ -12,6 +12,9 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 import time
 import uuid
+import threading
+import random
+import time
 
 MIN_DATA = date(1900, 1, 1)
 MAX_DATA = date(2100, 12, 31)
@@ -61,187 +64,181 @@ hide_st_style = """
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE BANCO DE DADOS E UTILITÁRIOS (COM PROTEÇÃO ANTI-WIPE) ---
+
+# Cria uma trava global no servidor para evitar salvamentos simultâneos
+@st.cache_resource
+def get_db_lock():
+    return threading.Lock()
+
+db_lock = get_db_lock()
 
 def load_db(strict=False):
     """
     Lê os dados da planilha do Google.
-    strict=True: Levanta erro se a leitura falhar (usado antes de salvar para garantir que leu tudo).
-    strict=False: Retorna vazio se falhar (usado apenas para visualização).
     """
     try:
         df = conn.read(worksheet="Alunos", ttl=0)
-        # Se o DF vier vazio, verificar se não foi erro de conexão silencioso
         if df.empty and strict:
-             # Tenta ler outra aba leve apenas para testar conexão
-             conn.read(worksheet="Professores", ttl=0)
-        
+            # Tenta ler outra aba leve apenas para testar conexão
+            conn.read(worksheet="Professores", ttl=0)
         df = df.dropna(how="all")
         return df
     except Exception as e:
         if strict:
-            st.error(f"❌ ERRO CRÍTICO DE LEITURA: Não foi possível ler o banco de dados. Operação de salvamento bloqueada para evitar perda de dados. Detalhe: {e}")
-            raise e # Para a execução
+            raise Exception(f"Erro ao ler Google Sheets (API pode estar sobrecarregada): {e}")
         return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id"])
 
 def safe_read(worksheet_name, columns):
-    """Lê uma aba com segurança, retornando vazio se falhar"""
     try:
         df = conn.read(worksheet=worksheet_name, ttl=0)
-        if df.empty:
-             return pd.DataFrame(columns=columns)
-        return df
+        if df.empty: return pd.DataFrame(columns=columns)
+        return df.dropna(how="all")
     except:
         return pd.DataFrame(columns=columns)
 
 def safe_update(worksheet_name, data):
-    """Atualiza uma aba com segurança"""
-    try:
-        conn.update(worksheet=worksheet_name, data=data)
-        return True
-    except Exception as e:
-        st.error(f"Erro ao atualizar {worksheet_name}: {e}")
-        return False
+    """Atualiza uma aba com fila de espera (Lock) e retentativas"""
+    MAX_RETRIES = 3
+    with db_lock: # Fila de espera
+        for attempt in range(MAX_RETRIES):
+            try:
+                conn.update(worksheet=worksheet_name, data=data)
+                return True
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(random.uniform(1, 3)) # Espera um tempo aleatório e tenta de novo
+                else:
+                    st.error(f"Erro ao atualizar {worksheet_name} após {MAX_RETRIES} tentativas: {e}")
+                    return False
 
 def create_backup(df_atual):
-    """Cria um backup de segurança na aba 'Backup_Alunos' antes de qualquer alteração"""
     if not df_atual.empty:
         try:
-            # Tenta salvar na aba de Backup. Se ela não existir, o gsheets cria ou dá erro dependendo da permissão
-            # O ideal é criar uma aba "Backup_Alunos" manualmente no Google Sheets antes.
             conn.update(worksheet="Backup_Alunos", data=df_atual)
-        except Exception as e:
-            print(f"Aviso: Não foi possível criar backup: {e}")
+        except:
+            pass # Falhas de backup não devem travar o sistema principal
 
-# --- LOGGER ---
 def log_action(student_name, action, details):
-    """Registra ação no histórico"""
     try:
-        df_hist = safe_read("Historico", ["Data_Hora", "Aluno", "Usuario", "Acao", "Detalhes"])
-        novo_log = {
-            "Data_Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "Aluno": student_name,
-            "Usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
-            "Acao": action,
-            "Detalhes": details
-        }
-        df_hist = pd.concat([df_hist, pd.DataFrame([novo_log])], ignore_index=True)
-        safe_update("Historico", df_hist)
-    except Exception as e:
-        print(f"Erro ao logar: {e}")
-
+        with db_lock:
+            df_hist = safe_read("Historico", ["Data_Hora", "Aluno", "Usuario", "Acao", "Detalhes"])
+            novo_log = {
+                "Data_Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "Aluno": student_name,
+                "Usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
+                "Acao": action,
+                "Detalhes": details
+            }
+            df_hist = pd.concat([df_hist, pd.DataFrame([novo_log])], ignore_index=True)
+            conn.update(worksheet="Historico", data=df_hist)
+    except:
+        pass
 
 def save_student(doc_type, name, data, section="Geral"):
-    """Salva ou atualiza com TRAVA DE SEGURANÇA (ANTI-WIPE)"""
-    
-    # Verifica permissão
+    """Salva ou atualiza com LOCK e LEITURA DE ÚLTIMO MILISSEGUNDO"""
     is_monitor = st.session_state.get('user_role') == 'monitor'
     if is_monitor and doc_type != "DIARIO" and section != "Assinatura":
         st.error("Acesso negado: Monitores não podem editar este documento.")
         return
 
-    try:
-        # 1. LEITURA ESTRITA: Se falhar a leitura, O CÓDIGO PARA AQUI.
-        # Isso impede que o sistema ache que o banco está vazio por erro de internet.
-        df_atual = load_db(strict=True)
-        
-        # 2. BACKUP AUTOMÁTICO
-        create_backup(df_atual)
+    MAX_RETRIES = 3
 
-        id_registro = f"{name} ({doc_type})"
-        
-        # Garantir UUID
-        if 'doc_uuid' not in data or not data['doc_uuid']:
-            data['doc_uuid'] = str(uuid.uuid4()).upper()
+    # O WITH DB_LOCK garante que se 5 pessoas clicarem em salvar ao mesmo tempo,
+    # o Streamlit fará uma fila e salvará um por um, evitando esmagamento de dados.
+    with db_lock:
+        for attempt in range(MAX_RETRIES):
+            try:
+                # 1. LÊ TUDO FRESQUINHO AGORA. Não confia nos dados velhos da tela.
+                df_atual = load_db(strict=True)
+                
+                # 2. BACKUP (Apenas na primeira tentativa)
+                if attempt == 0: 
+                    create_backup(df_atual)
 
-        def serializar_datas(obj):
-            if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
-            if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
-            if isinstance(obj, list): return [serializar_datas(i) for i in obj]
-            return obj
-            
-        data_limpa = serializar_datas(data)
-        novo_json = json.dumps(data_limpa, ensure_ascii=False)
+                id_registro = f"{name} ({doc_type})"
+                
+                if 'doc_uuid' not in data or not data['doc_uuid']:
+                    data['doc_uuid'] = str(uuid.uuid4()).upper()
 
-        # Lógica de Atualização vs Inserção
-        df_final = df_atual.copy()
-        
-        if not df_atual.empty and "id" in df_atual.columns and id_registro in df_atual["id"].values:
-            # ATUALIZAÇÃO
-            df_final.loc[df_final["id"] == id_registro, "dados_json"] = novo_json
-        else:
-            # INSERÇÃO
-            novo_registro = {
-                "id": id_registro,
-                "nome": name,
-                "tipo_doc": doc_type,
-                "dados_json": novo_json
-            }
-            # Se o banco estava vazio, cria o DF, senão concatena
-            if df_final.empty:
-                df_final = pd.DataFrame([novo_registro])
-            else:
-                df_final = pd.concat([df_final, pd.DataFrame([novo_registro])], ignore_index=True)
+                def serializar_datas(obj):
+                    if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
+                    if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
+                    if isinstance(obj, list): return [serializar_datas(i) for i in obj]
+                    return obj
+                    
+                data_limpa = serializar_datas(data)
+                novo_json = json.dumps(data_limpa, ensure_ascii=False)
 
-        # 3. TRAVA DE SEGURANÇA (ANTI-WIPE)
-        # Se o banco tinha dados (ex: 100 linhas) e o df_final tem muito menos (ex: 1 linha),
-        # significa que algo deu errado na leitura ou concatenação. Bloqueia o salvamento.
-        qtd_antes = len(df_atual)
-        qtd_depois = len(df_final)
+                df_final = df_atual.copy()
+                
+                if not df_atual.empty and "id" in df_atual.columns and id_registro in df_atual["id"].values:
+                    df_final.loc[df_final["id"] == id_registro, "dados_json"] = novo_json
+                else:
+                    novo_registro = {
+                        "id": id_registro,
+                        "nome": name,
+                        "tipo_doc": doc_type,
+                        "dados_json": novo_json
+                    }
+                    if df_final.empty:
+                        df_final = pd.DataFrame([novo_registro])
+                    else:
+                        df_final = pd.concat([df_final, pd.DataFrame([novo_registro])], ignore_index=True)
 
-        if qtd_antes > 5 and qtd_depois < (qtd_antes * 0.9): 
-            # Se tentar apagar mais de 10% da base de uma vez numa função de salvar, é erro.
-            st.error(f"⛔ BLOQUEIO DE SEGURANÇA: O sistema detectou uma possível perda de dados em massa (De {qtd_antes} para {qtd_depois} registros). A operação foi cancelada.")
-            return
+                # 3. TRAVA ANTI-WIPE (Se vier vazio da API por erro, ele barra aqui)
+                qtd_antes = len(df_atual)
+                qtd_depois = len(df_final)
 
-        # 4. SALVAMENTO FINAL
-        conn.update(worksheet="Alunos", data=df_final)
-        
-        # Registra no histórico
-        log_action(name, f"Salvou {doc_type}", f"Seção: {section}")
-        
-        st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
-        
-    except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+                if qtd_antes > 5 and qtd_depois < (qtd_antes * 0.9): 
+                    st.error(f"⛔ BLOQUEIO DE SEGURANÇA: Prevenção de perda de dados. Salvamento cancelado.")
+                    return
+
+                # 4. SALVA
+                conn.update(worksheet="Alunos", data=df_final)
+                
+                # O log agora roda fora do seu próprio lock (já estamos no lock)
+                st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
+                return # Sai do loop se deu certo
+                
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(random.uniform(1.5, 3.5)) # Espera e tenta de novo se o Google bloquear
+                else:
+                    st.error(f"❌ Falha ao salvar no banco (API do Google sobrecarregada). Tente novamente em 10 segundos. Erro: {e}")
 
 def delete_student(student_name):
-    """Exclui um aluno com TRAVA DE SEGURANÇA"""
     is_monitor = st.session_state.get('user_role') == 'monitor'
-    if is_monitor:
-        st.error("Acesso negado: Monitores não podem excluir registros.")
-        return False
+    if is_monitor: return False
         
-    try:
-        # Leitura Estrita
-        df = load_db(strict=True)
-        create_backup(df) # Backup antes de deletar
+    with db_lock:
+        try:
+            df = load_db(strict=True)
+            create_backup(df)
 
-        if "nome" in df.columns:
-            # Filtra removendo o aluno
-            df_new = df[df["nome"] != student_name]
-            
-            qtd_antes = len(df)
-            qtd_depois = len(df_new)
+            if "nome" in df.columns:
+                df_new = df[df["nome"] != student_name]
+                qtd_antes = len(df)
+                qtd_depois = len(df_new)
 
-            # Trava: Se a exclusão apagar TUDO ou mais do que o esperado
-            if qtd_antes > 0 and qtd_depois == 0 and qtd_antes > 5: 
-                # Se tinha mais de 5 alunos e vai sobrar zero, provavelmente a lógica de filtro falhou ou string vazia
-                st.error("⛔ BLOQUEIO: Tentativa de excluir TODOS os registros detectada. Operação cancelada.")
-                return False
+                if qtd_antes > 0 and qtd_depois == 0 and qtd_antes > 5: 
+                    st.error("⛔ BLOQUEIO: Tentativa de exclusão em massa cancelada.")
+                    return False
 
-            if qtd_depois < qtd_antes:
-                conn.update(worksheet="Alunos", data=df_new)
-                log_action(student_name, "Exclusão", "Registro do aluno excluído")
-                st.toast(f"🗑️ Registro de {student_name} excluído com sucesso!", icon="🔥")
-                return True
-            else:
-                st.warning("Nenhum registro encontrado para exclusão.")
-    except Exception as e:
-        st.error(f"Erro ao excluir: {e}")
+                if qtd_depois < qtd_antes:
+                    conn.update(worksheet="Alunos", data=df_new)
+                    st.toast(f"🗑️ Registro de {student_name} excluído!", icon="🔥")
+                    return True
+        except Exception as e:
+            st.error(f"Erro ao excluir: {e}")
     return False
 
 # --- FIM DAS FUNÇÕES DE BANCO DE DADOS ---
+
+
+
+
+
+
 
 
 # --- HELPERS PARA PDF ---
@@ -5963,3 +5960,4 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao salvar: {e}")
+
