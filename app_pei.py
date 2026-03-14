@@ -5345,7 +5345,7 @@ elif app_mode == "👥 Gestão de Alunos":
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
 
 elif modulo_atuacao == "🏫 Ensino Regular":
-
+    
     # ==============================================================================
     # MATRIZ DE DADOS DA SME (CEIEF RAFAEL AFFONSO LEITE - 2026)
     # ==============================================================================
@@ -5385,7 +5385,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     'obs_especiais': [{"Estudante": "", "Desempenho/Observação": ""}],
                     'encaminhamentos': [{"Estudante": "", "Motivo": ""}],
                     'mat_tardia': [{"Estudante": "", "Data Matrícula": "", "Total Frequência": ""}],
-                    'aee_texto': "",
                     'obs_outras': "",
                     'assinaturas': [{"Nome": "", "Cargo/Atuação": ""}]
                 }
@@ -5396,7 +5395,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if isinstance(data_ata.get(key), pd.DataFrame):
                     data_ata[key] = data_ata[key].to_dict('records')
             
-            tabs = st.tabs(["1. Identificação", "2. Síntese", "3. Plano de Ação", "4. AEE e Observações", "5. Finalização"])
+            tabs = st.tabs(["1. Identificação", "2. Síntese", "3. Plano de Ação", "4. Observações", "5. Finalização"])
             
             with tabs[0]:
                 st.subheader("Dados da Unidade e Ciclo")
@@ -5414,7 +5413,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 ciclo_idx = ciclo_opts.index(data_ata.get('ciclo', "Ciclo I (1º ao 3º ano)")) if data_ata.get('ciclo') in ciclo_opts else 0
                 data_ata['ciclo'] = c5.selectbox("Ciclo", ciclo_opts, index=ciclo_idx, key="sel_ciclo")
                 
-                # Lista de Turmas Inteligente baseada no Ciclo
                 turmas_disponiveis = list(MATRIZ_PROFESSORES[data_ata['ciclo']].keys()) + ["Outra Turma..."]
                 try: 
                     turma_idx = turmas_disponiveis.index(data_ata.get('turma', ''))
@@ -5505,13 +5503,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.rerun()
 
             with tabs[3]:
-                st.subheader("3. Atendimento Educacional Especializado (AEE)")
-                data_ata['aee_texto'] = st.text_area("Registre os apontamentos sobre os estudantes público-alvo da Educação Especial:", value=data_ata.get('aee_texto', ''), height=120)
+                st.subheader("3. Observações Gerais")
                 
-                st.divider()
-                st.subheader("4. Observações Gerais")
-                
-                st.markdown("**Desempenho de alunos especiais (laudados)**")
+                st.markdown("**a) Desempenho de alunos especiais (laudados)**")
                 for i, row in enumerate(data_ata['obs_especiais']):
                     c1, c2, c3 = st.columns([3, 6, 1])
                     row['Estudante'] = c1.text_input("Estudante Especial", value=row.get('Estudante', ''), key=f"obs_est_{i}")
@@ -5523,7 +5517,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.rerun()
                 
                 st.divider()
-                st.markdown("**Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
+                st.markdown("**b) Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
                 for i, row in enumerate(data_ata['encaminhamentos']):
                     c1, c2, c3 = st.columns([3, 6, 1])
                     row['Estudante'] = c1.text_input("Estudante Encaminhado", value=row.get('Estudante', ''), key=f"enc_est_{i}")
@@ -5535,7 +5529,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.rerun()
 
                 st.divider()
-                st.markdown("**Estudantes Matriculados Tardiamente**")
+                st.markdown("**c) Estudantes Matriculados Tardiamente**")
                 for i, row in enumerate(data_ata['mat_tardia']):
                     c1, c2, c3, c4 = st.columns([4, 3, 3, 1])
                     row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"mat_est_{i}")
@@ -5548,13 +5542,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.rerun()
                     
                 st.divider()
-                st.markdown("**Outras Observações**")
+                st.markdown("**d) Outras Observações**")
                 data_ata['obs_outras'] = st.text_area("Campo livre para quaisquer outras observações da turma:", value=data_ata.get('obs_outras', ''), height=120)
 
             with tabs[4]:
                 st.subheader("Finalização e Assinaturas")
                 
-                # --- MOTOR DE AUTOMAÇÃO DE ASSINATURAS ---
                 if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary"):
                     ciclo_atual = data_ata.get('ciclo')
                     turma_atual = data_ata.get('turma')
@@ -5564,7 +5557,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         lista_final = []
                         professores_adicionados = set()
                         
-                        # 1. Professores da Turma Específica
                         if profs_da_turma["Polivalente"]:
                             lista_final.append({"Nome": profs_da_turma["Polivalente"], "Cargo/Atuação": "Prof. Polivalente (Atuante na Turma)"})
                             professores_adicionados.add(profs_da_turma["Polivalente"])
@@ -5578,10 +5570,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             lista_final.append({"Nome": profs_da_turma["Linguagens e Tecnologias"], "Cargo/Atuação": "Prof. de Ling. e Tec. (Atuante na Turma)"})
                             professores_adicionados.add(profs_da_turma["Linguagens e Tecnologias"])
                             
-                        # Placeholder para Libras
                         lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
                         
-                        # 2. Professores do Restante do Ciclo (Sem repetir nomes)
                         for t_nome, profs in MATRIZ_PROFESSORES[ciclo_atual].items():
                             if t_nome != turma_atual:
                                 for materia, nome_prof in profs.items():
@@ -5590,7 +5580,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                         lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante no Ciclo)"})
                                         professores_adicionados.add(nome_prof)
                                         
-                        # 3. Gestão
                         lista_final.extend([
                             {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
                             {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
@@ -5876,7 +5865,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'J')
                                 pdf.set_xy(15, y + h_row)
 
-                        # --- 3. ATENDIMENTO EDUCACIONAL ESPECIALIZADO ---
+                        # --- 3. OBSERVAÇÕES GERAIS (DENTRO DA CAIXA) ---
                         pdf.set_x(15)
                         pdf.cell(180, 5, "", "LR", 1) 
                         
@@ -5884,26 +5873,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(180, 6, clean_pdf_text("3- Atendimento Educacional Especializado (AEE):"), "LR", 1, 'L')
-                        pdf.set_font("Arial", "", 10)
-                        
-                        aee_txt = data_ata.get('aee_texto', '').strip()
-                        if aee_txt:
-                            pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(f"  {aee_txt}"), "LR", 'J')
-                        else:
-                            pdf.set_x(15)
-                            pdf.cell(180, 5, "  Nenhum apontamento registrado.", "LR", 1, 'L')
-
-                        # --- 4. OBSERVAÇÕES (DENTRO DA CAIXA) ---
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) 
-                        
-                        if pdf.get_y() > 230: pdf.add_page()
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 6, clean_pdf_text("4- Observações Gerais:"), "LR", 1, 'L')
+                        pdf.cell(180, 6, clean_pdf_text("3- Observações Gerais:"), "LR", 1, 'L')
                         pdf.set_font("Arial", "", 10)
                         
                         prefix_code = 97 
