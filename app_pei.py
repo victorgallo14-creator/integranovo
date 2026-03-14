@@ -5362,11 +5362,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             "3º Ano 3": {"Polivalente": "Regiane Faustino", "Artes": "Jordana Lima Alvez", "Educação Física": "Josiane Modesto da Silva", "Linguagens e Tecnologias": "Elaine Cristina Neves Fahl"},
         },
         "Ciclo II (4º e 5º ano)": {
-            # 4ºs anos com professores especialistas (Divididos por disciplina)
             "4º Ano 1": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
             "4º Ano 2": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
             "4º Ano 3": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
-            
             "5º Ano 1": {"Polivalente": "Elaine Cristina Neves Fahl", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
             "5º Ano 2": {"Polivalente": "Nathalia Teixeira Marcal Ribeiro", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
             "5º Ano 3": {"Polivalente": "Denise Teixeira Coelho Soffiati", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
@@ -5592,17 +5590,17 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             lista_final = []
                             professores_adicionados = set()
                             
-                            # 1. Professores da Turma (Dinâmico para ler qualquer disciplina da Matriz)
+                            # 1. Professores da Turma Específica
                             for materia, nome_prof in profs_da_turma.items():
                                 if nome_prof:
                                     cargo_formatado = "Prof. Polivalente" if materia == "Polivalente" else f"Prof. de {materia}"
                                     lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante na Turma)"})
                                     professores_adicionados.add(nome_prof)
                                     
-                            # Adiciona Libras Manualmente no final dos professores da turma
+                            # Placeholder para Libras (Turma)
                             lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
                             
-                            # 2. Professores do Restante do Ciclo (Sem repetir nomes)
+                            # 2. Professores do Restante do Ciclo
                             for t_nome, profs in MATRIZ_PROFESSORES[ciclo_atual].items():
                                 if t_nome != turma_atual:
                                     for materia, nome_prof in profs.items():
@@ -6009,7 +6007,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 3, "", "LRB", 1) 
 
-                            # --- ASSINATURAS (NOVA GRADE DENTRO DA CAIXA CINZA) ---
+                            # --- ASSINATURAS (NOVA GRADE DESENHADA) ---
                             pdf.ln(5)
                             if pdf.get_y() > 220: pdf.add_page()
                             
@@ -6027,7 +6025,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             else:
                                 cols = 4
                                 cell_w = 180 / cols
-                                cell_h = 16
+                                cell_h = 24  # Altura ampliada para caber linha e 3 textos
                                 
                                 x_start = 15
                                 y = pdf.get_y()
@@ -6044,22 +6042,41 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     x = x_start + (col * cell_w)
                                     pdf.rect(x, y, cell_w, cell_h)
                                     
-                                    nome = str(sig.get('Nome', '')).strip()
-                                    cargo = str(sig.get('Cargo/Atuação', '')).strip()
+                                    # Desenha a linha de assinatura
+                                    pdf.line(x + 4, y + 10, x + cell_w - 4, y + 10)
                                     
-                                    font_size = 8
+                                    nome = str(sig.get('Nome', '')).strip()
+                                    cargo_full = str(sig.get('Cargo/Atuação', '')).strip()
+                                    
+                                    # Separa Cargo de Atuação (Se existir o parêntese)
+                                    cargo = cargo_full
+                                    atuacao = ""
+                                    if "(" in cargo_full:
+                                        parts = cargo_full.split("(")
+                                        cargo = parts[0].strip()
+                                        atuacao = parts[1].replace(")", "").strip()
+                                    
+                                    # Imprime o Nome
+                                    font_size = 7
                                     pdf.set_font("Arial", "B", font_size)
-                                    while pdf.get_string_width(nome) > cell_w - 2 and font_size > 5:
+                                    while pdf.get_string_width(nome) > cell_w - 2 and font_size > 4.5:
                                         font_size -= 0.5
                                         pdf.set_font("Arial", "B", font_size)
                                     
-                                    pdf.set_xy(x + 1, y + 6) 
+                                    pdf.set_xy(x + 1, y + 11) 
                                     pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(nome), 0, 'C')
                                     
-                                    pdf.set_font("Arial", "", 7)
+                                    # Imprime o Cargo
+                                    pdf.set_font("Arial", "", 6)
                                     curr_y = pdf.get_y()
                                     pdf.set_xy(x + 1, curr_y)
                                     pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(cargo), 0, 'C')
+                                    
+                                    # Imprime a Atuação (se houver)
+                                    if atuacao:
+                                        curr_y = pdf.get_y()
+                                        pdf.set_xy(x + 1, curr_y)
+                                        pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(atuacao), 0, 'C')
                                 
                                 pdf.set_y(y + cell_h)
 
