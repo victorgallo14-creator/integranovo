@@ -5355,8 +5355,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         if modalidade_ata == "Ensino Fundamental":
             if 'data_ata_ef' not in st.session_state:
                 st.session_state.data_ata_ef = {
-                    'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": False, "M": False, "H": False, "G": False, "C": False, "A": False, "EF": False, "LT": False, "LIBRAS": False}]),
-                    'basico': pd.DataFrame([{"Estudante": "", "Ações (LP e Mat)": ""}])
+                    'abaixo_basico': pd.DataFrame([{"Estudante": "", "LP": "", "M": "", "H": "", "G": "", "C": "", "A": "", "EF": "", "LT": "", "LIBRAS": ""}]),
+                    'basico': pd.DataFrame([{"Estudante": "", "Ações (LP e Mat)": ""}]),
+                    'obs_especiais': pd.DataFrame([{"Estudante": "", "Desempenho/Observação": ""}]),
+                    'encaminhamentos': pd.DataFrame([{"Estudante": "", "Motivo (Conselho Tutelar/Serviço Social)": ""}]),
+                    'mat_tardia': pd.DataFrame([{"Estudante": "", "Data Matrícula": "", "Total Frequência (Dias)": ""}])
                 }
             
             data_ata = st.session_state.data_ata_ef
@@ -5404,27 +5407,40 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
             with tabs[2]:
                 st.subheader("Plano de Ação (Abaixo do Básico)")
-                if "LT" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LT"] = False
-                if "LIBRAS" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LIBRAS"] = False
+                st.caption("Insira os **números das propostas de recuperação** nas disciplinas correspondentes (ex: 1, 3, 10).")
+                
+                if "LT" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LT"] = ""
+                if "LIBRAS" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LIBRAS"] = ""
                 
                 config_abaixo = {
                     "Estudante": st.column_config.TextColumn("Estudante"),
-                    "LP": st.column_config.CheckboxColumn("LP", default=False),
-                    "M": st.column_config.CheckboxColumn("M", default=False),
-                    "H": st.column_config.CheckboxColumn("H", default=False),
-                    "G": st.column_config.CheckboxColumn("G", default=False),
-                    "C": st.column_config.CheckboxColumn("C", default=False),
-                    "A": st.column_config.CheckboxColumn("A", default=False),
-                    "EF": st.column_config.CheckboxColumn("EF", default=False),
-                    "LT": st.column_config.CheckboxColumn("LT", default=False),
-                    "LIBRAS": st.column_config.CheckboxColumn("LIB", default=False)
+                    "LP": st.column_config.TextColumn("LP"),
+                    "M": st.column_config.TextColumn("M"),
+                    "H": st.column_config.TextColumn("H"),
+                    "G": st.column_config.TextColumn("G"),
+                    "C": st.column_config.TextColumn("C"),
+                    "A": st.column_config.TextColumn("A"),
+                    "EF": st.column_config.TextColumn("EF"),
+                    "LT": st.column_config.TextColumn("LT"),
+                    "LIBRAS": st.column_config.TextColumn("LIB")
                 }
                 
                 data_ata['abaixo_basico'] = st.data_editor(data_ata['abaixo_basico'], column_config=config_abaixo, num_rows="dynamic", use_container_width=True, hide_index=True)
                 
-                st.markdown("**Propostas de Recuperação:**")
-                for i in range(1, 6):
-                    data_ata[f'prop_{i}'] = st.text_input(f"{i}.", value=data_ata.get(f'prop_{i}', ''), key=f"prop_{i}")
+                st.markdown("---")
+                st.markdown("**Propostas de Recuperação da Gestão:**")
+                st.markdown("""
+                1. Recuperação contínua de aprendizagem dos estudantes;
+                2. Intervenções pontuais e individuais;
+                3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;
+                4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;
+                5. Proposta de compensação de ausências para o próximo trimestre;
+                6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;
+                7. Indicar o aluno para Ação Pedagógica Complementar;
+                8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;
+                9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;
+                10. Sistematizar atividades para consolidação dos conteúdos;
+                """)
                 
                 st.divider()
                 st.subheader("Plano de Ação (Básico)")
@@ -5436,14 +5452,20 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
             with tabs[3]:
                 st.subheader("3. Observações")
-                c_o1, c_o2, c_o3 = st.columns([2, 1, 1])
-                data_ata['obs_paral_dias'] = c_o1.text_input("Dias de paralisação", value=data_ata.get('obs_paral_dias', ''))
-                data_ata['obs_dias_previstos'] = c_o2.text_input("Dias Previstos", value=str(data_ata.get('obs_dias_previstos', '')))
-                data_ata['obs_dias_dados'] = c_o3.text_input("Dias Dados", value=str(data_ata.get('obs_dias_dados', '')))
-                data_ata['obs_reposicao'] = st.text_input("Observação sobre reposição", value=data_ata.get('obs_reposicao', ''))
                 
-                st.divider()
-                st.markdown("**b) Estudantes Matriculados Tardiamente**")
+                st.markdown("**a) Desempenho de alunos especiais (laudados)**")
+                if 'obs_especiais' not in st.session_state.data_ata_ef:
+                    st.session_state.data_ata_ef['obs_especiais'] = pd.DataFrame([{"Estudante": "", "Desempenho/Observação": ""}])
+                data_ata['obs_especiais'] = st.data_editor(st.session_state.data_ata_ef['obs_especiais'], num_rows="dynamic", use_container_width=True, hide_index=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("**b) Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
+                if 'encaminhamentos' not in st.session_state.data_ata_ef:
+                    st.session_state.data_ata_ef['encaminhamentos'] = pd.DataFrame([{"Estudante": "", "Motivo (Conselho Tutelar/Serviço Social)": ""}])
+                data_ata['encaminhamentos'] = st.data_editor(st.session_state.data_ata_ef['encaminhamentos'], num_rows="dynamic", use_container_width=True, hide_index=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("**c) Estudantes Matriculados Tardiamente**")
                 if 'mat_tardia' not in st.session_state.data_ata_ef:
                     st.session_state.data_ata_ef['mat_tardia'] = pd.DataFrame([{"Estudante": "", "Data Matrícula": "", "Total Frequência (Dias)": ""}])
                 data_ata['mat_tardia'] = st.data_editor(st.session_state.data_ata_ef['mat_tardia'], num_rows="dynamic", use_container_width=True, hide_index=True)
@@ -5508,7 +5530,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_fill_color(220, 220, 220)
                         pdf.set_x(15)
-                        # LTR (Left, Top, Right) - Abre a tampa superior da super caixa
                         pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                         
                         df_config = safe_read("Config_Ata", ["chave", "valor"])
@@ -5518,7 +5539,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
                         
                         pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1) # Espaço interno contínuo
+                        pdf.cell(180, 2, "", "LR", 1) 
                         
                         pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
@@ -5527,8 +5548,13 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_x(15)
                         pdf.cell(180, 4, "", "LR", 1)
                         
-                        texto_sint = "1- Síntese avaliativa da classe: a partir dos diferentes instrumentos avaliativos e da análise dos resultados, descrever o desempenho alcançado pela classe em cada componente curricular no trimestre atual:"
+                        # Título "1- Síntese..." em negrito, o resto normal
                         pdf.set_font("Arial", "B", 10)
+                        pdf.set_x(15)
+                        pdf.cell(180, 5, clean_pdf_text("1- Síntese avaliativa da classe:"), "LR", 1, 'L')
+                        
+                        texto_sint = "a partir dos diferentes instrumentos avaliativos e da análise dos resultados, o desempenho alcançado pela classe em cada componente curricular no trimestre atual se apresenta da seguinte forma:"
+                        pdf.set_font("Arial", "", 10)
                         pdf.set_x(15)
                         pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
                         
@@ -5549,26 +5575,27 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         
                         pdf.set_font("Arial", "", 10)
                         for i, (nome, texto) in enumerate(disciplinas):
-                            linha_texto = f"  {chr(149)}  {nome}: {texto if texto else '(descrever o desempenho da classe)'}"
-                            
-                            if i < len(disciplinas) - 1:
-                                linha_texto += "\n"
+                            if texto.strip() == "":
+                                linha_texto = f"  {chr(149)}  {nome}:"
+                            else:
+                                linha_texto = f"  {chr(149)}  {nome}: {texto}"
                             
                             pdf.set_x(15)
                             pdf.multi_cell(180, 5, clean_pdf_text(linha_texto), "LR", 'J')
+                            
+                            if i < len(disciplinas) - 1:
+                                pdf.set_x(15)
+                                pdf.cell(180, 3, "", "LR", 1) # Cria o espaço sem quebrar a borda lateral
                         
                         # --- 2. PLANO DE AÇÃO (DENTRO DA CAIXA) ---
                         pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) # Espaço com borda
+                        pdf.cell(180, 5, "", "LR", 1) 
                         
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho"), "LR", 1, 'L')
-                        pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("(considerar os conteúdos previstos para o ano de escolaridade na atribuição de conceitos):"), "LR", 1, 'L')
+                        pdf.cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho:"), "LR", 1, 'L')
                         
                         pdf.set_x(15)
                         pdf.cell(180, 3, "", "LR", 1)
@@ -5576,14 +5603,10 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
                         pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico:"), "LR", 1, 'L')
-                        pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("(indicar o nº conforme a proposta de recuperação que será utilizada)"), "LR", 1, 'L')
                         
                         pdf.set_x(15)
                         pdf.cell(180, 2, "", "LR", 1)
                         
-                        # Tabela Abaixo do Básico (Se encaixa perfeitamente nas bordas 180mm)
                         pdf.set_font("Arial", "B", 10)
                         col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
                         headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
@@ -5605,32 +5628,43 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             if estudante: 
                                 pdf.set_x(15)
                                 estudante_seguro = truncate_str(estudante, col_w[0])
-                                def check(val): return "X" if val else ""
                                 pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
-                                pdf.cell(col_w[1], 6, check(row.get('LP')), 1, 0, 'C')
-                                pdf.cell(col_w[2], 6, check(row.get('M')), 1, 0, 'C')
-                                pdf.cell(col_w[3], 6, check(row.get('H')), 1, 0, 'C')
-                                pdf.cell(col_w[4], 6, check(row.get('G')), 1, 0, 'C')
-                                pdf.cell(col_w[5], 6, check(row.get('C')), 1, 0, 'C')
-                                pdf.cell(col_w[6], 6, check(row.get('A')), 1, 0, 'C')
-                                pdf.cell(col_w[7], 6, check(row.get('EF')), 1, 0, 'C')
-                                pdf.cell(col_w[8], 6, check(row.get('LT')), 1, 0, 'C')
-                                pdf.cell(col_w[9], 6, check(row.get('LIBRAS')), 1, 1, 'C')
+                                pdf.cell(col_w[1], 6, clean_pdf_text(str(row.get('LP', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[2], 6, clean_pdf_text(str(row.get('M', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[3], 6, clean_pdf_text(str(row.get('H', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[4], 6, clean_pdf_text(str(row.get('G', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('C', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[6], 6, clean_pdf_text(str(row.get('A', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[7], 6, clean_pdf_text(str(row.get('EF', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[8], 6, clean_pdf_text(str(row.get('LT', ''))), 1, 0, 'C')
+                                pdf.cell(col_w[9], 6, clean_pdf_text(str(row.get('LIBRAS', ''))), 1, 1, 'C')
                         
                         pdf.set_x(15)
-                        pdf.cell(180, 3, "", "LR", 1) # Espaço
+                        pdf.cell(180, 3, "", "LR", 1) 
                         
-                        pdf.set_font("Arial", "", 10)
+                        pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text("*Propostas de Recuperação: (descrever cada ação)"), "LR", 'L')
-                        for i in range(1, 6):
-                            prop = data_ata.get(f'prop_{i}', '')
-                            if prop: 
-                                pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"{i}. {prop}"), "LR", 'L')
+                        pdf.cell(180, 5, clean_pdf_text("*Propostas de Recuperação:"), "LR", 1, 'L')
+                        pdf.set_font("Arial", "", 9)
+                        
+                        propostas_estaticas = [
+                            "1. Recuperação contínua de aprendizagem dos estudantes;",
+                            "2. Intervenções pontuais e individuais;",
+                            "3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;",
+                            "4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;",
+                            "5. Proposta de compensação de ausências para o próximo trimestre;",
+                            "6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;",
+                            "7. Indicar o aluno para Ação Pedagógica Complementar;",
+                            "8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;",
+                            "9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;",
+                            "10. Sistematizar atividades para consolidação dos conteúdos;"
+                        ]
+                        for prop in propostas_estaticas:
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 4, clean_pdf_text(prop), "LR", 'L')
 
                         pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) # Espaço
+                        pdf.cell(180, 5, "", "LR", 1) 
                         
                         if pdf.get_y() > 230: pdf.add_page()
                         
@@ -5639,7 +5673,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), "LR", 1, 'L')
                         
                         pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1) # Espaço
+                        pdf.cell(180, 2, "", "LR", 1) 
                         
                         pdf.set_font("Arial", "B", 10)
                         y = pdf.get_y()
@@ -5688,40 +5722,84 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                         # --- 3. OBSERVAÇÕES (DENTRO DA CAIXA) ---
                         pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) # Espaço
+                        pdf.cell(180, 5, "", "LR", 1) 
                         
                         if pdf.get_y() > 230: pdf.add_page()
                         
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
-                        pdf.cell(180, 6, clean_pdf_text("3. Observações:"), "LR", 1, 'L')
+                        pdf.cell(180, 6, clean_pdf_text("3- Observações:"), "LR", 1, 'L')
                         pdf.set_font("Arial", "", 10)
                         
-                        obs_paral = f"a) Devido à paralisação ocorrida nos dias {data_ata.get('obs_paral_dias', '___')}, dos {data_ata.get('obs_dias_previstos', '___')} dias letivos previstos, {data_ata.get('obs_dias_dados', '___')} foram realmente dados. {data_ata.get('obs_reposicao', '')}"
-                        pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text(obs_paral), "LR", 'L')
+                        # Alunos Especiais
+                        lista_esp = data_ata.get('obs_especiais', [])
+                        if isinstance(lista_esp, pd.DataFrame): lista_esp = lista_esp.to_dict('records')
+                        esp_valid = [r for r in lista_esp if str(r.get('Estudante', '')).strip()]
                         
-                        pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1) # Espaço
+                        if esp_valid:
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("a) Desempenho de alunos especiais (laudados):"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            for row in esp_valid:
+                                est = str(row.get('Estudante', '')).strip()
+                                obs = str(row.get('Desempenho/Observação', '')).strip()
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(f" {chr(149)} {est}: {obs}"), "LR", 'L')
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1)
                         
+                        # Encaminhamentos
+                        lista_enc = data_ata.get('encaminhamentos', [])
+                        if isinstance(lista_enc, pd.DataFrame): lista_enc = lista_enc.to_dict('records')
+                        enc_valid = [r for r in lista_enc if str(r.get('Estudante', '')).strip()]
+                        
+                        if enc_valid:
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            prefix = "b)" if esp_valid else "a)"
+                            pdf.cell(180, 5, clean_pdf_text(f"{prefix} Alunos encaminhados (Conselho Tutelar/Serv. Social):"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            for row in enc_valid:
+                                est = str(row.get('Estudante', '')).strip()
+                                mot = str(row.get('Motivo (Conselho Tutelar/Serviço Social)', '')).strip()
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(f" {chr(149)} {est}: {mot}"), "LR", 'L')
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1)
+
+                        # Matrículas Tardias
                         lista_tardia = data_ata.get('mat_tardia', [])
                         if isinstance(lista_tardia, pd.DataFrame): lista_tardia = lista_tardia.to_dict('records')
-                        est_tardios = [str(r.get('Estudante', '')).strip() for r in lista_tardia if str(r.get('Estudante', '')).strip()]
+                        tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
                         
-                        if len(est_tardios) > 0:
-                            for row in lista_tardia:
+                        pdf.set_font("Arial", "B", 10)
+                        pdf.set_x(15)
+                        if esp_valid and enc_valid:
+                            prefix = "c)"
+                        elif esp_valid or enc_valid:
+                            prefix = "b)"
+                        else:
+                            prefix = "a)"
+                        
+                        pdf.cell(180, 5, clean_pdf_text(f"{prefix} Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                        pdf.set_font("Arial", "", 10)
+                        
+                        if len(tardia_valid) > 0:
+                            for row in tardia_valid:
                                 est_tardio = str(row.get('Estudante', '')).strip()
-                                if est_tardio:
-                                    texto_tardio = f"b) O estudante {est_tardio} foi matriculado nesta sala em {row.get('Data Matrícula')}. Portanto, obteve um total de frequência de {row.get('Total Frequência (Dias)')} dias letivos."
-                                    pdf.set_x(15)
-                                    pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), "LR", 'L')
+                                mat = str(row.get('Data Matrícula', '')).strip()
+                                freq = str(row.get('Total Frequência (Dias)', '')).strip()
+                                texto_tardio = f" {chr(149)} O estudante {est_tardio} foi matriculado nesta sala em {mat}. Portanto, obteve um total de frequência de {freq} dias letivos."
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), "LR", 'L')
                         else:
                             pdf.set_x(15)
-                            pdf.cell(180, 5, "b) Sem matrículas tardias registradas no período.", "LR", 1)
+                            pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
 
                         # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
                         pdf.set_x(15)
-                        pdf.cell(180, 3, "", "LRB", 1) # Left, Right, BOTTOM
+                        pdf.cell(180, 3, "", "LRB", 1) 
                         
                         # ==============================================================================
                         # FIM DA SUPER CAIXA
@@ -5786,7 +5864,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 dados_row = df_atas[df_atas["id_ata"] == ata_selecionada].iloc[0]
                 try:
                     dados_json = json.loads(dados_row["dados_json"])
-                    for key in ['abaixo_basico', 'basico', 'mat_tardia']:
+                    for key in ['abaixo_basico', 'basico', 'mat_tardia', 'obs_especiais', 'encaminhamentos']:
                         if key in dados_json and isinstance(dados_json[key], list):
                             dados_json[key] = pd.DataFrame(dados_json[key])
                             
