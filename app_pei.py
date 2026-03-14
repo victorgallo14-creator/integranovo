@@ -5479,7 +5479,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         # ------------------------------------------------------------------------------
         # MÓDULO: ENSINO FUNDAMENTAL
         # ------------------------------------------------------------------------------
-        if modalidade_ata == "Ensino Fundamental":
+        if "Fundamental" in modalidade_ata:
             if 'data_ata_ef' not in st.session_state:
                 st.session_state.data_ata_ef = {
                     'abaixo_basico': [{"Estudante": "", "LP": "", "M": "", "H": "", "G": "", "C": "", "A": "", "EF": "", "LT": "", "LIBRAS": ""}],
@@ -6141,7 +6141,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         # ------------------------------------------------------------------------------
         # MÓDULO: EDUCAÇÃO INFANTIL
         # ------------------------------------------------------------------------------
-        elif modalidade_ata == "Educação Infantil":
+        elif "Infantil" in modalidade_ata:
             if 'data_ata_inf' not in st.session_state:
                 st.session_state.data_ata_inf = {
                     'abaixo_basico': [{"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": ""}],
@@ -6714,12 +6714,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         if key in dados_json and isinstance(dados_json[key], list):
                             dados_json[key] = pd.DataFrame(dados_json[key])
                             
-                    if dados_row["modalidade"] == "Ensino Fundamental":
+                    if "Fundamental" in dados_row["modalidade"]:
                         st.session_state.data_ata_ef = dados_json
                         st.session_state.ata_turma_confirmada = dados_json.get('turma', '')
                         st.session_state.ata_ciclo_confirmado = dados_json.get('ciclo', '')
                         
-                    elif dados_row["modalidade"] == "Educação Infantil":
+                    elif "Infantil" in dados_row["modalidade"]:
                         st.session_state.data_ata_inf = dados_json
                         st.session_state.ata_turma_confirmada_inf = dados_json.get('turma', '')
                         st.session_state.ata_ciclo_confirmado_inf = dados_json.get('ciclo', '')
