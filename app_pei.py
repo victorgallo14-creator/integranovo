@@ -5388,6 +5388,10 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     'obs_outras': "",
                     'assinaturas': [{"Nome": "", "Cargo/Atuação": ""}]
                 }
+                
+            if 'ata_turma_confirmada' not in st.session_state:
+                st.session_state.ata_turma_confirmada = None
+                st.session_state.ata_ciclo_confirmado = None
             
             data_ata = st.session_state.data_ata_ef
             
@@ -5395,475 +5399,504 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if isinstance(data_ata.get(key), pd.DataFrame):
                     data_ata[key] = data_ata[key].to_dict('records')
             
-            tabs = st.tabs(["1. Identificação", "2. Síntese", "3. Plano de Ação", "4. Observações", "5. Finalização"])
-            
-            with tabs[0]:
-                st.subheader("Dados da Unidade e Ciclo")
-                c1, c2, c3 = st.columns([2, 1, 1])
-                data_ata['escola'] = c1.text_input("Unidade Escolar", value=data_ata.get('escola', "CEIEF Rafael Affonso Leite"))
-                
-                tri_opts = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
-                tri_idx = tri_opts.index(data_ata.get('trimestre', "1º Trimestre")) if data_ata.get('trimestre') in tri_opts else 0
-                data_ata['trimestre'] = c2.selectbox("Trimestre", tri_opts, index=tri_idx)
-                
-                data_ata['ano_letivo'] = c3.text_input("Ano Letivo", value=data_ata.get('ano_letivo', str(date.today().year)))
-                
-                c4, c5 = st.columns(2)
-                ciclo_opts = ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"]
-                ciclo_idx = ciclo_opts.index(data_ata.get('ciclo', "Ciclo I (1º ao 3º ano)")) if data_ata.get('ciclo') in ciclo_opts else 0
-                data_ata['ciclo'] = c5.selectbox("Ciclo", ciclo_opts, index=ciclo_idx, key="sel_ciclo")
-                
-                turmas_disponiveis = list(MATRIZ_PROFESSORES[data_ata['ciclo']].keys()) + ["Outra Turma..."]
-                try: 
-                    turma_idx = turmas_disponiveis.index(data_ata.get('turma', ''))
-                except ValueError: 
-                    turma_idx = 0
-                
-                data_ata['turma'] = c4.selectbox("Turma/Ano", turmas_disponiveis, index=turma_idx)
-                if data_ata['turma'] == "Outra Turma...":
-                    data_ata['turma'] = c4.text_input("Digite o nome da turma:", value="")
-
-            with tabs[1]:
-                st.subheader("Síntese Avaliativa da Classe")
-                st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual.")
-                
-                c_lp, c_mat = st.columns(2)
-                data_ata['sin_lp'] = c_lp.text_area("Língua Portuguesa", value=data_ata.get('sin_lp', ''), height=120)
-                data_ata['sin_mat'] = c_mat.text_area("Matemática", value=data_ata.get('sin_mat', ''), height=120)
-                
-                c_h, c_g = st.columns(2)
-                data_ata['sin_hist'] = c_h.text_area("História", value=data_ata.get('sin_hist', ''), height=120)
-                data_ata['sin_geo'] = c_g.text_area("Geografia", value=data_ata.get('sin_geo', ''), height=120)
-                
-                c_c, c_a = st.columns(2)
-                data_ata['sin_cien'] = c_c.text_area("Ciências", value=data_ata.get('sin_cien', ''), height=120)
-                data_ata['sin_arte'] = c_a.text_area("Arte", value=data_ata.get('sin_arte', ''), height=120)
-                
-                c_ef, c_lt = st.columns(2)
-                data_ata['sin_ef'] = c_ef.text_area("Educação Física", value=data_ata.get('sin_ef', ''), height=120)
-                data_ata['sin_lt'] = c_lt.text_area("Linguagens e Tecnologias", value=data_ata.get('sin_lt', ''), height=120)
-                
-                data_ata['sin_libras'] = st.text_area("Libras", value=data_ata.get('sin_libras', ''), height=120)
-
-            with tabs[2]:
-                st.subheader("Plano de Ação (Abaixo do Básico)")
-                st.caption("Insira os **números das propostas de recuperação** nas disciplinas correspondentes (ex: 1, 3, 10).")
-                
-                for i, row in enumerate(data_ata['abaixo_basico']):
-                    with st.container():
-                        st.markdown(f"**Estudante {i+1}**")
-                        c_est, c_del = st.columns([11, 1])
-                        row['Estudante'] = c_est.text_input(f"Nome do Estudante", value=row.get('Estudante', ''), key=f"ab_est_{i}", label_visibility="collapsed", placeholder="Nome do Aluno")
-                        if c_del.button("🗑️", key=f"del_ab_{i}", help="Excluir Linha"):
-                            data_ata['abaixo_basico'].pop(i); st.rerun()
-                        
-                        cc = st.columns(9)
-                        row['LP'] = cc[0].text_input("LP", value=row.get('LP', ''), key=f"ab_lp_{i}")
-                        row['M'] = cc[1].text_input("M", value=row.get('M', ''), key=f"ab_m_{i}")
-                        row['H'] = cc[2].text_input("H", value=row.get('H', ''), key=f"ab_h_{i}")
-                        row['G'] = cc[3].text_input("G", value=row.get('G', ''), key=f"ab_g_{i}")
-                        row['C'] = cc[4].text_input("C", value=row.get('C', ''), key=f"ab_c_{i}")
-                        row['A'] = cc[5].text_input("A", value=row.get('A', ''), key=f"ab_a_{i}")
-                        row['EF'] = cc[6].text_input("EF", value=row.get('EF', ''), key=f"ab_ef_{i}")
-                        row['LT'] = cc[7].text_input("LT", value=row.get('LT', ''), key=f"ab_lt_{i}")
-                        row['LIBRAS'] = cc[8].text_input("LIB", value=row.get('LIBRAS', ''), key=f"ab_lib_{i}")
-                        st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
-                
-                if st.button("➕ Adicionar Novo Estudante", key="add_ab"):
-                    data_ata['abaixo_basico'].append({"Estudante": "", "LP": "", "M": "", "H": "", "G": "", "C": "", "A": "", "EF": "", "LT": "", "LIBRAS": ""})
-                    st.rerun()
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown("**Propostas de Recuperação da Gestão:**")
+            # --- PORTÃO DE ENTRADA (GATE) ---
+            if not st.session_state.ata_turma_confirmada:
                 st.markdown("""
-                1. Recuperação contínua de aprendizagem dos estudantes;
-                2. Intervenções pontuais e individuais;
-                3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;
-                4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;
-                5. Proposta de compensação de ausências para o próximo trimestre;
-                6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;
-                7. Indicar o aluno para Ação Pedagógica Complementar;
-                8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;
-                9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;
-                10. Sistematizar atividades para consolidação dos conteúdos;
-                """)
+                <div style='background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;'>
+                    <h3 style='color: #1e293b; margin-top:0;'>🚪 Selecione a Turma</h3>
+                    <p style='color: #64748b;'>Para iniciar o preenchimento de uma nova ata, selecione abaixo o Ciclo e a Turma.</p>
+                </div>
+                <br>
+                """, unsafe_allow_html=True)
                 
-                st.divider()
-                st.subheader("Plano de Ação (Básico)")
+                c_c, c_t = st.columns(2)
+                ciclo_sel = c_c.selectbox("1. Selecione o Ciclo:", ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"])
                 
-                for i, row in enumerate(data_ata['basico']):
-                    c1, c2, c3 = st.columns([4, 6, 1])
-                    row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"bas_est_{i}", placeholder="Nome")
-                    row['Ações (LP e Mat)'] = c2.text_area("Ações (LP e Matemática)", value=row.get('Ações (LP e Mat)', ''), key=f"bas_ac_{i}", height=68)
-                    if c3.button("🗑️", key=f"del_bas_{i}"):
-                        data_ata['basico'].pop(i); st.rerun()
-                        
-                if st.button("➕ Adicionar Estudante no Básico", key="add_bas"):
-                    data_ata['basico'].append({"Estudante": "", "Ações (LP e Mat)": ""})
-                    st.rerun()
-
-            with tabs[3]:
-                st.subheader("3. Observações Gerais")
+                turmas_disp = list(MATRIZ_PROFESSORES[ciclo_sel].keys()) + ["Outra Turma..."]
+                turma_sel = c_t.selectbox("2. Selecione a Turma:", turmas_disp)
                 
-                st.markdown("**a) Desempenho de alunos especiais (laudados)**")
-                for i, row in enumerate(data_ata['obs_especiais']):
-                    c1, c2, c3 = st.columns([3, 6, 1])
-                    row['Estudante'] = c1.text_input("Estudante Especial", value=row.get('Estudante', ''), key=f"obs_est_{i}")
-                    row['Desempenho/Observação'] = c2.text_area("Desempenho/Observações", value=row.get('Desempenho/Observação', ''), key=f"obs_des_{i}", height=68)
-                    if c3.button("🗑️", key=f"del_obs_{i}"):
-                        data_ata['obs_especiais'].pop(i); st.rerun()
-                if st.button("➕ Adicionar Aluno Especial", key="add_obs"):
-                    data_ata['obs_especiais'].append({"Estudante": "", "Desempenho/Observação": ""})
-                    st.rerun()
+                if turma_sel == "Outra Turma...":
+                    turma_sel = st.text_input("Digite o nome da turma:")
                 
-                st.divider()
-                st.markdown("**b) Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
-                for i, row in enumerate(data_ata['encaminhamentos']):
-                    c1, c2, c3 = st.columns([3, 6, 1])
-                    row['Estudante'] = c1.text_input("Estudante Encaminhado", value=row.get('Estudante', ''), key=f"enc_est_{i}")
-                    row['Motivo'] = c2.text_area("Motivo do Encaminhamento", value=row.get('Motivo', ''), key=f"enc_mot_{i}", height=68)
-                    if c3.button("🗑️", key=f"del_enc_{i}"):
-                        data_ata['encaminhamentos'].pop(i); st.rerun()
-                if st.button("➕ Adicionar Encaminhamento", key="add_enc"):
-                    data_ata['encaminhamentos'].append({"Estudante": "", "Motivo": ""})
-                    st.rerun()
-
-                st.divider()
-                st.markdown("**c) Estudantes Matriculados Tardiamente**")
-                for i, row in enumerate(data_ata['mat_tardia']):
-                    c1, c2, c3, c4 = st.columns([4, 3, 3, 1])
-                    row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"mat_est_{i}")
-                    row['Data Matrícula'] = c2.text_input("Data da Matrícula", value=row.get('Data Matrícula', ''), key=f"mat_data_{i}")
-                    row['Total Frequência'] = c3.text_input("Frequência (Dias)", value=row.get('Total Frequência', ''), key=f"mat_freq_{i}")
-                    if c4.button("🗑️", key=f"del_mat_{i}"):
-                        data_ata['mat_tardia'].pop(i); st.rerun()
-                if st.button("➕ Adicionar Matrícula Tardia", key="add_mat"):
-                    data_ata['mat_tardia'].append({"Estudante": "", "Data Matrícula": "", "Total Frequência": ""})
-                    st.rerun()
-                    
-                st.divider()
-                st.markdown("**d) Outras Observações**")
-                data_ata['obs_outras'] = st.text_area("Campo livre para quaisquer outras observações da turma:", value=data_ata.get('obs_outras', ''), height=120)
-
-            with tabs[4]:
-                st.subheader("Finalização e Assinaturas")
-                
-                if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary"):
-                    ciclo_atual = data_ata.get('ciclo')
-                    turma_atual = data_ata.get('turma')
-                    
-                    if ciclo_atual in MATRIZ_PROFESSORES and turma_atual in MATRIZ_PROFESSORES[ciclo_atual]:
-                        profs_da_turma = MATRIZ_PROFESSORES[ciclo_atual][turma_atual]
-                        lista_final = []
-                        professores_adicionados = set()
-                        
-                        if profs_da_turma["Polivalente"]:
-                            lista_final.append({"Nome": profs_da_turma["Polivalente"], "Cargo/Atuação": "Prof. Polivalente (Atuante na Turma)"})
-                            professores_adicionados.add(profs_da_turma["Polivalente"])
-                        if profs_da_turma["Artes"]:
-                            lista_final.append({"Nome": profs_da_turma["Artes"], "Cargo/Atuação": "Prof. de Arte (Atuante na Turma)"})
-                            professores_adicionados.add(profs_da_turma["Artes"])
-                        if profs_da_turma["Educação Física"]:
-                            lista_final.append({"Nome": profs_da_turma["Educação Física"], "Cargo/Atuação": "Prof. de Ed. Física (Atuante na Turma)"})
-                            professores_adicionados.add(profs_da_turma["Educação Física"])
-                        if profs_da_turma["Linguagens e Tecnologias"]:
-                            lista_final.append({"Nome": profs_da_turma["Linguagens e Tecnologias"], "Cargo/Atuação": "Prof. de Ling. e Tec. (Atuante na Turma)"})
-                            professores_adicionados.add(profs_da_turma["Linguagens e Tecnologias"])
-                            
-                        lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
-                        
-                        for t_nome, profs in MATRIZ_PROFESSORES[ciclo_atual].items():
-                            if t_nome != turma_atual:
-                                for materia, nome_prof in profs.items():
-                                    if nome_prof and nome_prof not in professores_adicionados:
-                                        cargo_formatado = "Prof. Polivalente" if materia == "Polivalente" else f"Prof. de {materia}"
-                                        lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante no Ciclo)"})
-                                        professores_adicionados.add(nome_prof)
-                                        
-                        lista_final.extend([
-                            {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
-                            {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
-                            {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                            {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                            {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                            {"Nome": "", "Cargo/Atuação": "Diretor de Escola"}
-                        ])
-                        
-                        data_ata['assinaturas'] = lista_final
-                        st.success("✅ Grade de assinaturas preenchida com sucesso para a turma selecionada!")
+                st.write("")
+                if st.button("✅ Confirmar e Acessar Formulário", type="primary", use_container_width=True):
+                    if turma_sel:
+                        st.session_state.ata_ciclo_confirmado = ciclo_sel
+                        st.session_state.ata_turma_confirmada = turma_sel
+                        data_ata['ciclo'] = ciclo_sel
+                        data_ata['turma'] = turma_sel
                         st.rerun()
                     else:
-                        st.error("A turma atual não foi encontrada na Matriz de Automação. Selecione uma turma válida no Passo 1.")
-
-                st.divider()
-                st.markdown("**Participantes da Reunião**")
-                
-                if 'assinaturas' not in data_ata:
-                    data_ata['assinaturas'] = [{"Nome": "", "Cargo/Atuação": ""}]
-                    
-                for i, row in enumerate(data_ata['assinaturas']):
-                    c1, c2, c3 = st.columns([4, 4, 1])
-                    row['Nome'] = c1.text_input("Nome", value=row.get('Nome', ''), key=f"sig_nome_{i}", placeholder="Ex: Ana Silva", label_visibility="collapsed")
-                    row['Cargo/Atuação'] = c2.text_input("Cargo", value=row.get('Cargo/Atuação', ''), key=f"sig_cargo_{i}", placeholder="Ex: Diretor de Escola", label_visibility="collapsed")
-                    if c3.button("🗑️", key=f"del_sig_{i}"):
-                        data_ata['assinaturas'].pop(i); st.rerun()
-                        
-                if st.button("➕ Adicionar Participante Manualmente", key="add_sig"):
-                    data_ata['assinaturas'].append({"Nome": "", "Cargo/Atuação": ""})
+                        st.warning("⚠️ Por favor, informe o nome da turma.")
+            
+            # --- FORMULÁRIO DE ATA (SÓ APARECE SE A TURMA FOI CONFIRMADA) ---
+            else:
+                c_info, c_btn = st.columns([4, 1])
+                c_info.success(f"📌 **Ata em edição:** {st.session_state.ata_ciclo_confirmado} - {st.session_state.ata_turma_confirmada}")
+                if c_btn.button("⬅️ Trocar Turma", use_container_width=True):
+                    st.session_state.ata_turma_confirmada = None
                     st.rerun()
                     
-                st.divider()
+                tabs = st.tabs(["1. Identificação", "2. Síntese", "3. Plano de Ação", "4. Observações", "5. Finalização"])
                 
-                if st.button("💾 Salvar Ata", use_container_width=True, type="secondary"):
-                    try:
-                        dados_para_salvar = {}
-                        for key, value in data_ata.items():
-                            if isinstance(value, pd.DataFrame):
-                                dados_para_salvar[key] = value.to_dict(orient='records')
+                with tabs[0]:
+                    st.subheader("Dados da Unidade e Ciclo")
+                    c1, c2, c3 = st.columns([2, 1, 1])
+                    data_ata['escola'] = c1.text_input("Unidade Escolar", value=data_ata.get('escola', "CEIEF Rafael Affonso Leite"))
+                    
+                    tri_opts = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
+                    tri_idx = tri_opts.index(data_ata.get('trimestre', "1º Trimestre")) if data_ata.get('trimestre') in tri_opts else 0
+                    data_ata['trimestre'] = c2.selectbox("Trimestre", tri_opts, index=tri_idx)
+                    
+                    data_ata['ano_letivo'] = c3.text_input("Ano Letivo", value=data_ata.get('ano_letivo', str(date.today().year)))
+                    
+                    st.markdown("---")
+                    st.caption("A Turma e o Ciclo foram definidos no início. Se precisar alterar, use o botão 'Trocar Turma' no topo.")
+                    c4, c5 = st.columns(2)
+                    c4.text_input("Turma/Ano", value=st.session_state.ata_turma_confirmada, disabled=True)
+                    c5.text_input("Ciclo", value=st.session_state.ata_ciclo_confirmado, disabled=True)
+
+                with tabs[1]:
+                    st.subheader("Síntese Avaliativa da Classe")
+                    st.info("Descreva o desempenho alcançado pela classe em cada componente curricular no trimestre atual.")
+                    
+                    c_lp, c_mat = st.columns(2)
+                    data_ata['sin_lp'] = c_lp.text_area("Língua Portuguesa", value=data_ata.get('sin_lp', ''), height=120)
+                    data_ata['sin_mat'] = c_mat.text_area("Matemática", value=data_ata.get('sin_mat', ''), height=120)
+                    
+                    c_h, c_g = st.columns(2)
+                    data_ata['sin_hist'] = c_h.text_area("História", value=data_ata.get('sin_hist', ''), height=120)
+                    data_ata['sin_geo'] = c_g.text_area("Geografia", value=data_ata.get('sin_geo', ''), height=120)
+                    
+                    c_c, c_a = st.columns(2)
+                    data_ata['sin_cien'] = c_c.text_area("Ciências", value=data_ata.get('sin_cien', ''), height=120)
+                    data_ata['sin_arte'] = c_a.text_area("Arte", value=data_ata.get('sin_arte', ''), height=120)
+                    
+                    c_ef, c_lt = st.columns(2)
+                    data_ata['sin_ef'] = c_ef.text_area("Educação Física", value=data_ata.get('sin_ef', ''), height=120)
+                    data_ata['sin_lt'] = c_lt.text_area("Linguagens e Tecnologias", value=data_ata.get('sin_lt', ''), height=120)
+                    
+                    data_ata['sin_libras'] = st.text_area("Libras", value=data_ata.get('sin_libras', ''), height=120)
+
+                with tabs[2]:
+                    st.subheader("Plano de Ação (Abaixo do Básico)")
+                    st.caption("Insira os **números das propostas de recuperação** nas disciplinas correspondentes (ex: 1, 3, 10).")
+                    
+                    for i, row in enumerate(data_ata['abaixo_basico']):
+                        with st.container():
+                            st.markdown(f"**Estudante {i+1}**")
+                            c_est, c_del = st.columns([11, 1])
+                            row['Estudante'] = c_est.text_input(f"Nome do Estudante", value=row.get('Estudante', ''), key=f"ab_est_{i}", label_visibility="collapsed", placeholder="Nome do Aluno")
+                            if c_del.button("🗑️", key=f"del_ab_{i}", help="Excluir Linha"):
+                                data_ata['abaixo_basico'].pop(i); st.rerun()
+                            
+                            cc = st.columns(9)
+                            row['LP'] = cc[0].text_input("LP", value=row.get('LP', ''), key=f"ab_lp_{i}")
+                            row['M'] = cc[1].text_input("M", value=row.get('M', ''), key=f"ab_m_{i}")
+                            row['H'] = cc[2].text_input("H", value=row.get('H', ''), key=f"ab_h_{i}")
+                            row['G'] = cc[3].text_input("G", value=row.get('G', ''), key=f"ab_g_{i}")
+                            row['C'] = cc[4].text_input("C", value=row.get('C', ''), key=f"ab_c_{i}")
+                            row['A'] = cc[5].text_input("A", value=row.get('A', ''), key=f"ab_a_{i}")
+                            row['EF'] = cc[6].text_input("EF", value=row.get('EF', ''), key=f"ab_ef_{i}")
+                            row['LT'] = cc[7].text_input("LT", value=row.get('LT', ''), key=f"ab_lt_{i}")
+                            row['LIBRAS'] = cc[8].text_input("LIB", value=row.get('LIBRAS', ''), key=f"ab_lib_{i}")
+                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+                    
+                    if st.button("➕ Adicionar Novo Estudante", key="add_ab"):
+                        data_ata['abaixo_basico'].append({"Estudante": "", "LP": "", "M": "", "H": "", "G": "", "C": "", "A": "", "EF": "", "LT": "", "LIBRAS": ""})
+                        st.rerun()
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("**Propostas de Recuperação da Gestão:**")
+                    st.markdown("""
+                    1. Recuperação contínua de aprendizagem dos estudantes;
+                    2. Intervenções pontuais e individuais;
+                    3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;
+                    4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;
+                    5. Proposta de compensação de ausências para o próximo trimestre;
+                    6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;
+                    7. Indicar o aluno para Ação Pedagógica Complementar;
+                    8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;
+                    9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;
+                    10. Sistematizar atividades para consolidação dos conteúdos;
+                    """)
+                    
+                    st.divider()
+                    st.subheader("Plano de Ação (Básico)")
+                    
+                    for i, row in enumerate(data_ata['basico']):
+                        c1, c2, c3 = st.columns([4, 6, 1])
+                        row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"bas_est_{i}", placeholder="Nome")
+                        row['Ações (LP e Mat)'] = c2.text_area("Ações (LP e Matemática)", value=row.get('Ações (LP e Mat)', ''), key=f"bas_ac_{i}", height=68)
+                        if c3.button("🗑️", key=f"del_bas_{i}"):
+                            data_ata['basico'].pop(i); st.rerun()
+                            
+                    if st.button("➕ Adicionar Estudante no Básico", key="add_bas"):
+                        data_ata['basico'].append({"Estudante": "", "Ações (LP e Mat)": ""})
+                        st.rerun()
+
+                with tabs[3]:
+                    st.subheader("3. Observações Gerais")
+                    
+                    st.markdown("**a) Desempenho de alunos especiais (laudados)**")
+                    for i, row in enumerate(data_ata['obs_especiais']):
+                        c1, c2, c3 = st.columns([3, 6, 1])
+                        row['Estudante'] = c1.text_input("Estudante Especial", value=row.get('Estudante', ''), key=f"obs_est_{i}")
+                        row['Desempenho/Observação'] = c2.text_area("Desempenho/Observações", value=row.get('Desempenho/Observação', ''), key=f"obs_des_{i}", height=68)
+                        if c3.button("🗑️", key=f"del_obs_{i}"):
+                            data_ata['obs_especiais'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Aluno Especial", key="add_obs"):
+                        data_ata['obs_especiais'].append({"Estudante": "", "Desempenho/Observação": ""})
+                        st.rerun()
+                    
+                    st.divider()
+                    st.markdown("**b) Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
+                    for i, row in enumerate(data_ata['encaminhamentos']):
+                        c1, c2, c3 = st.columns([3, 6, 1])
+                        row['Estudante'] = c1.text_input("Estudante Encaminhado", value=row.get('Estudante', ''), key=f"enc_est_{i}")
+                        row['Motivo'] = c2.text_area("Motivo do Encaminhamento", value=row.get('Motivo', ''), key=f"enc_mot_{i}", height=68)
+                        if c3.button("🗑️", key=f"del_enc_{i}"):
+                            data_ata['encaminhamentos'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Encaminhamento", key="add_enc"):
+                        data_ata['encaminhamentos'].append({"Estudante": "", "Motivo": ""})
+                        st.rerun()
+
+                    st.divider()
+                    st.markdown("**c) Estudantes Matriculados Tardiamente**")
+                    for i, row in enumerate(data_ata['mat_tardia']):
+                        c1, c2, c3, c4 = st.columns([4, 3, 3, 1])
+                        row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"mat_est_{i}")
+                        row['Data Matrícula'] = c2.text_input("Data da Matrícula", value=row.get('Data Matrícula', ''), key=f"mat_data_{i}")
+                        row['Total Frequência'] = c3.text_input("Frequência (Dias)", value=row.get('Total Frequência', ''), key=f"mat_freq_{i}")
+                        if c4.button("🗑️", key=f"del_mat_{i}"):
+                            data_ata['mat_tardia'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Matrícula Tardia", key="add_mat"):
+                        data_ata['mat_tardia'].append({"Estudante": "", "Data Matrícula": "", "Total Frequência": ""})
+                        st.rerun()
+                        
+                    st.divider()
+                    st.markdown("**d) Outras Observações**")
+                    data_ata['obs_outras'] = st.text_area("Campo livre para quaisquer outras observações da turma:", value=data_ata.get('obs_outras', ''), height=120)
+
+                with tabs[4]:
+                    st.subheader("Finalização e Assinaturas")
+                    
+                    if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary"):
+                        ciclo_atual = data_ata.get('ciclo')
+                        turma_atual = data_ata.get('turma')
+                        
+                        if ciclo_atual in MATRIZ_PROFESSORES and turma_atual in MATRIZ_PROFESSORES[ciclo_atual]:
+                            profs_da_turma = MATRIZ_PROFESSORES[ciclo_atual][turma_atual]
+                            lista_final = []
+                            professores_adicionados = set()
+                            
+                            if profs_da_turma["Polivalente"]:
+                                lista_final.append({"Nome": profs_da_turma["Polivalente"], "Cargo/Atuação": "Prof. Polivalente (Atuante na Turma)"})
+                                professores_adicionados.add(profs_da_turma["Polivalente"])
+                            if profs_da_turma["Artes"]:
+                                lista_final.append({"Nome": profs_da_turma["Artes"], "Cargo/Atuação": "Prof. de Arte (Atuante na Turma)"})
+                                professores_adicionados.add(profs_da_turma["Artes"])
+                            if profs_da_turma["Educação Física"]:
+                                lista_final.append({"Nome": profs_da_turma["Educação Física"], "Cargo/Atuação": "Prof. de Ed. Física (Atuante na Turma)"})
+                                professores_adicionados.add(profs_da_turma["Educação Física"])
+                            if profs_da_turma["Linguagens e Tecnologias"]:
+                                lista_final.append({"Nome": profs_da_turma["Linguagens e Tecnologias"], "Cargo/Atuação": "Prof. de Ling. e Tec. (Atuante na Turma)"})
+                                professores_adicionados.add(profs_da_turma["Linguagens e Tecnologias"])
+                                
+                            lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
+                            
+                            for t_nome, profs in MATRIZ_PROFESSORES[ciclo_atual].items():
+                                if t_nome != turma_atual:
+                                    for materia, nome_prof in profs.items():
+                                        if nome_prof and nome_prof not in professores_adicionados:
+                                            cargo_formatado = "Prof. Polivalente" if materia == "Polivalente" else f"Prof. de {materia}"
+                                            lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante no Ciclo)"})
+                                            professores_adicionados.add(nome_prof)
+                                            
+                            lista_final.extend([
+                                {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
+                                {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
+                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "", "Cargo/Atuação": "Diretor de Escola"}
+                            ])
+                            
+                            data_ata['assinaturas'] = lista_final
+                            st.success("✅ Grade de assinaturas preenchida com sucesso para a turma selecionada!")
+                            st.rerun()
+                        else:
+                            st.error("A turma atual não foi encontrada na Matriz de Automação.")
+
+                    st.divider()
+                    st.markdown("**Participantes da Reunião**")
+                    
+                    if 'assinaturas' not in data_ata:
+                        data_ata['assinaturas'] = [{"Nome": "", "Cargo/Atuação": ""}]
+                        
+                    for i, row in enumerate(data_ata['assinaturas']):
+                        c1, c2, c3 = st.columns([4, 4, 1])
+                        row['Nome'] = c1.text_input("Nome", value=row.get('Nome', ''), key=f"sig_nome_{i}", placeholder="Ex: Ana Silva", label_visibility="collapsed")
+                        row['Cargo/Atuação'] = c2.text_input("Cargo", value=row.get('Cargo/Atuação', ''), key=f"sig_cargo_{i}", placeholder="Ex: Diretor de Escola", label_visibility="collapsed")
+                        if c3.button("🗑️", key=f"del_sig_{i}"):
+                            data_ata['assinaturas'].pop(i); st.rerun()
+                            
+                    if st.button("➕ Adicionar Participante Manualmente", key="add_sig"):
+                        data_ata['assinaturas'].append({"Nome": "", "Cargo/Atuação": ""})
+                        st.rerun()
+                        
+                    st.divider()
+                    
+                    if st.button("💾 Salvar Ata", use_container_width=True, type="secondary"):
+                        try:
+                            dados_para_salvar = {}
+                            for key, value in data_ata.items():
+                                if isinstance(value, pd.DataFrame):
+                                    dados_para_salvar[key] = value.to_dict(orient='records')
+                                else:
+                                    dados_para_salvar[key] = value
+                            
+                            novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
+                            id_ata = f"{data_ata.get('turma', 'SemTurma')} - {data_ata.get('trimestre', 'SemTri')} ({modalidade_ata})"
+                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
+                            
+                            if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
+                                df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
                             else:
-                                dados_para_salvar[key] = value
-                        
-                        novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
-                        id_ata = f"{data_ata.get('turma', 'SemTurma')} - {data_ata.get('trimestre', 'SemTri')} ({modalidade_ata})"
-                        df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
-                        
-                        if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
-                            df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
-                        else:
-                            novo_registro = {"id_ata": id_ata, "modalidade": modalidade_ata, "turma": data_ata.get('turma', ''), "dados_json": novo_json}
-                            df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
-                        
-                        safe_update("Atas_Conselho", df_atas)
-                        st.success(f"✅ Ata salva com sucesso!")
-                    except Exception as e:
-                        st.error(f"Erro ao salvar: {e}")
-
-                if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
-                    try:
-                        pdf = OfficialPDF('P', 'mm', 'A4')
-                        pdf.doc_type = "Ata" 
-                        pdf.set_margins(15, 35, 15)
-                        pdf.set_auto_page_break(auto=True, margin=20)
-                        pdf.add_page()
-                        
-                        # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
-                        pdf.set_font("Arial", "B", 10)
-                        escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
-                        
-                        trimestre = data_ata.get('trimestre', '').upper()
-                        ano = data_ata.get('ano_letivo', '')
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
-                        
-                        turma = data_ata.get('turma', '')
-                        ciclo = data_ata.get('ciclo', '')
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
-                        pdf.ln(5)
-                        
-                        # ==============================================================================
-                        # INÍCIO DA SUPER CAIXA
-                        # ==============================================================================
-                        
-                        # --- 1. SÍNTESE AVALIATIVA ---
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_fill_color(220, 220, 220)
-                        pdf.set_x(15)
-                        pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
-                        
-                        df_config = safe_read("Config_Ata", ["chave", "valor"])
-                        if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
-                            texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
-                        else:
-                            texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1) 
-                        
-                        pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 4, "", "LR", 1)
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("1- Síntese avaliativa da classe:"), "LR", 1, 'L')
-                        
-                        texto_sint = "a partir dos diferentes instrumentos avaliativos e da análise dos resultados, o desempenho alcançado pela classe em cada componente curricular no trimestre atual se apresenta da seguinte forma:"
-                        pdf.set_font("Arial", "", 10)
-                        pdf.set_x(15)
-                        pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 4, "", "LR", 1)
-                        
-                        disciplinas = [
-                            ("Língua Portuguesa", data_ata.get('sin_lp', '')),
-                            ("Matemática", data_ata.get('sin_mat', '')),
-                            ("História", data_ata.get('sin_hist', '')),
-                            ("Geografia", data_ata.get('sin_geo', '')),
-                            ("Ciências", data_ata.get('sin_cien', '')),
-                            ("Arte", data_ata.get('sin_arte', '')),
-                            ("Educação Física", data_ata.get('sin_ef', '')),
-                            ("Linguagens e Tecnologias", data_ata.get('sin_lt', '')),
-                            ("Libras", data_ata.get('sin_libras', ''))
-                        ]
-                        
-                        for i, (nome, texto) in enumerate(disciplinas):
-                            if texto.strip() != "":
-                                pdf.set_font("Arial", "B", 10)
-                                pdf.set_x(15)
-                                pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}:"), "LR", 1, 'L')
-                                
-                                pdf.set_font("Arial", "", 10)
-                                pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto}"), "LR", 'J')
+                                novo_registro = {"id_ata": id_ata, "modalidade": modalidade_ata, "turma": data_ata.get('turma', ''), "dados_json": novo_json}
+                                df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
                             
-                            if i < len(disciplinas) - 1:
-                                pdf.set_x(15)
-                                pdf.cell(180, 4, "", "LR", 1) 
-                        
-                        # --- 2. PLANO DE AÇÃO ---
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) 
-                        
-                        if pdf.get_y() > 230: pdf.add_page()
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho:"), "LR", 1, 'L')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 3, "", "LR", 1)
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico:"), "LR", 1, 'L')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1)
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
-                        headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
-                        pdf.set_x(15)
-                        for i, h in enumerate(headers):
-                            pdf.cell(col_w[i], 6, h, 1, 0, 'C')
-                        pdf.ln()
-                        
-                        pdf.set_font("Arial", "", 10)
-                        lista_abaixo = data_ata.get('abaixo_basico', [])
-                            
-                        def truncate_str(texto, max_w):
-                            while pdf.get_string_width(texto) > max_w - 2: texto = texto[:-1]
-                            return texto
+                            safe_update("Atas_Conselho", df_atas)
+                            st.success(f"✅ Ata salva com sucesso!")
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
 
-                        for row in lista_abaixo:
-                            estudante = str(row.get('Estudante', '')).strip()
-                            if estudante: 
-                                pdf.set_x(15)
-                                estudante_seguro = truncate_str(estudante, col_w[0])
-                                pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
-                                pdf.cell(col_w[1], 6, clean_pdf_text(str(row.get('LP', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[2], 6, clean_pdf_text(str(row.get('M', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[3], 6, clean_pdf_text(str(row.get('H', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[4], 6, clean_pdf_text(str(row.get('G', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('C', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[6], 6, clean_pdf_text(str(row.get('A', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[7], 6, clean_pdf_text(str(row.get('EF', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[8], 6, clean_pdf_text(str(row.get('LT', ''))), 1, 0, 'C')
-                                pdf.cell(col_w[9], 6, clean_pdf_text(str(row.get('LIBRAS', ''))), 1, 1, 'C')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 3, "", "LR", 1) 
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("*Propostas de Recuperação:"), "LR", 1, 'L')
-                        pdf.set_font("Arial", "", 10)
-                        
-                        propostas_estaticas = [
-                            "1. Recuperação contínua de aprendizagem dos estudantes;",
-                            "2. Intervenções pontuais e individuais;",
-                            "3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;",
-                            "4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;",
-                            "5. Proposta de compensação de ausências para o próximo trimestre;",
-                            "6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;",
-                            "7. Indicar o aluno para Ação Pedagógica Complementar;",
-                            "8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;",
-                            "9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;",
-                            "10. Sistematizar atividades para consolidação dos conteúdos;"
-                        ]
-                        for prop in propostas_estaticas:
+                    if st.button("👁️ GERAR ATA COMPLETA (PDF)", type="primary", use_container_width=True):
+                        try:
+                            pdf = OfficialPDF('P', 'mm', 'A4')
+                            pdf.doc_type = "Ata" 
+                            pdf.set_margins(15, 35, 15)
+                            pdf.set_auto_page_break(auto=True, margin=20)
+                            pdf.add_page()
+                            
+                            # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
+                            pdf.set_font("Arial", "B", 10)
+                            escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
                             pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(prop), "LR", 'J')
-
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) 
-                        
-                        if pdf.get_y() > 230: pdf.add_page()
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), "LR", 1, 'L')
-                        
-                        pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1) 
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        y = pdf.get_y()
-                        pdf.rect(15, y, 60, 10)
-                        pdf.set_xy(15, y+2)
-                        pdf.cell(60, 6, "Estudantes", 0, 0, 'C')
-                        
-                        pdf.rect(75, y, 120, 10)
-                        pdf.set_xy(75, y+1)
-                        pdf.multi_cell(120, 4, clean_pdf_text("Descrever de forma sucinta as ações que serão desenvolvidas nas áreas de Língua Portuguesa e Matemática."), 0, 'C')
-                        pdf.set_xy(15, y+10)
-                        
-                        pdf.set_font("Arial", "", 10)
-                        lista_basico = data_ata.get('basico', [])
+                            pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
                             
-                        def calc_lines(txt, w):
-                            if not txt: return 1
-                            lines = 0
-                            for par in txt.split('\n'):
-                                words = par.split(' ')
-                                curr_w = 0
-                                for word in words:
-                                    word_w = pdf.get_string_width(word + ' ')
-                                    if curr_w + word_w > w:
-                                        lines += 1; curr_w = word_w
-                                    else:
-                                        curr_w += word_w
-                                lines += 1
-                            return lines
+                            trimestre = data_ata.get('trimestre', '').upper()
+                            ano = data_ata.get('ano_letivo', '')
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"ATA DESCRITIVA DO CONSELHO DE CICLO/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
+                            
+                            turma = data_ata.get('turma', '')
+                            ciclo = data_ata.get('ciclo', '')
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
+                            pdf.ln(5)
+                            
+                            # ==============================================================================
+                            # INÍCIO DA SUPER CAIXA
+                            # ==============================================================================
+                            
+                            # --- 1. SÍNTESE AVALIATIVA ---
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_fill_color(220, 220, 220)
+                            pdf.set_x(15)
+                            pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
+                            
+                            df_config = safe_read("Config_Ata", ["chave", "valor"])
+                            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+                                texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
+                            else:
+                                texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1) 
+                            
+                            pdf.set_font("Arial", "", 10)
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 4, "", "LR", 1)
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("1- Síntese avaliativa da classe:"), "LR", 1, 'L')
+                            
+                            texto_sint = "a partir dos diferentes instrumentos avaliativos e da análise dos resultados, o desempenho alcançado pela classe em cada componente curricular no trimestre atual se apresenta da seguinte forma:"
+                            pdf.set_font("Arial", "", 10)
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 4, "", "LR", 1)
+                            
+                            disciplinas = [
+                                ("Língua Portuguesa", data_ata.get('sin_lp', '')),
+                                ("Matemática", data_ata.get('sin_mat', '')),
+                                ("História", data_ata.get('sin_hist', '')),
+                                ("Geografia", data_ata.get('sin_geo', '')),
+                                ("Ciências", data_ata.get('sin_cien', '')),
+                                ("Arte", data_ata.get('sin_arte', '')),
+                                ("Educação Física", data_ata.get('sin_ef', '')),
+                                ("Linguagens e Tecnologias", data_ata.get('sin_lt', '')),
+                                ("Libras", data_ata.get('sin_libras', ''))
+                            ]
+                            
+                            for i, (nome, texto) in enumerate(disciplinas):
+                                if texto.strip() != "":
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}:"), "LR", 1, 'L')
+                                    
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto}"), "LR", 'J')
+                                
+                                if i < len(disciplinas) - 1:
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 4, "", "LR", 1) 
+                            
+                            # --- 2. PLANO DE AÇÃO ---
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, "", "LR", 1) 
+                            
+                            if pdf.get_y() > 230: pdf.add_page()
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes de acordo com desempenho:"), "LR", 1, 'L')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 3, "", "LR", 1)
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Abaixo do Básico:"), "LR", 1, 'L')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1)
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            col_w = [54, 14, 14, 14, 14, 14, 14, 14, 14, 14]
+                            headers = ["Estudante", "LP", "M", "H", "G", "C", "A", "EF", "LT", "LIB"]
+                            pdf.set_x(15)
+                            for i, h in enumerate(headers):
+                                pdf.cell(col_w[i], 6, h, 1, 0, 'C')
+                            pdf.ln()
+                            
+                            pdf.set_font("Arial", "", 10)
+                            lista_abaixo = data_ata.get('abaixo_basico', [])
+                                
+                            def truncate_str(texto, max_w):
+                                while pdf.get_string_width(texto) > max_w - 2: texto = texto[:-1]
+                                return texto
 
-                        for row in lista_basico:
-                            estudante = str(row.get('Estudante', '')).strip()
-                            if estudante:
-                                y = pdf.get_y()
-                                texto_acao = str(row.get('Ações (LP e Mat)', ''))
+                            for row in lista_abaixo:
+                                estudante = str(row.get('Estudante', '')).strip()
+                                if estudante: 
+                                    pdf.set_x(15)
+                                    estudante_seguro = truncate_str(estudante, col_w[0])
+                                    pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
+                                    pdf.cell(col_w[1], 6, clean_pdf_text(str(row.get('LP', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[2], 6, clean_pdf_text(str(row.get('M', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[3], 6, clean_pdf_text(str(row.get('H', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[4], 6, clean_pdf_text(str(row.get('G', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('C', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[6], 6, clean_pdf_text(str(row.get('A', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[7], 6, clean_pdf_text(str(row.get('EF', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[8], 6, clean_pdf_text(str(row.get('LT', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[9], 6, clean_pdf_text(str(row.get('LIBRAS', ''))), 1, 1, 'C')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 3, "", "LR", 1) 
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("*Propostas de Recuperação:"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            
+                            propostas_estaticas = [
+                                "1. Recuperação contínua de aprendizagem dos estudantes;",
+                                "2. Intervenções pontuais e individuais;",
+                                "3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;",
+                                "4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;",
+                                "5. Proposta de compensação de ausências para o próximo trimestre;",
+                                "6. Informar as famílias dos alunos com desempenho insuficiente e/ou baixa frequência visando a conscientização;",
+                                "7. Indicar o aluno para Ação Pedagógica Complementar;",
+                                "8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;",
+                                "9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;",
+                                "10. Sistematizar atividades para consolidação dos conteúdos;"
+                            ]
+                            for prop in propostas_estaticas:
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(prop), "LR", 'J')
+
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, "", "LR", 1) 
+                            
+                            if pdf.get_y() > 230: pdf.add_page()
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("-Estudantes com desempenho Básico:"), "LR", 1, 'L')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1) 
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            y = pdf.get_y()
+                            pdf.rect(15, y, 60, 10)
+                            pdf.set_xy(15, y+2)
+                            pdf.cell(60, 6, "Estudantes", 0, 0, 'C')
+                            
+                            pdf.rect(75, y, 120, 10)
+                            pdf.set_xy(75, y+1)
+                            pdf.multi_cell(120, 4, clean_pdf_text("Descrever de forma sucinta as ações que serão desenvolvidas nas áreas de Língua Portuguesa e Matemática."), 0, 'C')
+                            pdf.set_xy(15, y+10)
+                            
+                            pdf.set_font("Arial", "", 10)
+                            lista_basico = data_ata.get('basico', [])
                                 
-                                linhas_est = calc_lines(estudante, 58)
-                                linhas_acao = calc_lines(texto_acao, 118)
-                                h_row = max(6, max(linhas_est, linhas_acao) * 5 + 4)
-                                
-                                if y + h_row > 265:
-                                    pdf.add_page()
+                            def calc_lines(txt, w):
+                                if not txt: return 1
+                                lines = 0
+                                for par in txt.split('\n'):
+                                    words = par.split(' ')
+                                    curr_w = 0
+                                    for word in words:
+                                        word_w = pdf.get_string_width(word + ' ')
+                                        if curr_w + word_w > w:
+                                            lines += 1; curr_w = word_w
+                                        else:
+                                            curr_w += word_w
+                                    lines += 1
+                                return lines
+
+                            for row in lista_basico:
+                                estudante = str(row.get('Estudante', '')).strip()
+                                if estudante:
                                     y = pdf.get_y()
-                                
-                                pdf.rect(15, y, 60, h_row)
-                                pdf.rect(75, y, 120, h_row)
-                                pdf.set_xy(15, y+2)
-                                pdf.multi_cell(60, 5, clean_pdf_text(estudante), 0, 'L')
-                                pdf.set_xy(75, y+2)
-                                pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'J')
-                                pdf.set_xy(15, y + h_row)
+                                    texto_acao = str(row.get('Ações (LP e Mat)', ''))
+                                    
+                                    linhas_est = calc_lines(estudante, 58)
+                                    linhas_acao = calc_lines(texto_acao, 118)
+                                    h_row = max(6, max(linhas_est, linhas_acao) * 5 + 4)
+                                    
+                                    if y + h_row > 265:
+                                        pdf.add_page()
+                                        y = pdf.get_y()
+                                    
+                                    pdf.rect(15, y, 60, h_row)
+                                    pdf.rect(75, y, 120, h_row)
+                                    pdf.set_xy(15, y+2)
+                                    pdf.multi_cell(60, 5, clean_pdf_text(estudante), 0, 'L')
+                                    pdf.set_xy(75, y+2)
+                                    pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'J')
+                                    pdf.set_xy(15, y + h_row)
 
                         # --- 3. OBSERVAÇÕES GERAIS (DENTRO DA CAIXA) ---
                         pdf.set_x(15)
@@ -6060,6 +6093,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                     if dados_row["modalidade"] == "Ensino Fundamental":
                         st.session_state.data_ata_ef = dados_json
+                        # ABRE O PORTÃO AUTOMATICAMENTE
+                        st.session_state.ata_turma_confirmada = dados_json.get('turma', '')
+                        st.session_state.ata_ciclo_confirmado = dados_json.get('ciclo', '')
                     st.success(f"Ata '{ata_selecionada}' carregada! Vá para 'Nova Ata' para visualizar.")
                 except Exception as e:
                     st.error(f"Erro ao carregar: {e}")
