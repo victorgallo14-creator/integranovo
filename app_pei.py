@@ -5412,6 +5412,16 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if "LT" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LT"] = ""
                 if "LIBRAS" not in data_ata['abaixo_basico'].columns: data_ata['abaixo_basico']["LIBRAS"] = ""
                 
+                # --- CORREÇÃO DE COMPATIBILIDADE ---
+                # Garante que todas as colunas de disciplinas sejam tratadas como TEXTO puro (String),
+                # evitando o erro _check_type_compatibilities caso haja dados antigos (True/False).
+                cols_disciplinas = ["LP", "M", "H", "G", "C", "A", "EF", "LT", "LIBRAS"]
+                for col in cols_disciplinas:
+                    if col in data_ata['abaixo_basico'].columns:
+                        if data_ata['abaixo_basico'][col].dtype == bool:
+                            data_ata['abaixo_basico'][col] = data_ata['abaixo_basico'][col].replace({True: "X", False: ""})
+                        data_ata['abaixo_basico'][col] = data_ata['abaixo_basico'][col].astype(str)
+                
                 config_abaixo = {
                     "Estudante": st.column_config.TextColumn("Estudante"),
                     "LP": st.column_config.TextColumn("LP"),
@@ -5548,7 +5558,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         pdf.set_x(15)
                         pdf.cell(180, 4, "", "LR", 1)
                         
-                        # Título "1- Síntese..." em negrito, o resto normal
                         pdf.set_font("Arial", "B", 10)
                         pdf.set_x(15)
                         pdf.cell(180, 5, clean_pdf_text("1- Síntese avaliativa da classe:"), "LR", 1, 'L')
@@ -5585,7 +5594,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             if i < len(disciplinas) - 1:
                                 pdf.set_x(15)
-                                pdf.cell(180, 3, "", "LR", 1) # Cria o espaço sem quebrar a borda lateral
+                                pdf.cell(180, 3, "", "LR", 1) 
                         
                         # --- 2. PLANO DE AÇÃO (DENTRO DA CAIXA) ---
                         pdf.set_x(15)
@@ -5795,7 +5804,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.multi_cell(180, 5, clean_pdf_text(texto_tardio), "LR", 'L')
                         else:
                             pdf.set_x(15)
-                            pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
+                            pdf.cell(180, 5, f" {prefix} Sem matrículas tardias registradas no período.", "LR", 1)
 
                         # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
                         pdf.set_x(15)
