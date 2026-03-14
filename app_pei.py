@@ -5898,166 +5898,166 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'J')
                                     pdf.set_xy(15, y + h_row)
 
-                        # --- 3. OBSERVAÇÕES GERAIS (DENTRO DA CAIXA) ---
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, "", "LR", 1) 
-                        
-                        if pdf.get_y() > 230: pdf.add_page()
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 6, clean_pdf_text("3- Observações Gerais:"), "LR", 1, 'L')
-                        pdf.set_font("Arial", "", 10)
-                        
-                        prefix_code = 97 
-                        
-                        lista_esp = data_ata.get('obs_especiais', [])
-                        esp_valid = [r for r in lista_esp if str(r.get('Estudante', '')).strip()]
-                        
-                        if esp_valid:
+                            # --- 3. OBSERVAÇÕES GERAIS (DENTRO DA CAIXA) ---
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, "", "LR", 1) 
+                            
+                            if pdf.get_y() > 230: pdf.add_page()
+                            
                             pdf.set_font("Arial", "B", 10)
                             pdf.set_x(15)
-                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Desempenho de alunos especiais (laudados):"), "LR", 1, 'L')
-                            prefix_code += 1
-                            for row in esp_valid:
-                                est = str(row.get('Estudante', '')).strip()
-                                obs = str(row.get('Desempenho/Observação', '')).strip()
-                                
+                            pdf.cell(180, 6, clean_pdf_text("3- Observações Gerais:"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            
+                            prefix_code = 97 
+                            
+                            lista_esp = data_ata.get('obs_especiais', [])
+                            esp_valid = [r for r in lista_esp if str(r.get('Estudante', '')).strip()]
+                            
+                            if esp_valid:
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
-                                pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Desempenho de alunos especiais (laudados):"), "LR", 1, 'L')
+                                prefix_code += 1
+                                for row in esp_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    obs = str(row.get('Desempenho/Observação', '')).strip()
+                                    
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs}"), "LR", 'J')
                                 
+                                pdf.set_x(15)
+                                pdf.cell(180, 2, "", "LR", 1)
+                            
+                            lista_enc = data_ata.get('encaminhamentos', [])
+                            enc_valid = [r for r in lista_enc if str(r.get('Estudante', '')).strip()]
+                            
+                            if enc_valid:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Alunos encaminhados (Conselho Tutelar/Serv. Social):"), "LR", 1, 'L')
+                                prefix_code += 1
+                                for row in enc_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    mot = str(row.get('Motivo', '')).strip()
+                                    
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {mot}"), "LR", 'J')
+                                    
+                                pdf.set_x(15)
+                                pdf.cell(180, 2, "", "LR", 1)
+
+                            lista_tardia = data_ata.get('mat_tardia', [])
+                            tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                            prefix_code += 1
+                            
+                            if len(tardia_valid) > 0:
+                                for row in tardia_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    mat = str(row.get('Data Matrícula', '')).strip()
+                                    freq = str(row.get('Total Frequência', '')).strip()
+                                    
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    
+                                    texto_tardio = f"Matriculado(a) nesta sala em {mat}. Portanto, obteve um total de frequência de {freq} dias letivos."
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto_tardio}"), "LR", 'J')
+                            else:
                                 pdf.set_font("Arial", "", 10)
                                 pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs}"), "LR", 'J')
-                            
+                                pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
+
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1)
-                        
-                        lista_enc = data_ata.get('encaminhamentos', [])
-                        enc_valid = [r for r in lista_enc if str(r.get('Estudante', '')).strip()]
-                        
-                        if enc_valid:
-                            pdf.set_font("Arial", "B", 10)
-                            pdf.set_x(15)
-                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Alunos encaminhados (Conselho Tutelar/Serv. Social):"), "LR", 1, 'L')
-                            prefix_code += 1
-                            for row in enc_valid:
-                                est = str(row.get('Estudante', '')).strip()
-                                mot = str(row.get('Motivo', '')).strip()
-                                
+                            
+                            obs_outras = data_ata.get('obs_outras', '').strip()
+                            if obs_outras:
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
-                                pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
-                                
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Outras Observações:"), "LR", 1, 'L')
                                 pdf.set_font("Arial", "", 10)
                                 pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {mot}"), "LR", 'J')
+                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs_outras}"), "LR", 'J')
                                 
+                            # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
                             pdf.set_x(15)
-                            pdf.cell(180, 2, "", "LR", 1)
+                            pdf.cell(180, 3, "", "LRB", 1) 
 
-                        lista_tardia = data_ata.get('mat_tardia', [])
-                        tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_x(15)
-                        pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
-                        prefix_code += 1
-                        
-                        if len(tardia_valid) > 0:
-                            for row in tardia_valid:
-                                est = str(row.get('Estudante', '')).strip()
-                                mat = str(row.get('Data Matrícula', '')).strip()
-                                freq = str(row.get('Total Frequência', '')).strip()
-                                
-                                pdf.set_font("Arial", "B", 10)
-                                pdf.set_x(15)
-                                pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
-                                
-                                texto_tardio = f"Matriculado(a) nesta sala em {mat}. Portanto, obteve um total de frequência de {freq} dias letivos."
-                                pdf.set_font("Arial", "", 10)
-                                pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto_tardio}"), "LR", 'J')
-                        else:
-                            pdf.set_font("Arial", "", 10)
-                            pdf.set_x(15)
-                            pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
-
-                        pdf.set_x(15)
-                        pdf.cell(180, 2, "", "LR", 1)
-                        
-                        obs_outras = data_ata.get('obs_outras', '').strip()
-                        if obs_outras:
+                            # --- ASSINATURAS (NOVA GRADE DENTRO DA CAIXA CINZA) ---
+                            pdf.ln(5)
+                            if pdf.get_y() > 220: pdf.add_page()
+                            
                             pdf.set_font("Arial", "B", 10)
+                            pdf.set_fill_color(220, 220, 220)
                             pdf.set_x(15)
-                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Outras Observações:"), "LR", 1, 'L')
-                            pdf.set_font("Arial", "", 10)
-                            pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs_outras}"), "LR", 'J')
+                            pdf.cell(180, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 1, 1, 'C', True)
                             
-                        # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
-                        pdf.set_x(15)
-                        pdf.cell(180, 3, "", "LRB", 1) 
-
-                        # --- ASSINATURAS (NOVA GRADE DENTRO DA CAIXA CINZA) ---
-                        pdf.ln(5)
-                        if pdf.get_y() > 220: pdf.add_page()
-                        
-                        pdf.set_font("Arial", "B", 10)
-                        pdf.set_fill_color(220, 220, 220)
-                        pdf.set_x(15)
-                        pdf.cell(180, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE CICLO", 1, 1, 'C', True)
-                        
-                        lista_assinaturas = data_ata.get('assinaturas', [])
-                        sigs_validas = [s for s in lista_assinaturas if str(s.get('Nome', '')).strip()]
-                        
-                        if not sigs_validas:
-                            pdf.set_x(15)
-                            pdf.cell(180, 20, "Nenhuma assinatura cadastrada para esta ata.", 1, 1, 'C')
-                        else:
-                            cols = 4
-                            cell_w = 180 / cols
-                            cell_h = 16
+                            lista_assinaturas = data_ata.get('assinaturas', [])
+                            sigs_validas = [s for s in lista_assinaturas if str(s.get('Nome', '')).strip()]
                             
-                            x_start = 15
-                            y = pdf.get_y()
-                            
-                            for i, sig in enumerate(sigs_validas):
-                                col = i % cols
-                                if col == 0 and i > 0:
-                                    y += cell_h
+                            if not sigs_validas:
+                                pdf.set_x(15)
+                                pdf.cell(180, 20, "Nenhuma assinatura cadastrada para esta ata.", 1, 1, 'C')
+                            else:
+                                cols = 4
+                                cell_w = 180 / cols
+                                cell_h = 16
                                 
-                                if y + cell_h > 275:
-                                    pdf.add_page()
-                                    y = pdf.get_y()
+                                x_start = 15
+                                y = pdf.get_y()
                                 
-                                x = x_start + (col * cell_w)
-                                pdf.rect(x, y, cell_w, cell_h)
-                                
-                                nome = str(sig.get('Nome', '')).strip()
-                                cargo = str(sig.get('Cargo/Atuação', '')).strip()
-                                
-                                font_size = 8
-                                pdf.set_font("Arial", "B", font_size)
-                                while pdf.get_string_width(nome) > cell_w - 2 and font_size > 5:
-                                    font_size -= 0.5
+                                for i, sig in enumerate(sigs_validas):
+                                    col = i % cols
+                                    if col == 0 and i > 0:
+                                        y += cell_h
+                                    
+                                    if y + cell_h > 275:
+                                        pdf.add_page()
+                                        y = pdf.get_y()
+                                    
+                                    x = x_start + (col * cell_w)
+                                    pdf.rect(x, y, cell_w, cell_h)
+                                    
+                                    nome = str(sig.get('Nome', '')).strip()
+                                    cargo = str(sig.get('Cargo/Atuação', '')).strip()
+                                    
+                                    font_size = 8
                                     pdf.set_font("Arial", "B", font_size)
+                                    while pdf.get_string_width(nome) > cell_w - 2 and font_size > 5:
+                                        font_size -= 0.5
+                                        pdf.set_font("Arial", "B", font_size)
+                                    
+                                    pdf.set_xy(x + 1, y + 6) 
+                                    pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(nome), 0, 'C')
+                                    
+                                    pdf.set_font("Arial", "", 7)
+                                    curr_y = pdf.get_y()
+                                    pdf.set_xy(x + 1, curr_y)
+                                    pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(cargo), 0, 'C')
                                 
-                                pdf.set_xy(x + 1, y + 6) 
-                                pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(nome), 0, 'C')
-                                
-                                pdf.set_font("Arial", "", 7)
-                                curr_y = pdf.get_y()
-                                pdf.set_xy(x + 1, curr_y)
-                                pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(cargo), 0, 'C')
-                            
-                            pdf.set_y(y + cell_h)
+                                pdf.set_y(y + cell_h)
 
-                        st.session_state.pdf_bytes_ata = get_pdf_bytes(pdf)
-                        st.success("✅ PDF gerado com sucesso!")
-                    except Exception as e:
-                        st.error(f"Erro ao desenhar o PDF: {e}")
+                            st.session_state.pdf_bytes_ata = get_pdf_bytes(pdf)
+                            st.success("✅ PDF gerado com sucesso!")
+                        except Exception as e:
+                            st.error(f"Erro ao desenhar o PDF: {e}")
 
                 if 'pdf_bytes_ata' in st.session_state:
                     turma_limpa = str(data_ata.get('turma', 'Turma')).replace('/', '-').replace('\\', '-')
@@ -6093,7 +6093,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                     if dados_row["modalidade"] == "Ensino Fundamental":
                         st.session_state.data_ata_ef = dados_json
-                        # ABRE O PORTÃO AUTOMATICAMENTE
                         st.session_state.ata_turma_confirmada = dados_json.get('turma', '')
                         st.session_state.ata_ciclo_confirmado = dados_json.get('ciclo', '')
                     st.success(f"Ata '{ata_selecionada}' carregada! Vá para 'Nova Ata' para visualizar.")
@@ -6133,6 +6132,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             
             safe_update("Config_Ata", df_config)
             st.success("✅ Texto base atualizado!")
+
+    
 
 # ==============================================================================
 # MÓDULO 4: AGENDAMENTO SALA DE INFORMÁTICA (NOVO)
