@@ -5362,9 +5362,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             "3º Ano 3": {"Polivalente": "Regiane Faustino", "Artes": "Jordana Lima Alvez", "Educação Física": "Josiane Modesto da Silva", "Linguagens e Tecnologias": "Elaine Cristina Neves Fahl"},
         },
         "Ciclo II (4º e 5º ano)": {
-            "4º Ano 1": {"Polivalente": "Eliana Cristina de Carvalho Gabriel", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
-            "4º Ano 2": {"Polivalente": "Daiane Luzia de Matos Bueno", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
-            "4º Ano 3": {"Polivalente": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
+            # 4ºs anos com professores especialistas (Divididos por disciplina)
+            "4º Ano 1": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
+            "4º Ano 2": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
+            "4º Ano 3": {"Língua Portuguesa": "Eliana Cristina de Carvalho Gabriel", "Matemática": "Daiane Luzia de Matos Bueno", "Ciências, Hist. e Geo.": "Débora Sara Ferreira", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Josiane Modesto da Silva"},
+            
             "5º Ano 1": {"Polivalente": "Elaine Cristina Neves Fahl", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
             "5º Ano 2": {"Polivalente": "Nathalia Teixeira Marcal Ribeiro", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
             "5º Ano 3": {"Polivalente": "Denise Teixeira Coelho Soffiati", "Artes": "Bruna Thais Bernini Guedes", "Educação Física": "Michel Luciano de Lima", "Linguagens e Tecnologias": "Bruna Thais Bernini Guedes"},
@@ -5590,21 +5592,17 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             lista_final = []
                             professores_adicionados = set()
                             
-                            if profs_da_turma["Polivalente"]:
-                                lista_final.append({"Nome": profs_da_turma["Polivalente"], "Cargo/Atuação": "Prof. Polivalente (Atuante na Turma)"})
-                                professores_adicionados.add(profs_da_turma["Polivalente"])
-                            if profs_da_turma["Artes"]:
-                                lista_final.append({"Nome": profs_da_turma["Artes"], "Cargo/Atuação": "Prof. de Arte (Atuante na Turma)"})
-                                professores_adicionados.add(profs_da_turma["Artes"])
-                            if profs_da_turma["Educação Física"]:
-                                lista_final.append({"Nome": profs_da_turma["Educação Física"], "Cargo/Atuação": "Prof. de Ed. Física (Atuante na Turma)"})
-                                professores_adicionados.add(profs_da_turma["Educação Física"])
-                            if profs_da_turma["Linguagens e Tecnologias"]:
-                                lista_final.append({"Nome": profs_da_turma["Linguagens e Tecnologias"], "Cargo/Atuação": "Prof. de Ling. e Tec. (Atuante na Turma)"})
-                                professores_adicionados.add(profs_da_turma["Linguagens e Tecnologias"])
-                                
+                            # 1. Professores da Turma (Dinâmico para ler qualquer disciplina da Matriz)
+                            for materia, nome_prof in profs_da_turma.items():
+                                if nome_prof:
+                                    cargo_formatado = "Prof. Polivalente" if materia == "Polivalente" else f"Prof. de {materia}"
+                                    lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante na Turma)"})
+                                    professores_adicionados.add(nome_prof)
+                                    
+                            # Adiciona Libras Manualmente no final dos professores da turma
                             lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
                             
+                            # 2. Professores do Restante do Ciclo (Sem repetir nomes)
                             for t_nome, profs in MATRIZ_PROFESSORES[ciclo_atual].items():
                                 if t_nome != turma_atual:
                                     for materia, nome_prof in profs.items():
@@ -5613,13 +5611,14 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                             lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante no Ciclo)"})
                                             professores_adicionados.add(nome_prof)
                                             
+                            # 3. Equipe Gestora Fixa
                             lista_final.extend([
-                                {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
-                                {"Nome": "", "Cargo/Atuação": "Prof. Coordenador"},
-                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                                {"Nome": "", "Cargo/Atuação": "Vice-Diretor"},
-                                {"Nome": "", "Cargo/Atuação": "Diretor de Escola"}
+                                {"Nome": "Luciana Lopes Faber", "Cargo/Atuação": "Prof. Coordenador"},
+                                {"Nome": "Oelen Fernando Pedro", "Cargo/Atuação": "Prof. Coordenador"},
+                                {"Nome": "Luciana Martinati Tetzner", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "Noreh Cristina Heldt Aldrigui", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "Marília Motta Camargo dos Reis", "Cargo/Atuação": "Vice-Diretor"},
+                                {"Nome": "José Victor Souza Gallo", "Cargo/Atuação": "Diretor de Escola"}
                             ])
                             
                             data_ata['assinaturas'] = lista_final
@@ -5630,16 +5629,26 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                     st.divider()
                     st.markdown("**Participantes da Reunião**")
+                    st.caption("Você pode usar as setinhas (⬆️/⬇️) para mudar a ordem que os nomes vão aparecer na folha do PDF.")
                     
                     if 'assinaturas' not in data_ata:
                         data_ata['assinaturas'] = [{"Nome": "", "Cargo/Atuação": ""}]
                         
                     for i, row in enumerate(data_ata['assinaturas']):
-                        c1, c2, c3 = st.columns([4, 4, 1])
+                        c1, c2, c3 = st.columns([5, 4, 2])
                         row['Nome'] = c1.text_input("Nome", value=row.get('Nome', ''), key=f"sig_nome_{i}", placeholder="Ex: Ana Silva", label_visibility="collapsed")
                         row['Cargo/Atuação'] = c2.text_input("Cargo", value=row.get('Cargo/Atuação', ''), key=f"sig_cargo_{i}", placeholder="Ex: Diretor de Escola", label_visibility="collapsed")
-                        if c3.button("🗑️", key=f"del_sig_{i}"):
-                            data_ata['assinaturas'].pop(i); st.rerun()
+                        
+                        b1, b2, b3 = c3.columns(3)
+                        if b1.button("⬆️", key=f"up_sig_{i}", disabled=(i == 0), help="Mover para cima"):
+                            data_ata['assinaturas'][i], data_ata['assinaturas'][i-1] = data_ata['assinaturas'][i-1], data_ata['assinaturas'][i]
+                            st.rerun()
+                        if b2.button("⬇️", key=f"dw_sig_{i}", disabled=(i == len(data_ata['assinaturas']) - 1), help="Mover para baixo"):
+                            data_ata['assinaturas'][i], data_ata['assinaturas'][i+1] = data_ata['assinaturas'][i+1], data_ata['assinaturas'][i]
+                            st.rerun()
+                        if b3.button("🗑️", key=f"del_sig_{i}", help="Excluir assinatura"):
+                            data_ata['assinaturas'].pop(i)
+                            st.rerun()
                             
                     if st.button("➕ Adicionar Participante Manualmente", key="add_sig"):
                         data_ata['assinaturas'].append({"Nome": "", "Cargo/Atuação": ""})
@@ -5855,7 +5864,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             pdf.rect(75, y, 120, 10)
                             pdf.set_xy(75, y+1)
-                            pdf.multi_cell(120, 4, clean_pdf_text("Descrever de forma sucinta as ações que serão desenvolvidas nas áreas de Língua Portuguesa e Matemática."), 0, 'C')
+                            pdf.multi_cell(120, 4, clean_pdf_text("Ações que serão desenvolvidas nas áreas de Língua Portuguesa e Matemática."), 0, 'C')
                             pdf.set_xy(15, y+10)
                             
                             pdf.set_font("Arial", "", 10)
