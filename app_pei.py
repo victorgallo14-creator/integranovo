@@ -5356,10 +5356,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             return df_config.loc[df_config["chave"] == chave, "valor"].values[0]
         return padrao
 
-    texto_base_padrao = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
-    texto_base_ata = get_config("texto_base_ata", texto_base_padrao)
+    # --- Textos do Fundamental ---
+    texto_base_padrao_ef = "Com base: na Resolução SME nº 07/2024, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, e no inciso V do artigo 5º, faz a indicação sobre a realização do Conselho de Ciclo/ Educação Infantil e Educação de Jovens e Adultos; no plano de trabalho para o ano de 2026, produzido no Conselho de Ciclo do 3º trimestre de 2025; na avaliação diagnóstica elaborada em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+    texto_base_ata_ef = get_config("texto_base_ata", texto_base_padrao_ef)
     
-    propostas_padrao = """1. Recuperação contínua de aprendizagem dos estudantes;
+    propostas_padrao_ef = """1. Recuperação contínua de aprendizagem dos estudantes;
 2. Intervenções pontuais e individuais;
 3. Organização de recursos pedagógicos e situações didáticas eficientes e coerentes;
 4. Encaminhamento à Direção/Serviço Social Escolar para busca ativa de estudantes com baixa frequência;
@@ -5369,7 +5370,14 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 8. Propor atividades interdisciplinares objetivando o avanço do processo de aprendizagem;
 9. Emitir relatórios solicitando suporte e avaliação de profissionais da saúde;
 10. Sistematizar atividades para consolidação dos conteúdos;"""
-    propostas_ata = get_config("propostas_ata", propostas_padrao)
+    propostas_ata_ef = get_config("propostas_ata", propostas_padrao_ef)
+
+    # --- Textos da Educação Infantil ---
+    texto_base_padrao_inf = "Com base na Resolução SME nº 07/24, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, especialmente no inciso V do artigo 5º que indica a realização do Conselho de Educação Infantil, na avaliação diagnóstica produzida em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
+    texto_base_ata_inf = get_config("texto_base_ata_inf", texto_base_padrao_inf)
+    
+    propostas_padrao_inf = "1. \n2. \n3. \n4. \n5. \n6. "
+    propostas_ata_inf = get_config("propostas_ata_inf", propostas_padrao_inf)
     
     # Matriz de Professores Padrão (Semente)
     MATRIZ_SEED = [
@@ -5439,7 +5447,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Polivalente", "Professor": "Denise Teixeira Coelho Soffiati"},
         {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Artes", "Professor": "Bruna Thais Bernini Guedes"},
         {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Educação Física", "Professor": "Michel Luciano de Lima"},
-        {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Linguagens e Tecnologias", "Professor": "Bruna Thais Bernini Guedes"}
+        {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Linguagens e Tecnologias", "Professor": "Bruna Thais Bernini Guedes"},
+        
+        # Estrutura base para a Educação Infantil
+        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Professor de Ed. Infantil", "Professor": ""},
+        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Artes", "Professor": ""},
+        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Educação Física", "Professor": ""}
     ]
     matriz_json = get_config("matriz_professores", "")
     df_matriz = pd.DataFrame(json.loads(matriz_json)) if matriz_json else pd.DataFrame(MATRIZ_SEED)
@@ -5461,8 +5474,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
     # 1. TELA: NOVA ATA DE CONSELHO
     # ==============================================================================
     if app_mode_regular == "📝 Nova Ata de Conselho":
-        st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Ciclo / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="header-box"><div class="header-title">Conselho de Classe / Termo</div><div class="header-subtitle">{modalidade_ata}</div></div>""", unsafe_allow_html=True)
         
+        # ------------------------------------------------------------------------------
+        # MÓDULO: ENSINO FUNDAMENTAL
+        # ------------------------------------------------------------------------------
         if modalidade_ata == "Ensino Fundamental":
             if 'data_ata_ef' not in st.session_state:
                 st.session_state.data_ata_ef = {
@@ -5498,7 +5514,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 c_c, c_t = st.columns(2)
                 ciclo_sel = c_c.selectbox("1. Selecione o Ciclo:", ["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)"])
                 
-                # Puxa as turmas dinamicamente do Banco de Dados
                 turmas_bd = df_matriz[df_matriz['Ciclo'] == ciclo_sel]['Turma'].unique().tolist()
                 turmas_disp = turmas_bd + ["Outra Turma..."]
                 
@@ -5518,7 +5533,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     else:
                         st.warning("⚠️ Por favor, informe o nome da turma.")
             
-            # --- FORMULÁRIO DE ATA (SÓ APARECE SE A TURMA FOI CONFIRMADA) ---
+            # --- FORMULÁRIO DO FUNDAMENTAL ---
             else:
                 c_info, c_btn = st.columns([4, 1])
                 c_info.success(f"📌 **Ata em edição:** {st.session_state.ata_ciclo_confirmado} - {st.session_state.ata_turma_confirmada}")
@@ -5540,7 +5555,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     data_ata['ano_letivo'] = c3.text_input("Ano Letivo", value=data_ata.get('ano_letivo', str(date.today().year)))
                     
                     st.markdown("---")
-                    st.caption("A Turma e o Ciclo foram definidos no início. Se precisar alterar, use o botão 'Trocar Turma' no topo.")
                     c4, c5 = st.columns(2)
                     c4.text_input("Turma/Ano", value=st.session_state.ata_turma_confirmada, disabled=True)
                     c5.text_input("Ciclo", value=st.session_state.ata_ciclo_confirmado, disabled=True)
@@ -5597,7 +5611,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     st.markdown("**Propostas de Recuperação da Gestão:**")
-                    st.markdown(propostas_ata)
+                    st.markdown(propostas_ata_ef)
                     
                     st.divider()
                     st.subheader("Plano de Ação (Básico)")
@@ -5669,7 +5683,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             lista_final = []
                             professores_adicionados = set()
                             
-                            # 1. Professores da Turma Específica
                             for _, row in df_turma.iterrows():
                                 materia = row['Disciplina']
                                 nome_prof = row['Professor']
@@ -5678,10 +5691,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante na Turma)"})
                                     professores_adicionados.add(nome_prof)
                                     
-                            # Placeholder para Libras (Turma)
                             lista_final.append({"Nome": "", "Cargo/Atuação": "Prof. de Libras (Atuante na Turma)"})
                             
-                            # 2. Professores do Restante do Ciclo
                             df_ciclo = df_matriz[(df_matriz['Ciclo'] == ciclo_atual) & (df_matriz['Turma'] != turma_atual)]
                             for _, row in df_ciclo.iterrows():
                                 materia = row['Disciplina']
@@ -5691,7 +5702,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{cargo_formatado} (Atuante no Ciclo)"})
                                     professores_adicionados.add(nome_prof)
                                             
-                            # 3. Equipe Gestora (Puxada do BD)
                             for _, row in df_gestao.iterrows():
                                 if row['Nome']:
                                     lista_final.append({"Nome": row['Nome'], "Cargo/Atuação": row['Cargo']})
@@ -5763,7 +5773,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_auto_page_break(auto=True, margin=20)
                             pdf.add_page()
                             
-                            # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
+                            # --- CABEÇALHO ---
                             pdf.set_font("Arial", "B", 10)
                             escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
                             pdf.set_x(15)
@@ -5780,11 +5790,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                             pdf.ln(5)
                             
-                            # ==============================================================================
-                            # INÍCIO DA SUPER CAIXA
-                            # ==============================================================================
-                            
-                            # --- 1. SÍNTESE AVALIATIVA ---
+                            # --- SÍNTESE AVALIATIVA ---
                             pdf.set_font("Arial", "B", 10)
                             pdf.set_fill_color(220, 220, 220)
                             pdf.set_x(15)
@@ -5795,7 +5801,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             pdf.set_font("Arial", "", 10)
                             pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_ata), "LR", 'J')
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_ata_ef), "LR", 'J')
                             
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
@@ -5897,7 +5903,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.cell(180, 5, clean_pdf_text("*Propostas de Recuperação:"), "LR", 1, 'L')
                             pdf.set_font("Arial", "", 10)
                             
-                            for prop in propostas_ata.split('\n'):
+                            for prop in propostas_ata_ef.split('\n'):
                                 if prop.strip():
                                     pdf.set_x(15)
                                     pdf.multi_cell(180, 5, clean_pdf_text(prop.strip()), "LR", 'J')
@@ -5965,7 +5971,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     pdf.multi_cell(120, 5, clean_pdf_text(texto_acao), 0, 'J')
                                     pdf.set_xy(15, y + h_row)
 
-                            # --- 3. OBSERVAÇÕES GERAIS (DENTRO DA CAIXA) ---
+                            # --- 3. OBSERVAÇÕES GERAIS ---
                             pdf.set_x(15)
                             pdf.cell(180, 5, "", "LR", 1) 
                             
@@ -5980,7 +5986,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             lista_esp = data_ata.get('obs_especiais', [])
                             esp_valid = [r for r in lista_esp if str(r.get('Estudante', '')).strip()]
-                            
                             if esp_valid:
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
@@ -5989,21 +5994,17 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 for row in esp_valid:
                                     est = str(row.get('Estudante', '')).strip()
                                     obs = str(row.get('Desempenho/Observação', '')).strip()
-                                    
                                     pdf.set_font("Arial", "B", 10)
                                     pdf.set_x(15)
                                     pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
-                                    
                                     pdf.set_font("Arial", "", 10)
                                     pdf.set_x(15)
                                     pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs}"), "LR", 'J')
-                                
                                 pdf.set_x(15)
                                 pdf.cell(180, 2, "", "LR", 1)
                             
                             lista_enc = data_ata.get('encaminhamentos', [])
                             enc_valid = [r for r in lista_enc if str(r.get('Estudante', '')).strip()]
-                            
                             if enc_valid:
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
@@ -6012,35 +6013,29 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 for row in enc_valid:
                                     est = str(row.get('Estudante', '')).strip()
                                     mot = str(row.get('Motivo', '')).strip()
-                                    
                                     pdf.set_font("Arial", "B", 10)
                                     pdf.set_x(15)
                                     pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
-                                    
                                     pdf.set_font("Arial", "", 10)
                                     pdf.set_x(15)
                                     pdf.multi_cell(180, 5, clean_pdf_text(f"  {mot}"), "LR", 'J')
-                                    
                                 pdf.set_x(15)
                                 pdf.cell(180, 2, "", "LR", 1)
 
                             lista_tardia = data_ata.get('mat_tardia', [])
                             tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
-                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                            prefix_code += 1
                             if len(tardia_valid) > 0:
-                                pdf.set_font("Arial", "B", 10)
-                                pdf.set_x(15)
-                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
-                                prefix_code += 1
                                 for row in tardia_valid:
                                     est = str(row.get('Estudante', '')).strip()
                                     mat = str(row.get('Data Matrícula', '')).strip()
                                     freq = str(row.get('Total Frequência', '')).strip()
-                                    
                                     pdf.set_font("Arial", "B", 10)
                                     pdf.set_x(15)
                                     pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
-                                    
                                     texto_tardio = f"Matriculado(a) nesta sala em {mat}. Portanto, obteve um total de frequência de {freq} dias letivos."
                                     pdf.set_font("Arial", "", 10)
                                     pdf.set_x(15)
@@ -6048,8 +6043,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             else:
                                 pdf.set_font("Arial", "", 10)
                                 pdf.set_x(15)
-                                pdf.cell(180, 5, f" {chr(prefix_code)}) Sem matrículas tardias registradas no período.", "LR", 1)
-                                prefix_code += 1
+                                pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
 
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1)
@@ -6063,11 +6057,10 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.set_x(15)
                                 pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs_outras}"), "LR", 'J')
                                 
-                            # FECHAMENTO DA SUPER CAIXA (Borda Inferior)
                             pdf.set_x(15)
                             pdf.cell(180, 3, "", "LRB", 1) 
 
-                            # --- ASSINATURAS (NOVA GRADE DESENHADA) ---
+                            # --- ASSINATURAS ---
                             pdf.ln(5)
                             if pdf.get_y() > 220: pdf.add_page()
                             
@@ -6145,6 +6138,555 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     trimestre_limpo = str(data_ata.get('trimestre', 'Trimestre')).replace('/', '-')
                     st.download_button("📥 BAIXAR ATA", st.session_state.pdf_bytes_ata, f"Ata_{turma_limpa}_{trimestre_limpo}.pdf", "application/pdf", type="primary")
 
+        # ------------------------------------------------------------------------------
+        # MÓDULO: EDUCAÇÃO INFANTIL
+        # ------------------------------------------------------------------------------
+        elif modalidade_ata == "Educação Infantil":
+            if 'data_ata_inf' not in st.session_state:
+                st.session_state.data_ata_inf = {
+                    'abaixo_basico': [{"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": ""}],
+                    'obs_especiais': [{"Estudante": "", "Desempenho/Observação": ""}],
+                    'encaminhamentos': [{"Estudante": "", "Motivo": ""}],
+                    'mat_tardia': [{"Estudante": "", "Data Matrícula": "", "Total Frequência": ""}],
+                    'obs_outras': "",
+                    'assinaturas': [{"Nome": "", "Cargo/Atuação": ""}]
+                }
+                
+            if 'ata_turma_confirmada_inf' not in st.session_state:
+                st.session_state.ata_turma_confirmada_inf = None
+                st.session_state.ata_ciclo_confirmado_inf = None
+            
+            data_inf = st.session_state.data_ata_inf
+            
+            for key in ['abaixo_basico', 'obs_especiais', 'encaminhamentos', 'mat_tardia', 'assinaturas']:
+                if isinstance(data_inf.get(key), pd.DataFrame):
+                    data_inf[key] = data_inf[key].to_dict('records')
+            
+            # --- PORTÃO DE ENTRADA (GATE) ---
+            if not st.session_state.ata_turma_confirmada_inf:
+                st.markdown("""
+                <div style='background-color: #fdf4ff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f5d0fe;'>
+                    <h3 style='color: #86198f; margin-top:0;'>🧸 Selecione a Turma (Educação Infantil)</h3>
+                    <p style='color: #a21caf;'>Para iniciar o preenchimento da ata do Infantil, selecione a Etapa e a Turma.</p>
+                </div>
+                <br>
+                """, unsafe_allow_html=True)
+                
+                c_c, c_t = st.columns(2)
+                ciclo_sel = c_c.selectbox("1. Selecione a Fase/Etapa:", ["Maternal II", "1ª Etapa", "2ª Etapa", "Educação Infantil"])
+                
+                turmas_bd = df_matriz[df_matriz['Ciclo'] == "Educação Infantil"]['Turma'].unique().tolist()
+                turmas_disp = turmas_bd + ["Outra Turma..."]
+                
+                turma_sel = c_t.selectbox("2. Selecione a Turma:", turmas_disp)
+                if turma_sel == "Outra Turma...":
+                    turma_sel = st.text_input("Digite o nome da turma:")
+                
+                st.write("")
+                if st.button("✅ Confirmar e Acessar Formulário do Infantil", type="primary", use_container_width=True):
+                    if turma_sel:
+                        st.session_state.ata_ciclo_confirmado_inf = ciclo_sel
+                        st.session_state.ata_turma_confirmada_inf = turma_sel
+                        data_inf['ciclo'] = ciclo_sel
+                        data_inf['turma'] = turma_sel
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Por favor, informe o nome da turma.")
+                        
+            # --- FORMULÁRIO DA EDUCAÇÃO INFANTIL ---
+            else:
+                c_info, c_btn = st.columns([4, 1])
+                c_info.success(f"🧸 **Ata do Infantil em edição:** {st.session_state.ata_ciclo_confirmado_inf} - {st.session_state.ata_turma_confirmada_inf}")
+                if c_btn.button("⬅️ Trocar Turma", use_container_width=True, key="btn_trocar_inf"):
+                    st.session_state.ata_turma_confirmada_inf = None
+                    st.rerun()
+                    
+                tabs = st.tabs(["1. Identificação", "2. Síntese Avaliativa", "3. Plano de Ação", "4. Observações", "5. Finalização"])
+                
+                with tabs[0]:
+                    st.subheader("Dados da Unidade Escolar")
+                    c1, c2, c3 = st.columns([2, 1, 1])
+                    data_inf['escola'] = c1.text_input("Unidade Escolar", value=data_inf.get('escola', "CEIEF Rafael Affonso Leite"), key="inf_esc")
+                    
+                    tri_opts = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
+                    tri_idx = tri_opts.index(data_inf.get('trimestre', "1º Trimestre")) if data_inf.get('trimestre') in tri_opts else 0
+                    data_inf['trimestre'] = c2.selectbox("Trimestre", tri_opts, index=tri_idx, key="inf_tri")
+                    
+                    data_inf['ano_letivo'] = c3.text_input("Ano Letivo", value=data_inf.get('ano_letivo', str(date.today().year)), key="inf_ano")
+                    
+                    st.markdown("---")
+                    c4, c5 = st.columns(2)
+                    c4.text_input("Turma", value=st.session_state.ata_turma_confirmada_inf, disabled=True, key="inf_turma")
+                    c5.text_input("Etapa/Fase", value=st.session_state.ata_ciclo_confirmado_inf, disabled=True, key="inf_ciclo")
+
+                with tabs[1]:
+                    st.subheader("Síntese Avaliativa da Classe - Campos de Experiência")
+                    
+                    if "1ª Etapa" in st.session_state.ata_ciclo_confirmado_inf:
+                        with st.expander("💡 Dicas de preenchimento para a 1ª Etapa (Clique para abrir)"):
+                            st.markdown("""
+                            **Linguagem Verbal:** Oralidade (Pronúncia correta, participação atenta); Leitura (Compreensão, sílabas canônicas e não canônicas); Análise Linguística (Escrita convencional); Produção.
+                            **Linguagem Matemática:** Álgebra (Classificação); Estatística (Gráficos); Geometria (Figuras planas e espaciais); Grandezas (Tempo, massa); Números (Sistema decimal).
+                            **Indivíduo e Sociedade:** Sistema biológico (Saúde e higiene); Sujeito histórico (Dados pessoais, regras).
+                            **Arte:** Formas geométricas, Cores, Instrumentos, Relação do som, Expressão teatral.
+                            **Cultura Corporal:** Deslocamento (saltitar, correr), Brincadeiras cantadas, Partes do corpo, Equilíbrio.
+                            """)
+                    else:
+                        st.info("Descreva o desenvolvimento da classe em cada componente curricular no trimestre atual.")
+
+                    data_inf['sin_lv'] = st.text_area("Linguagem Verbal", value=data_inf.get('sin_lv', ''), height=100)
+                    data_inf['sin_lm'] = st.text_area("Linguagem Matemática", value=data_inf.get('sin_lm', ''), height=100)
+                    data_inf['sin_is'] = st.text_area("Indivíduo e Sociedade", value=data_inf.get('sin_is', ''), height=100)
+                    data_inf['sin_arte'] = st.text_area("Arte", value=data_inf.get('sin_arte', ''), height=100)
+                    data_inf['sin_ccm'] = st.text_area("Cultura Corporal e Movimento", value=data_inf.get('sin_ccm', ''), height=100)
+
+                with tabs[2]:
+                    st.subheader("Plano de Ação")
+                    st.caption("Estudantes com desenvolvimento abaixo do esperado em relação aos conteúdos do currículo.")
+                    
+                    for i, row in enumerate(data_inf['abaixo_basico']):
+                        with st.container():
+                            st.markdown(f"**Estudante {i+1}**")
+                            c_est, c_del = st.columns([11, 1])
+                            row['Estudante'] = c_est.text_input(f"Nome", value=row.get('Estudante', ''), key=f"inf_ab_est_{i}", label_visibility="collapsed")
+                            if c_del.button("🗑️", key=f"inf_del_ab_{i}"):
+                                data_inf['abaixo_basico'].pop(i); st.rerun()
+                            
+                            cc = st.columns(5)
+                            row['LV'] = cc[0].text_input("LV", value=row.get('LV', ''), key=f"inf_ab_lv_{i}")
+                            row['LM'] = cc[1].text_input("LM", value=row.get('LM', ''), key=f"inf_ab_lm_{i}")
+                            row['IS'] = cc[2].text_input("IS", value=row.get('IS', ''), key=f"inf_ab_is_{i}")
+                            row['A'] = cc[3].text_input("A", value=row.get('A', ''), key=f"inf_ab_a_{i}")
+                            row['CCM'] = cc[4].text_input("CCM", value=row.get('CCM', ''), key=f"inf_ab_ccm_{i}")
+                            st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
+                    
+                    if st.button("➕ Adicionar Estudante", key="inf_add_ab"):
+                        data_inf['abaixo_basico'].append({"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": ""})
+                        st.rerun()
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("**Propostas para Intervenção/Recuperação de aprendizagem:**")
+                    st.markdown(propostas_ata_inf)
+
+                with tabs[3]:
+                    st.subheader("3. Observações Gerais")
+                    
+                    st.markdown("**a) Desempenho de alunos especiais (laudados)**")
+                    for i, row in enumerate(data_inf['obs_especiais']):
+                        c1, c2, c3 = st.columns([3, 6, 1])
+                        row['Estudante'] = c1.text_input("Estudante Especial", value=row.get('Estudante', ''), key=f"inf_obs_est_{i}")
+                        row['Desempenho/Observação'] = c2.text_area("Desempenho/Observações", value=row.get('Desempenho/Observação', ''), key=f"inf_obs_des_{i}", height=68)
+                        if c3.button("🗑️", key=f"inf_del_obs_{i}"):
+                            data_inf['obs_especiais'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Aluno Especial", key="inf_add_obs"):
+                        data_inf['obs_especiais'].append({"Estudante": "", "Desempenho/Observação": ""})
+                        st.rerun()
+                    
+                    st.divider()
+                    st.markdown("**b) Alunos encaminhados (Conselho Tutelar ou Serviço Social)**")
+                    for i, row in enumerate(data_inf['encaminhamentos']):
+                        c1, c2, c3 = st.columns([3, 6, 1])
+                        row['Estudante'] = c1.text_input("Estudante Encaminhado", value=row.get('Estudante', ''), key=f"inf_enc_est_{i}")
+                        row['Motivo'] = c2.text_area("Motivo do Encaminhamento", value=row.get('Motivo', ''), key=f"inf_enc_mot_{i}", height=68)
+                        if c3.button("🗑️", key=f"inf_del_enc_{i}"):
+                            data_inf['encaminhamentos'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Encaminhamento", key="inf_add_enc"):
+                        data_inf['encaminhamentos'].append({"Estudante": "", "Motivo": ""})
+                        st.rerun()
+
+                    st.divider()
+                    st.markdown("**c) Estudantes Matriculados Tardiamente**")
+                    for i, row in enumerate(data_inf['mat_tardia']):
+                        c1, c2, c3, c4 = st.columns([4, 3, 3, 1])
+                        row['Estudante'] = c1.text_input("Estudante", value=row.get('Estudante', ''), key=f"inf_mat_est_{i}")
+                        row['Data Matrícula'] = c2.text_input("Data da Matrícula", value=row.get('Data Matrícula', ''), key=f"inf_mat_data_{i}")
+                        row['Total Frequência'] = c3.text_input("Frequência (Dias)", value=row.get('Total Frequência', ''), key=f"inf_mat_freq_{i}")
+                        if c4.button("🗑️", key=f"inf_del_mat_{i}"):
+                            data_inf['mat_tardia'].pop(i); st.rerun()
+                    if st.button("➕ Adicionar Matrícula Tardia", key="inf_add_mat"):
+                        data_inf['mat_tardia'].append({"Estudante": "", "Data Matrícula": "", "Total Frequência": ""})
+                        st.rerun()
+                        
+                    st.divider()
+                    st.markdown("**d) Outras Observações**")
+                    data_inf['obs_outras'] = st.text_area("Campo livre para quaisquer outras observações da turma:", value=data_inf.get('obs_outras', ''), height=120, key="inf_obs_outras")
+
+                with tabs[4]:
+                    st.subheader("Finalização e Assinaturas")
+                    
+                    if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary", key="inf_btn_auto"):
+                        turma_atual = st.session_state.ata_turma_confirmada_inf
+                        df_turma = df_matriz[(df_matriz['Ciclo'] == "Educação Infantil") & (df_matriz['Turma'] == turma_atual)]
+                        
+                        if not df_turma.empty:
+                            lista_final = []
+                            professores_adicionados = set()
+                            
+                            for _, row in df_turma.iterrows():
+                                materia = row['Disciplina']
+                                nome_prof = row['Professor']
+                                if nome_prof and nome_prof not in professores_adicionados:
+                                    lista_final.append({"Nome": nome_prof, "Cargo/Atuação": f"{materia} (Atuante na Turma)"})
+                                    professores_adicionados.add(nome_prof)
+                                    
+                            for _, row in df_gestao.iterrows():
+                                if row['Nome']:
+                                    lista_final.append({"Nome": row['Nome'], "Cargo/Atuação": row['Cargo']})
+                            
+                            data_inf['assinaturas'] = lista_final
+                            st.success("✅ Grade preenchida!")
+                            st.rerun()
+                        else:
+                            st.error("Turma não encontrada na Matriz de Automação (Aba Configurações).")
+
+                    st.divider()
+                    st.markdown("**Participantes da Reunião**")
+                    
+                    if 'assinaturas' not in data_inf:
+                        data_inf['assinaturas'] = [{"Nome": "", "Cargo/Atuação": ""}]
+                        
+                    for i, row in enumerate(data_inf['assinaturas']):
+                        c1, c2, c3 = st.columns([5, 4, 2])
+                        row['Nome'] = c1.text_input("Nome", value=row.get('Nome', ''), key=f"inf_sig_n_{i}", label_visibility="collapsed")
+                        row['Cargo/Atuação'] = c2.text_input("Cargo", value=row.get('Cargo/Atuação', ''), key=f"inf_sig_c_{i}", label_visibility="collapsed")
+                        
+                        b1, b2, b3 = c3.columns(3)
+                        if b1.button("⬆️", key=f"inf_up_{i}", disabled=(i == 0)):
+                            data_inf['assinaturas'][i], data_inf['assinaturas'][i-1] = data_inf['assinaturas'][i-1], data_inf['assinaturas'][i]
+                            st.rerun()
+                        if b2.button("⬇️", key=f"inf_dw_{i}", disabled=(i == len(data_inf['assinaturas']) - 1)):
+                            data_inf['assinaturas'][i], data_inf['assinaturas'][i+1] = data_inf['assinaturas'][i+1], data_inf['assinaturas'][i]
+                            st.rerun()
+                        if b3.button("🗑️", key=f"inf_del_{i}"):
+                            data_inf['assinaturas'].pop(i)
+                            st.rerun()
+                            
+                    if st.button("➕ Adicionar Participante Manualmente", key="inf_add_sig"):
+                        data_inf['assinaturas'].append({"Nome": "", "Cargo/Atuação": ""})
+                        st.rerun()
+                        
+                    st.divider()
+                    
+                    if st.button("💾 Salvar Ata do Infantil", use_container_width=True, type="secondary", key="inf_save"):
+                        try:
+                            dados_para_salvar = {}
+                            for key, value in data_inf.items():
+                                if isinstance(value, pd.DataFrame):
+                                    dados_para_salvar[key] = value.to_dict(orient='records')
+                                else:
+                                    dados_para_salvar[key] = value
+                            
+                            novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
+                            id_ata = f"{data_inf.get('turma', 'SemTurma')} - {data_inf.get('trimestre', 'SemTri')} (Infantil)"
+                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
+                            
+                            if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
+                                df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
+                            else:
+                                novo_registro = {"id_ata": id_ata, "modalidade": "Educação Infantil", "turma": data_inf.get('turma', ''), "dados_json": novo_json}
+                                df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
+                            
+                            safe_update("Atas_Conselho", df_atas)
+                            st.success(f"✅ Ata do Infantil salva com sucesso!")
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
+
+                    if st.button("👁️ GERAR ATA DO INFANTIL (PDF)", type="primary", use_container_width=True, key="inf_pdf"):
+                        try:
+                            pdf = OfficialPDF('P', 'mm', 'A4')
+                            pdf.doc_type = "Ata" 
+                            pdf.set_margins(15, 35, 15)
+                            pdf.set_auto_page_break(auto=True, margin=20)
+                            pdf.add_page()
+                            
+                            # --- CABEÇALHO ---
+                            pdf.set_font("Arial", "B", 10)
+                            escola_nome = data_inf.get('escola', 'CEIEF Rafael Affonso Leite').upper()
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(escola_nome), 0, 1, 'C')
+                            
+                            trimestre = data_inf.get('trimestre', '').upper()
+                            ano = data_inf.get('ano_letivo', '')
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"REGISTRO E CONTROLE DO ACOMPANHAMENTO ESCOLAR"), 0, 1, 'C')
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"EDUCAÇÃO INFANTIL - CONSELHO DE CLASSE/TERMO - {trimestre} DE {ano}"), 0, 1, 'C')
+                            
+                            turma = data_inf.get('turma', '')
+                            ciclo = data_inf.get('ciclo', '')
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Etapa: {ciclo}"), 0, 1, 'C')
+                            pdf.ln(5)
+                            
+                            # --- SÍNTESE AVALIATIVA ---
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_fill_color(220, 220, 220)
+                            pdf.set_x(15)
+                            pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1) 
+                            
+                            pdf.set_font("Arial", "", 10)
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_ata_inf), "LR", 'J')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 4, "", "LR", 1)
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("1- Síntese avaliativa da classe:"), "LR", 1, 'L')
+                            
+                            texto_sint = "descrever o desenvolvimento da classe em cada componente curricular, considerando os aspectos avaliados no trimestre:"
+                            pdf.set_font("Arial", "", 10)
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_sint), "LR", 'J')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 4, "", "LR", 1)
+                            
+                            disciplinas = [
+                                ("Linguagem Verbal", data_inf.get('sin_lv', '')),
+                                ("Linguagem Matemática", data_inf.get('sin_lm', '')),
+                                ("Indivíduo e Sociedade", data_inf.get('sin_is', '')),
+                                ("Arte", data_inf.get('sin_arte', '')),
+                                ("Cultura Corporal e Movimento", data_inf.get('sin_ccm', ''))
+                            ]
+                            
+                            for i, (nome, texto) in enumerate(disciplinas):
+                                if texto.strip() != "":
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}:"), "LR", 1, 'L')
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto}"), "LR", 'J')
+                                
+                                if i < len(disciplinas) - 1:
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 4, "", "LR", 1) 
+                            
+                            # --- 2. PLANO DE AÇÃO ---
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, "", "LR", 1) 
+                            
+                            if pdf.get_y() > 230: pdf.add_page()
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, clean_pdf_text("2- Plano de Ação para os estudantes com desenvolvimento abaixo do esperado em relação aos conteúdos do currículo:"), "LR", 'L')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 3, "", "LR", 1)
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            col_w = [80, 20, 20, 20, 20, 20]
+                            headers = ["Estudante", "LV", "LM", "IS", "A", "CCM"]
+                            pdf.set_x(15)
+                            for i, h in enumerate(headers):
+                                pdf.cell(col_w[i], 6, h, 1, 0, 'C')
+                            pdf.ln()
+                            
+                            pdf.set_font("Arial", "", 10)
+                            lista_abaixo = data_inf.get('abaixo_basico', [])
+                                
+                            def truncate_str(texto, max_w):
+                                while pdf.get_string_width(texto) > max_w - 2: texto = texto[:-1]
+                                return texto
+
+                            for row in lista_abaixo:
+                                estudante = str(row.get('Estudante', '')).strip()
+                                if estudante: 
+                                    pdf.set_x(15)
+                                    estudante_seguro = truncate_str(estudante, col_w[0])
+                                    pdf.cell(col_w[0], 6, clean_pdf_text(estudante_seguro), 1, 0, 'L')
+                                    pdf.cell(col_w[1], 6, clean_pdf_text(str(row.get('LV', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[2], 6, clean_pdf_text(str(row.get('LM', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[3], 6, clean_pdf_text(str(row.get('IS', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[4], 6, clean_pdf_text(str(row.get('A', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('CCM', ''))), 1, 1, 'C')
+                            
+                            pdf.set_x(15)
+                            pdf.cell(180, 3, "", "LR", 1) 
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text("*Propostas para Intervenção/Recuperação de aprendizagem:"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            
+                            for prop in propostas_ata_inf.split('\n'):
+                                if prop.strip():
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(prop.strip()), "LR", 'J')
+
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, "", "LR", 1) 
+
+                            # --- 3. OBSERVAÇÕES GERAIS ---
+                            if pdf.get_y() > 230: pdf.add_page()
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 6, clean_pdf_text("3- Observações Gerais:"), "LR", 1, 'L')
+                            pdf.set_font("Arial", "", 10)
+                            
+                            prefix_code = 97 
+                            
+                            lista_esp = data_inf.get('obs_especiais', [])
+                            esp_valid = [r for r in lista_esp if str(r.get('Estudante', '')).strip()]
+                            if esp_valid:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Desempenho de alunos especiais (laudados):"), "LR", 1, 'L')
+                                prefix_code += 1
+                                for row in esp_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    obs = str(row.get('Desempenho/Observação', '')).strip()
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs}"), "LR", 'J')
+                                pdf.set_x(15)
+                                pdf.cell(180, 2, "", "LR", 1)
+                            
+                            lista_enc = data_inf.get('encaminhamentos', [])
+                            enc_valid = [r for r in lista_enc if str(r.get('Estudante', '')).strip()]
+                            if enc_valid:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Alunos encaminhados (Conselho Tutelar/Serv. Social):"), "LR", 1, 'L')
+                                prefix_code += 1
+                                for row in enc_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    mot = str(row.get('Motivo', '')).strip()
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {mot}"), "LR", 'J')
+                                pdf.set_x(15)
+                                pdf.cell(180, 2, "", "LR", 1)
+
+                            lista_tardia = data_inf.get('mat_tardia', [])
+                            tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_x(15)
+                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                            prefix_code += 1
+                            if len(tardia_valid) > 0:
+                                for row in tardia_valid:
+                                    est = str(row.get('Estudante', '')).strip()
+                                    mat = str(row.get('Data Matrícula', '')).strip()
+                                    freq = str(row.get('Total Frequência', '')).strip()
+                                    pdf.set_font("Arial", "B", 10)
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {est}:"), "LR", 1, 'L')
+                                    texto_tardio = f"Matriculado(a) nesta sala em {mat}. Portanto, obteve um total de frequência de {freq} dias letivos."
+                                    pdf.set_font("Arial", "", 10)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto_tardio}"), "LR", 'J')
+                            else:
+                                pdf.set_font("Arial", "", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
+
+                            pdf.set_x(15)
+                            pdf.cell(180, 2, "", "LR", 1)
+                            
+                            obs_outras = data_inf.get('obs_outras', '').strip()
+                            if obs_outras:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Outras Observações:"), "LR", 1, 'L')
+                                pdf.set_font("Arial", "", 10)
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(f"  {obs_outras}"), "LR", 'J')
+                                
+                            pdf.set_x(15)
+                            pdf.cell(180, 3, "", "LRB", 1) 
+
+                            # --- ASSINATURAS ---
+                            pdf.ln(5)
+                            if pdf.get_y() > 220: pdf.add_page()
+                            
+                            pdf.set_font("Arial", "B", 10)
+                            pdf.set_fill_color(220, 220, 220)
+                            pdf.set_x(15)
+                            pdf.cell(180, 6, "ASSINATURA DOS PARTICIPANTES NA REUNIÃO DO CONSELHO DE EDUCAÇÃO INFANTIL", 1, 1, 'C', True)
+                            
+                            lista_assinaturas = data_inf.get('assinaturas', [])
+                            sigs_validas = [s for s in lista_assinaturas if str(s.get('Nome', '')).strip()]
+                            
+                            if not sigs_validas:
+                                pdf.set_x(15)
+                                pdf.cell(180, 20, "Nenhuma assinatura cadastrada para esta ata.", 1, 1, 'C')
+                            else:
+                                cols = 4
+                                cell_w = 180 / cols
+                                cell_h = 24 
+                                
+                                x_start = 15
+                                y = pdf.get_y()
+                                
+                                for i, sig in enumerate(sigs_validas):
+                                    col = i % cols
+                                    if col == 0 and i > 0:
+                                        y += cell_h
+                                    
+                                    if y + cell_h > 275:
+                                        pdf.add_page()
+                                        y = pdf.get_y()
+                                    
+                                    x = x_start + (col * cell_w)
+                                    pdf.rect(x, y, cell_w, cell_h)
+                                    
+                                    pdf.line(x + 4, y + 10, x + cell_w - 4, y + 10)
+                                    
+                                    nome = str(sig.get('Nome', '')).strip()
+                                    cargo_full = str(sig.get('Cargo/Atuação', '')).strip()
+                                    
+                                    cargo = cargo_full
+                                    atuacao = ""
+                                    if "(" in cargo_full:
+                                        parts = cargo_full.split("(")
+                                        cargo = parts[0].strip()
+                                        atuacao = parts[1].replace(")", "").strip()
+                                    
+                                    font_size = 7
+                                    pdf.set_font("Arial", "B", font_size)
+                                    while pdf.get_string_width(nome) > cell_w - 2 and font_size > 4.5:
+                                        font_size -= 0.5
+                                        pdf.set_font("Arial", "B", font_size)
+                                    
+                                    pdf.set_xy(x + 1, y + 11) 
+                                    pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(nome), 0, 'C')
+                                    
+                                    pdf.set_font("Arial", "", 6)
+                                    curr_y = pdf.get_y()
+                                    pdf.set_xy(x + 1, curr_y)
+                                    pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(cargo), 0, 'C')
+                                    
+                                    if atuacao:
+                                        curr_y = pdf.get_y()
+                                        pdf.set_xy(x + 1, curr_y)
+                                        pdf.multi_cell(cell_w - 2, 3, clean_pdf_text(atuacao), 0, 'C')
+                                
+                                pdf.set_y(y + cell_h)
+
+                            st.session_state.pdf_bytes_ata = get_pdf_bytes(pdf)
+                            st.success("✅ PDF do Infantil gerado com sucesso!")
+                        except Exception as e:
+                            st.error(f"Erro ao desenhar o PDF: {e}")
+
+                if 'pdf_bytes_ata' in st.session_state:
+                    turma_limpa = str(data_inf.get('turma', 'Turma')).replace('/', '-').replace('\\', '-')
+                    trimestre_limpo = str(data_inf.get('trimestre', 'Trimestre')).replace('/', '-')
+                    st.download_button("📥 BAIXAR ATA DO INFANTIL", st.session_state.pdf_bytes_ata, f"Ata_Infantil_{turma_limpa}_{trimestre_limpo}.pdf", "application/pdf", type="primary")
+
     # ==============================================================================
     # 2. TELA: HISTÓRICO DE ATAS
     # ==============================================================================
@@ -6176,7 +6718,13 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                         st.session_state.data_ata_ef = dados_json
                         st.session_state.ata_turma_confirmada = dados_json.get('turma', '')
                         st.session_state.ata_ciclo_confirmado = dados_json.get('ciclo', '')
-                    st.success(f"Ata '{ata_selecionada}' carregada! Vá para 'Nova Ata' para visualizar.")
+                        
+                    elif dados_row["modalidade"] == "Educação Infantil":
+                        st.session_state.data_ata_inf = dados_json
+                        st.session_state.ata_turma_confirmada_inf = dados_json.get('turma', '')
+                        st.session_state.ata_ciclo_confirmado_inf = dados_json.get('ciclo', '')
+                        
+                    st.success(f"Ata '{ata_selecionada}' carregada! Vá para 'Nova Ata' e certifique-se de escolher a modalidade correta no menu lateral.")
                 except Exception as e:
                     st.error(f"Erro ao carregar: {e}")
             
@@ -6196,34 +6744,41 @@ elif modulo_atuacao == "🏫 Ensino Regular":
     if app_mode_regular == "⚙️ Configurações":
         st.markdown('<div class="header-box"><div class="header-title">Configurações do Sistema</div><div class="header-subtitle">Textos Base e Matriz de Professores</div></div>', unsafe_allow_html=True)
         
-        t_conf = st.tabs(["📝 Textos Padrões", "👨‍🏫 Matriz de Professores", "👔 Matriz da Gestão"])
+        t_conf = st.tabs(["📝 Textos Fund.", "🧸 Textos Inf.", "👨‍🏫 Matriz de Professores", "👔 Matriz da Gestão"])
         
         with t_conf[0]:
-            st.info("💡 As edições salvas aqui serão utilizadas automaticamente nas novas Atas geradas.")
-            novo_texto_base = st.text_area("Texto Base da Síntese Avaliativa (Legislações)", value=texto_base_ata, height=180)
-            novas_propostas = st.text_area("Propostas de Recuperação", value=propostas_ata, height=250)
+            st.info("💡 As edições salvas aqui serão utilizadas automaticamente nas novas Atas do Ensino Fundamental.")
+            novo_texto_base = st.text_area("Texto Base da Síntese Avaliativa (Legislações)", value=texto_base_ata_ef, height=180)
+            novas_propostas = st.text_area("Propostas de Recuperação", value=propostas_ata_ef, height=250)
             
-            if st.button("💾 Salvar Textos", type="primary", use_container_width=True):
-                # Salva Texto Base
-                if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
-                    df_config.loc[df_config["chave"] == "texto_base_ata", "valor"] = novo_texto_base
-                else:
-                    df_config = pd.concat([df_config, pd.DataFrame([{"chave": "texto_base_ata", "valor": novo_texto_base}])], ignore_index=True)
+            if st.button("💾 Salvar Textos Fundamental", type="primary", use_container_width=True):
+                if not df_config.empty and "texto_base_ata" in df_config["chave"].values: df_config.loc[df_config["chave"] == "texto_base_ata", "valor"] = novo_texto_base
+                else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "texto_base_ata", "valor": novo_texto_base}])], ignore_index=True)
                 
-                # Salva Propostas
-                if not df_config.empty and "propostas_ata" in df_config["chave"].values:
-                    df_config.loc[df_config["chave"] == "propostas_ata", "valor"] = novas_propostas
-                else:
-                    df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata", "valor": novas_propostas}])], ignore_index=True)
+                if not df_config.empty and "propostas_ata" in df_config["chave"].values: df_config.loc[df_config["chave"] == "propostas_ata", "valor"] = novas_propostas
+                else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata", "valor": novas_propostas}])], ignore_index=True)
                 
                 safe_update("Config_Ata", df_config)
                 st.success("✅ Textos atualizados!")
 
         with t_conf[1]:
-            st.info("💡 Edite a tabela para alterar a atribuição de aulas. O Robô de Assinaturas usa esta tabela para gerar os PDFs.")
-            st.caption("DICA: Para adicionar uma linha nova, preencha os dados na última linha em branco.")
+            st.info("💡 As edições salvas aqui serão utilizadas automaticamente nas novas Atas da Educação Infantil.")
+            novo_texto_base_inf = st.text_area("Texto Base da Síntese Avaliativa (Infantil)", value=texto_base_ata_inf, height=180)
+            novas_propostas_inf = st.text_area("Propostas de Intervenção (Infantil)", value=propostas_ata_inf, height=200)
             
-            # Editor Dinâmico da Matriz
+            if st.button("💾 Salvar Textos Infantil", type="primary", use_container_width=True):
+                if not df_config.empty and "texto_base_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "texto_base_ata_inf", "valor"] = novo_texto_base_inf
+                else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "texto_base_ata_inf", "valor": novo_texto_base_inf}])], ignore_index=True)
+                
+                if not df_config.empty and "propostas_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "propostas_ata_inf", "valor"] = novas_propostas_inf
+                else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata_inf", "valor": novas_propostas_inf}])], ignore_index=True)
+                
+                safe_update("Config_Ata", df_config)
+                st.success("✅ Textos do Infantil atualizados!")
+
+        with t_conf[2]:
+            st.info("💡 Edite a tabela para alterar a atribuição de aulas.")
+            
             config_col_matriz = {
                 "Ciclo": st.column_config.SelectboxColumn("Ciclo", options=["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)", "Educação Infantil", "EJA"]),
                 "Turma": st.column_config.TextColumn("Turma (Ex: 5º Ano 1)"),
@@ -6242,7 +6797,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 safe_update("Config_Ata", df_config)
                 st.success("✅ Matriz de professores salva com sucesso!")
 
-        with t_conf[2]:
+        with t_conf[3]:
             st.info("💡 Edite a tabela para atualizar quem assina como Equipe Gestora nas Atas.")
             
             config_col_gestao = {
