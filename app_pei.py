@@ -5372,12 +5372,28 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 10. Sistematizar atividades para consolidação dos conteúdos;"""
     propostas_ata_ef = get_config("propostas_ata", propostas_padrao_ef)
 
-    # --- Textos da Educação Infantil ---
+    # --- Textos e Conteúdos da Educação Infantil ---
     texto_base_padrao_inf = "Com base na Resolução SME nº 07/24, considerando as orientações da Resolução nº 02/2025 que atualiza o calendário escolar da Rede Municipal em decorrência da portaria nº 729 de 21 de fevereiro de 2025, que dispõe sobre o Calendário Escolar do ano de 2026 das Escolas da Rede Municipal de Ensino de Limeira, especialmente no inciso V do artigo 5º que indica a realização do Conselho de Educação Infantil, na avaliação diagnóstica produzida em fevereiro de 2026 e nas avaliações realizadas na unidade escolar no primeiro trimestre de 2026. Essa ata possibilita a análise sobre aprendizagem e desempenho dos estudantes e os resultados das estratégias de ensino empregadas."
     texto_base_ata_inf = get_config("texto_base_ata_inf", texto_base_padrao_inf)
     
     propostas_padrao_inf = "1. \n2. \n3. \n4. \n5. \n6. "
     propostas_ata_inf = get_config("propostas_ata_inf", propostas_padrao_inf)
+
+    # Conteúdos Curriculares (Default para 1ª Etapa)
+    crit_lv_padrao = "Oralidade: (Pronúncia correta das palavras; Participação atenta nas exposições orais escutando com atenção, respondendo e elaborando questões); Leitura: (Compreensão do significado das palavras; Socialização de critérios de escolha e de apreciação estética de leituras; Leitura de sílabas canônica e não canônicas; Localização de Informações explícitas); Análise Linguística: (Escrita de palavras utilizando a direção convencional; Reconhecimento e utilização das letras do alfabeto para a produção escrita; Traçado de modo convencional as letras com o auxílio do(a) professor(a)); Produção: (Produção oral de textos com destino escrito considerando gênero trabalhado (silhueta), (interlocutor) (sentido a partir de uma situação dada))."
+    criterios_inf_lv = get_config("criterios_inf_lv", crit_lv_padrao)
+
+    crit_lm_padrao = "Álgebra (Classificação por semelhanças e diferenças); Estatística (Identificação de informações em gráficos de colunas); Geometria (Noções de: direcionalidade, proximidade, interioridade, exterioridade, reconhecimento de figuras geométricas planas e espaciais); Grandezas e medidas (Noções de: tempo, massa, capacidade e comprimento); Números e operações (Sistema de numeração decimal: récita numérica, reconhecimento da representação simbólica, contagem, associação quantidade/número e Ideias das operações: resolução de situações-problema com ideia de juntar - com apoio de material manipulativo)."
+    criterios_inf_lm = get_config("criterios_inf_lm", crit_lm_padrao)
+
+    crit_is_padrao = "Sistema biológico: Saúde (Princípios de higiene pessoal: banho diário, cuidado com os dentes, lavagem das mãos); Sujeito histórico: Dados pessoais, Identidade e Escola (Nome e Sobrenome; nomes dos colegas e educadores; regras de convivência no ambiente escolar)."
+    criterios_inf_is = get_config("criterios_inf_is", crit_is_padrao)
+
+    crit_arte_padrao = "Identificação e nomeação de formas geométricas básicas; Identificação e nomeação de cores; Identificação de instrumentos e suas famílias; Relação do som com a fonte sonora; Expressão de forma oral, gestual, utilizando a imaginação na representação teatral."
+    criterios_inf_arte = get_config("criterios_inf_arte", crit_arte_padrao)
+
+    crit_ccm_padrao = "Vivência de diversas formas de deslocamento nas situações de brincadeira (andar para frente, andar para trás, quadrupejar, saltar com um dos pés, saltitar, correr); Participação em brincadeira(s) cantada(s), realizando os movimentos sugeridos; Participação em brincadeira envolvendo a imitação, utilizando a linguagem corporal; Reconhecimento em si das diversas partes do corpo; Identificação da relação entre seu corpo e o espaço: Experimentação de movimentos estáticos e dinâmicos de equilíbrio."
+    criterios_inf_ccm = get_config("criterios_inf_ccm", crit_ccm_padrao)
     
     # Matriz de Professores Padrão (Semente)
     MATRIZ_SEED = [
@@ -6024,11 +6040,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                             lista_tardia = data_ata.get('mat_tardia', [])
                             tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
-                            pdf.set_font("Arial", "B", 10)
-                            pdf.set_x(15)
-                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
-                            prefix_code += 1
                             if len(tardia_valid) > 0:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                                prefix_code += 1
                                 for row in tardia_valid:
                                     est = str(row.get('Estudante', '')).strip()
                                     mat = str(row.get('Data Matrícula', '')).strip()
@@ -6043,7 +6059,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             else:
                                 pdf.set_font("Arial", "", 10)
                                 pdf.set_x(15)
-                                pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
+                                pdf.cell(180, 5, f" {chr(prefix_code)}) Sem matrículas tardias registradas no período.", "LR", 1)
+                                prefix_code += 1
 
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1)
@@ -6221,24 +6238,27 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                 with tabs[1]:
                     st.subheader("Síntese Avaliativa da Classe - Campos de Experiência")
+                    st.info("Abaixo de cada campo, digite a síntese correspondente à turma. Os conteúdos avaliados (configurados para esta etapa) já estão listados como referência e constarão no PDF gerado.")
                     
-                    if "1ª Etapa" in st.session_state.ata_ciclo_confirmado_inf:
-                        with st.expander("💡 Dicas de preenchimento para a 1ª Etapa (Clique para abrir)"):
-                            st.markdown("""
-                            **Linguagem Verbal:** Oralidade (Pronúncia correta, participação atenta); Leitura (Compreensão, sílabas canônicas e não canônicas); Análise Linguística (Escrita convencional); Produção.
-                            **Linguagem Matemática:** Álgebra (Classificação); Estatística (Gráficos); Geometria (Figuras planas e espaciais); Grandezas (Tempo, massa); Números (Sistema decimal).
-                            **Indivíduo e Sociedade:** Sistema biológico (Saúde e higiene); Sujeito histórico (Dados pessoais, regras).
-                            **Arte:** Formas geométricas, Cores, Instrumentos, Relação do som, Expressão teatral.
-                            **Cultura Corporal:** Deslocamento (saltitar, correr), Brincadeiras cantadas, Partes do corpo, Equilíbrio.
-                            """)
-                    else:
-                        st.info("Descreva o desenvolvimento da classe em cada componente curricular no trimestre atual.")
-
-                    data_inf['sin_lv'] = st.text_area("Linguagem Verbal", value=data_inf.get('sin_lv', ''), height=100)
-                    data_inf['sin_lm'] = st.text_area("Linguagem Matemática", value=data_inf.get('sin_lm', ''), height=100)
-                    data_inf['sin_is'] = st.text_area("Indivíduo e Sociedade", value=data_inf.get('sin_is', ''), height=100)
-                    data_inf['sin_arte'] = st.text_area("Arte", value=data_inf.get('sin_arte', ''), height=100)
-                    data_inf['sin_ccm'] = st.text_area("Cultura Corporal e Movimento", value=data_inf.get('sin_ccm', ''), height=100)
+                    st.markdown("**Linguagem Verbal:** descrever o desenvolvimento da classe referente a:")
+                    st.caption(f"_{criterios_inf_lv}_")
+                    data_inf['sin_lv'] = st.text_area("Síntese - Linguagem Verbal", value=data_inf.get('sin_lv', ''), height=100, label_visibility="collapsed", key="txt_lv")
+                    
+                    st.markdown("**Linguagem Matemática:** descrever o desenvolvimento da classe referente a:")
+                    st.caption(f"_{criterios_inf_lm}_")
+                    data_inf['sin_lm'] = st.text_area("Síntese - Linguagem Matemática", value=data_inf.get('sin_lm', ''), height=100, label_visibility="collapsed", key="txt_lm")
+                    
+                    st.markdown("**Indivíduo e Sociedade:** descrever o desenvolvimento da classe em relação a:")
+                    st.caption(f"_{criterios_inf_is}_")
+                    data_inf['sin_is'] = st.text_area("Síntese - Indivíduo e Sociedade", value=data_inf.get('sin_is', ''), height=100, label_visibility="collapsed", key="txt_is")
+                    
+                    st.markdown("**Arte:** descrever o desenvolvimento da classe referente a:")
+                    st.caption(f"_{criterios_inf_arte}_")
+                    data_inf['sin_arte'] = st.text_area("Síntese - Arte", value=data_inf.get('sin_arte', ''), height=100, label_visibility="collapsed", key="txt_arte")
+                    
+                    st.markdown("**Cultura Corporal e Movimento:** descrever o desenvolvimento da classe em relação a:")
+                    st.caption(f"_{criterios_inf_ccm}_")
+                    data_inf['sin_ccm'] = st.text_area("Síntese - Cultura Corporal", value=data_inf.get('sin_ccm', ''), height=100, label_visibility="collapsed", key="txt_ccm")
 
                 with tabs[2]:
                     st.subheader("Plano de Ação")
@@ -6446,24 +6466,32 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
                             
-                            disciplinas = [
-                                ("Linguagem Verbal", data_inf.get('sin_lv', '')),
-                                ("Linguagem Matemática", data_inf.get('sin_lm', '')),
-                                ("Indivíduo e Sociedade", data_inf.get('sin_is', '')),
-                                ("Arte", data_inf.get('sin_arte', '')),
-                                ("Cultura Corporal e Movimento", data_inf.get('sin_ccm', ''))
+                            # Lista dos conteúdos impressos no PDF + O texto do professor
+                            disciplinas_inf = [
+                                ("Linguagem Verbal", criterios_inf_lv, data_inf.get('sin_lv', '')),
+                                ("Linguagem Matemática", criterios_inf_lm, data_inf.get('sin_lm', '')),
+                                ("Indivíduo e Sociedade", criterios_inf_is, data_inf.get('sin_is', '')),
+                                ("Arte", criterios_inf_arte, data_inf.get('sin_arte', '')),
+                                ("Cultura Corporal e Movimento", criterios_inf_ccm, data_inf.get('sin_ccm', ''))
                             ]
                             
-                            for i, (nome, texto) in enumerate(disciplinas):
-                                if texto.strip() != "":
-                                    pdf.set_font("Arial", "B", 10)
+                            for i, (nome, crit, texto) in enumerate(disciplinas_inf):
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}: descrever o desenvolvimento da classe referente a:"), "LR", 1, 'L')
+                                
+                                pdf.set_font("Arial", "", 9)
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, clean_pdf_text(f"    {crit}"), "LR", 'J')
+                                
+                                if texto.strip():
                                     pdf.set_x(15)
-                                    pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}:"), "LR", 1, 'L')
+                                    pdf.cell(180, 2, "", "LR", 1)
                                     pdf.set_font("Arial", "", 10)
                                     pdf.set_x(15)
-                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto}"), "LR", 'J')
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"    {texto}"), "LR", 'J')
                                 
-                                if i < len(disciplinas) - 1:
+                                if i < len(disciplinas_inf) - 1:
                                     pdf.set_x(15)
                                     pdf.cell(180, 4, "", "LR", 1) 
                             
@@ -6573,11 +6601,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 
                             lista_tardia = data_inf.get('mat_tardia', [])
                             tardia_valid = [r for r in lista_tardia if str(r.get('Estudante', '')).strip()]
-                            pdf.set_font("Arial", "B", 10)
-                            pdf.set_x(15)
-                            pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
-                            prefix_code += 1
                             if len(tardia_valid) > 0:
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
+                                pdf.cell(180, 5, clean_pdf_text(f"{chr(prefix_code)}) Estudantes Matriculados Tardiamente:"), "LR", 1, 'L')
+                                prefix_code += 1
                                 for row in tardia_valid:
                                     est = str(row.get('Estudante', '')).strip()
                                     mat = str(row.get('Data Matrícula', '')).strip()
@@ -6592,7 +6620,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             else:
                                 pdf.set_font("Arial", "", 10)
                                 pdf.set_x(15)
-                                pdf.cell(180, 5, " Sem matrículas tardias registradas no período.", "LR", 1)
+                                pdf.cell(180, 5, f" {chr(prefix_code)}) Sem matrículas tardias registradas no período.", "LR", 1)
+                                prefix_code += 1
 
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1)
@@ -6762,9 +6791,16 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 st.success("✅ Textos atualizados!")
 
         with t_conf[1]:
-            st.info("💡 As edições salvas aqui serão utilizadas automaticamente nas novas Atas da Educação Infantil.")
-            novo_texto_base_inf = st.text_area("Texto Base da Síntese Avaliativa (Infantil)", value=texto_base_ata_inf, height=180)
-            novas_propostas_inf = st.text_area("Propostas de Intervenção (Infantil)", value=propostas_ata_inf, height=200)
+            st.info("💡 Configure os textos base e os conteúdos curriculares avaliados (eles mudam conforme a Etapa/Maternal).")
+            novo_texto_base_inf = st.text_area("Texto Base da Síntese Avaliativa (Infantil)", value=texto_base_ata_inf, height=120)
+            novas_propostas_inf = st.text_area("Propostas de Intervenção (Infantil)", value=propostas_ata_inf, height=120)
+            
+            st.markdown("**Conteúdos Avaliados por Campo de Experiência**")
+            novo_crit_lv = st.text_area("Linguagem Verbal", value=criterios_inf_lv)
+            novo_crit_lm = st.text_area("Linguagem Matemática", value=criterios_inf_lm)
+            novo_crit_is = st.text_area("Indivíduo e Sociedade", value=criterios_inf_is)
+            novo_crit_arte = st.text_area("Arte", value=criterios_inf_arte)
+            novo_crit_ccm = st.text_area("Cultura Corporal e Movimento", value=criterios_inf_ccm)
             
             if st.button("💾 Salvar Textos Infantil", type="primary", use_container_width=True):
                 if not df_config.empty and "texto_base_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "texto_base_ata_inf", "valor"] = novo_texto_base_inf
@@ -6773,8 +6809,14 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if not df_config.empty and "propostas_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "propostas_ata_inf", "valor"] = novas_propostas_inf
                 else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata_inf", "valor": novas_propostas_inf}])], ignore_index=True)
                 
+                # Salvando os Critérios
+                chaves_crit = [("criterios_inf_lv", novo_crit_lv), ("criterios_inf_lm", novo_crit_lm), ("criterios_inf_is", novo_crit_is), ("criterios_inf_arte", novo_crit_arte), ("criterios_inf_ccm", novo_crit_ccm)]
+                for k, v in chaves_crit:
+                    if not df_config.empty and k in df_config["chave"].values: df_config.loc[df_config["chave"] == k, "valor"] = v
+                    else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": k, "valor": v}])], ignore_index=True)
+
                 safe_update("Config_Ata", df_config)
-                st.success("✅ Textos do Infantil atualizados!")
+                st.success("✅ Textos e Conteúdos do Infantil atualizados!")
 
         with t_conf[2]:
             st.info("💡 Edite a tabela para alterar a atribuição de aulas.")
