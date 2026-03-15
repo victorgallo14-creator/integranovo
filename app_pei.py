@@ -5379,23 +5379,27 @@ elif modulo_atuacao == "🏫 Ensino Regular":
     propostas_padrao_inf = "1. \n2. \n3. \n4. \n5. \n6. "
     propostas_ata_inf = get_config("propostas_ata_inf", propostas_padrao_inf)
 
-    # Conteúdos Curriculares (Default para 1ª Etapa)
-    crit_lv_padrao = "Oralidade: (Pronúncia correta das palavras; Participação atenta nas exposições orais escutando com atenção, respondendo e elaborando questões); Leitura: (Compreensão do significado das palavras; Socialização de critérios de escolha e de apreciação estética de leituras; Leitura de sílabas canônica e não canônicas; Localização de Informações explícitas); Análise Linguística: (Escrita de palavras utilizando a direção convencional; Reconhecimento e utilização das letras do alfabeto para a produção escrita; Traçado de modo convencional as letras com o auxílio do(a) professor(a)); Produção: (Produção oral de textos com destino escrito considerando gênero trabalhado (silhueta), (interlocutor) (sentido a partir de uma situação dada))."
-    criterios_inf_lv = get_config("criterios_inf_lv", crit_lv_padrao)
-
-    crit_lm_padrao = "Álgebra (Classificação por semelhanças e diferenças); Estatística (Identificação de informações em gráficos de colunas); Geometria (Noções de: direcionalidade, proximidade, interioridade, exterioridade, reconhecimento de figuras geométricas planas e espaciais); Grandezas e medidas (Noções de: tempo, massa, capacidade e comprimento); Números e operações (Sistema de numeração decimal: récita numérica, reconhecimento da representação simbólica, contagem, associação quantidade/número e Ideias das operações: resolução de situações-problema com ideia de juntar - com apoio de material manipulativo)."
-    criterios_inf_lm = get_config("criterios_inf_lm", crit_lm_padrao)
-
-    crit_is_padrao = "Sistema biológico: Saúde (Princípios de higiene pessoal: banho diário, cuidado com os dentes, lavagem das mãos); Sujeito histórico: Dados pessoais, Identidade e Escola (Nome e Sobrenome; nomes dos colegas e educadores; regras de convivência no ambiente escolar)."
-    criterios_inf_is = get_config("criterios_inf_is", crit_is_padrao)
-
-    crit_arte_padrao = "Identificação e nomeação de formas geométricas básicas; Identificação e nomeação de cores; Identificação de instrumentos e suas famílias; Relação do som com a fonte sonora; Expressão de forma oral, gestual, utilizando a imaginação na representação teatral."
-    criterios_inf_arte = get_config("criterios_inf_arte", crit_arte_padrao)
-
-    crit_ccm_padrao = "Vivência de diversas formas de deslocamento nas situações de brincadeira (andar para frente, andar para trás, quadrupejar, saltar com um dos pés, saltitar, correr); Participação em brincadeira(s) cantada(s), realizando os movimentos sugeridos; Participação em brincadeira envolvendo a imitação, utilizando a linguagem corporal; Reconhecimento em si das diversas partes do corpo; Identificação da relação entre seu corpo e o espaço: Experimentação de movimentos estáticos e dinâmicos de equilíbrio."
-    criterios_inf_ccm = get_config("criterios_inf_ccm", crit_ccm_padrao)
+    def get_criterios_infantil(etapa):
+        # Define os padrões para a 1ª Etapa (como Semente)
+        padrao_lv = "Oralidade: (Pronúncia correta das palavras; Participação atenta nas exposições orais escutando com atenção, respondendo e elaborando questões); Leitura: (Compreensão do significado das palavras; Socialização de critérios de escolha e de apreciação estética de leituras; Leitura de sílabas canônica e não canônicas; Localização de Informações explícitas); Análise Linguística: (Escrita de palavras utilizando a direção convencional; Reconhecimento e utilização das letras do alfabeto para a produção escrita; Traçado de modo convencional as letras com o auxílio do(a) professor(a)); Produção: (Produção oral de textos com destino escrito considerando gênero trabalhado (silhueta), (interlocutor) (sentido a partir de uma situação dada))."
+        padrao_lm = "Álgebra (Classificação por semelhanças e diferenças); Estatística (Identificação de informações em gráficos de colunas); Geometria (Noções de: direcionalidade, proximidade, interioridade, exterioridade, reconhecimento de figuras geométricas planas e espaciais); Grandezas e medidas (Noções de: tempo, massa, capacidade e comprimento); Números e operações (Sistema de numeração decimal: récita numérica, reconhecimento da representação simbólica, contagem, associação quantidade/número e Ideias das operações: resolução de situações-problema com ideia de juntar - com apoio de material manipulativo)."
+        padrao_is = "Sistema biológico: Saúde (Princípios de higiene pessoal: banho diário, cuidado com os dentes, lavagem das mãos); Sujeito histórico: Dados pessoais, Identidade e Escola (Nome e Sobrenome; nomes dos colegas e educadores; regras de convivência no ambiente escolar)."
+        padrao_arte = "Identificação e nomeação de formas geométricas básicas; Identificação e nomeação de cores; Identificação de instrumentos e suas famílias; Relação do som com a fonte sonora; Expressão de forma oral, gestual, utilizando a imaginação na representação teatral."
+        padrao_ccm = "Vivência de diversas formas de deslocamento nas situações de brincadeira (andar para frente, andar para trás, quadrupejar, saltar com um dos pés, saltitar, correr); Participação em brincadeira(s) cantada(s), realizando os movimentos sugeridos; Participação em brincadeira envolvendo a imitação, utilizando a linguagem corporal; Reconhecimento em si das diversas partes do corpo; Identificação da relação entre seu corpo e o espaço: Experimentação de movimentos estáticos e dinâmicos de equilíbrio."
+        
+        # Se for outra etapa e não tiver configurado ainda, volta vazio para a escola preencher
+        if etapa != "1ª Etapa":
+            padrao_lv, padrao_lm, padrao_is, padrao_arte, padrao_ccm = "", "", "", "", ""
+            
+        return {
+            "LV": get_config(f"crit_lv_{etapa}", padrao_lv),
+            "LM": get_config(f"crit_lm_{etapa}", padrao_lm),
+            "IS": get_config(f"crit_is_{etapa}", padrao_is),
+            "Arte": get_config(f"crit_arte_{etapa}", padrao_arte),
+            "CCM": get_config(f"crit_ccm_{etapa}", padrao_ccm)
+        }
     
-    # Matriz de Professores Padrão (Semente)
+    # Matriz de Professores Padrão (Semente Atualizada)
     MATRIZ_SEED = [
         {"Ciclo": "Ciclo I (1º ao 3º ano)", "Turma": "1º Ano 1", "Disciplina": "Polivalente", "Professor": "Juliana Aparecida da Silva"},
         {"Ciclo": "Ciclo I (1º ao 3º ano)", "Turma": "1º Ano 1", "Disciplina": "Artes", "Professor": "Jordana Lima Alvez"},
@@ -5465,10 +5469,41 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Educação Física", "Professor": "Michel Luciano de Lima"},
         {"Ciclo": "Ciclo II (4º e 5º ano)", "Turma": "5º Ano 3", "Disciplina": "Linguagens e Tecnologias", "Professor": "Bruna Thais Bernini Guedes"},
         
-        # Estrutura base para a Educação Infantil
-        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Professor de Ed. Infantil", "Professor": ""},
-        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Artes", "Professor": ""},
-        {"Ciclo": "Educação Infantil", "Turma": "1ª Etapa A", "Disciplina": "Educação Física", "Professor": ""}
+        # --- EDUCAÇÃO INFANTIL ---
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 1", "Disciplina": "Professor de Ed. Infantil", "Professor": "Luciana Lopes Faber"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 1", "Disciplina": "Artes", "Professor": "Karen Cristina Fernandes Donatti"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 1", "Disciplina": "Educação Física", "Professor": "Michel Luciano de Lima"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 1", "Disciplina": "Linguagens e Tecnologias", "Professor": "Karina Brum Rivabene Gracini"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 2", "Disciplina": "Professor de Ed. Infantil", "Professor": "Sandra Maria Ribeiro dos Santos Brito"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 2", "Disciplina": "Artes", "Professor": "Karen Cristina Fernandes Donatti"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 2", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 2", "Disciplina": "Linguagens e Tecnologias", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 3", "Disciplina": "Professor de Ed. Infantil", "Professor": "Amanda Mussi"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 3", "Disciplina": "Artes", "Professor": "Karen Cristina Fernandes Donatti"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 3", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "1ª Etapa", "Turma": "1ª Etapa 3", "Disciplina": "Linguagens e Tecnologias", "Professor": "Fernando Indig Bongiovanni"},
+        
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 1", "Disciplina": "Professor de Ed. Infantil", "Professor": "Keila Maria Ribeiro dos Santos"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 1", "Disciplina": "Artes", "Professor": "Jordana Lima Alvez"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 1", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 1", "Disciplina": "Linguagens e Tecnologias", "Professor": "Elaine Cristina Neves Fahl"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 2", "Disciplina": "Professor de Ed. Infantil", "Professor": "Sandra Maria Ribeiro dos Santos Brito"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 2", "Disciplina": "Artes", "Professor": "Jordana Lima Alvez"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 2", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 2", "Disciplina": "Linguagens e Tecnologias", "Professor": "Elaine Cristina Neves Fahl"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 3", "Disciplina": "Professor de Ed. Infantil", "Professor": "Adriana Mello Costa"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 3", "Disciplina": "Artes", "Professor": "Jordana Lima Alvez"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 3", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "2ª Etapa", "Turma": "2ª Etapa 3", "Disciplina": "Linguagens e Tecnologias", "Professor": "Elaine Cristina Neves Fahl"},
+        
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 1", "Disciplina": "Professor de Ed. Infantil", "Professor": "Fernanda Dumit Graf"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 1", "Disciplina": "Artes", "Professor": "Bruna Thais Bernini Guedes"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 1", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 1", "Disciplina": "Linguagens e Tecnologias", "Professor": "Karina Brum Rivabene Gracini"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 2", "Disciplina": "Professor de Ed. Infantil", "Professor": "Lucineide Almeida da Silva"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 2", "Disciplina": "Artes", "Professor": ""},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 2", "Disciplina": "Educação Física", "Professor": "Fernando Indig Bongiovanni"},
+        {"Ciclo": "Maternal II", "Turma": "Maternal II 2", "Disciplina": "Linguagens e Tecnologias", "Professor": "Elaine Cristina Neves Fahl"}
     ]
     matriz_json = get_config("matriz_professores", "")
     df_matriz = pd.DataFrame(json.loads(matriz_json)) if matriz_json else pd.DataFrame(MATRIZ_SEED)
@@ -5806,7 +5841,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.cell(180, 5, clean_pdf_text(f"Turma: {turma} | Ciclo: {ciclo}"), 0, 1, 'C')
                             pdf.ln(5)
                             
-                            # --- SÍNTESE AVALIATIVA ---
+                            # ==============================================================================
+                            # INÍCIO DA SUPER CAIXA
+                            # ==============================================================================
+                            
+                            # --- 1. SÍNTESE AVALIATIVA ---
                             pdf.set_font("Arial", "B", 10)
                             pdf.set_fill_color(220, 220, 220)
                             pdf.set_x(15)
@@ -6192,7 +6231,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 c_c, c_t = st.columns(2)
                 ciclo_sel = c_c.selectbox("1. Selecione a Fase/Etapa:", ["Maternal II", "1ª Etapa", "2ª Etapa", "Educação Infantil"])
                 
-                turmas_bd = df_matriz[df_matriz['Ciclo'] == "Educação Infantil"]['Turma'].unique().tolist()
+                # Para o infantil, vamos buscar todas as turmas que correspondam ao ciclo ou que tenham a palavra no nome
+                turmas_bd = df_matriz[df_matriz['Ciclo'].str.contains("Infantil|Etapa|Maternal", na=False)]['Turma'].unique().tolist()
                 turmas_disp = turmas_bd + ["Outra Turma..."]
                 
                 turma_sel = c_t.selectbox("2. Selecione a Turma:", turmas_disp)
@@ -6217,6 +6257,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 if c_btn.button("⬅️ Trocar Turma", use_container_width=True, key="btn_trocar_inf"):
                     st.session_state.ata_turma_confirmada_inf = None
                     st.rerun()
+                
+                # Busca os critérios da etapa selecionada para mostrar na tela e imprimir no PDF
+                criterios_etapa = get_criterios_infantil(st.session_state.ata_ciclo_confirmado_inf)
                     
                 tabs = st.tabs(["1. Identificação", "2. Síntese Avaliativa", "3. Plano de Ação", "4. Observações", "5. Finalização"])
                 
@@ -6241,23 +6284,23 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.info("Abaixo de cada campo, digite a síntese correspondente à turma. Os conteúdos avaliados (configurados para esta etapa) já estão listados como referência e constarão no PDF gerado.")
                     
                     st.markdown("**Linguagem Verbal:** descrever o desenvolvimento da classe referente a:")
-                    st.caption(f"_{criterios_inf_lv}_")
+                    if criterios_etapa["LV"]: st.caption(f"_{criterios_etapa['LV']}_")
                     data_inf['sin_lv'] = st.text_area("Síntese - Linguagem Verbal", value=data_inf.get('sin_lv', ''), height=100, label_visibility="collapsed", key="txt_lv")
                     
                     st.markdown("**Linguagem Matemática:** descrever o desenvolvimento da classe referente a:")
-                    st.caption(f"_{criterios_inf_lm}_")
+                    if criterios_etapa["LM"]: st.caption(f"_{criterios_etapa['LM']}_")
                     data_inf['sin_lm'] = st.text_area("Síntese - Linguagem Matemática", value=data_inf.get('sin_lm', ''), height=100, label_visibility="collapsed", key="txt_lm")
                     
                     st.markdown("**Indivíduo e Sociedade:** descrever o desenvolvimento da classe em relação a:")
-                    st.caption(f"_{criterios_inf_is}_")
+                    if criterios_etapa["IS"]: st.caption(f"_{criterios_etapa['IS']}_")
                     data_inf['sin_is'] = st.text_area("Síntese - Indivíduo e Sociedade", value=data_inf.get('sin_is', ''), height=100, label_visibility="collapsed", key="txt_is")
                     
                     st.markdown("**Arte:** descrever o desenvolvimento da classe referente a:")
-                    st.caption(f"_{criterios_inf_arte}_")
+                    if criterios_etapa["Arte"]: st.caption(f"_{criterios_etapa['Arte']}_")
                     data_inf['sin_arte'] = st.text_area("Síntese - Arte", value=data_inf.get('sin_arte', ''), height=100, label_visibility="collapsed", key="txt_arte")
                     
                     st.markdown("**Cultura Corporal e Movimento:** descrever o desenvolvimento da classe em relação a:")
-                    st.caption(f"_{criterios_inf_ccm}_")
+                    if criterios_etapa["CCM"]: st.caption(f"_{criterios_etapa['CCM']}_")
                     data_inf['sin_ccm'] = st.text_area("Síntese - Cultura Corporal", value=data_inf.get('sin_ccm', ''), height=100, label_visibility="collapsed", key="txt_ccm")
 
                 with tabs[2]:
@@ -6335,8 +6378,10 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.subheader("Finalização e Assinaturas")
                     
                     if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary", key="inf_btn_auto"):
+                        ciclo_atual = st.session_state.ata_ciclo_confirmado_inf
                         turma_atual = st.session_state.ata_turma_confirmada_inf
-                        df_turma = df_matriz[(df_matriz['Ciclo'] == "Educação Infantil") & (df_matriz['Turma'] == turma_atual)]
+                        
+                        df_turma = df_matriz[(df_matriz['Turma'] == turma_atual)]
                         
                         if not df_turma.empty:
                             lista_final = []
@@ -6354,7 +6399,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     lista_final.append({"Nome": row['Nome'], "Cargo/Atuação": row['Cargo']})
                             
                             data_inf['assinaturas'] = lista_final
-                            st.success("✅ Grade preenchida!")
+                            st.success("✅ Grade preenchida com sucesso para a turma selecionada!")
                             st.rerun()
                         else:
                             st.error("Turma não encontrada na Matriz de Automação (Aba Configurações).")
@@ -6419,6 +6464,21 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_auto_page_break(auto=True, margin=20)
                             pdf.add_page()
                             
+                            def calc_lines(txt, w):
+                                if not txt: return 1
+                                lines = 0
+                                for par in txt.split('\n'):
+                                    words = par.split(' ')
+                                    curr_w = 0
+                                    for word in words:
+                                        word_w = pdf.get_string_width(word + ' ')
+                                        if curr_w + word_w > w:
+                                            lines += 1; curr_w = word_w
+                                        else:
+                                            curr_w += word_w
+                                    lines += 1
+                                return lines
+                            
                             # --- CABEÇALHO ---
                             pdf.set_font("Arial", "B", 10)
                             escola_nome = data_inf.get('escola', 'CEIEF Rafael Affonso Leite').upper()
@@ -6466,30 +6526,61 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
                             
-                            # Lista dos conteúdos impressos no PDF + O texto do professor
+                            # Busca os critérios da etapa correta no momento de gerar o PDF
+                            criterios_etapa = get_criterios_infantil(st.session_state.ata_ciclo_confirmado_inf)
+                            
                             disciplinas_inf = [
-                                ("Linguagem Verbal", criterios_inf_lv, data_inf.get('sin_lv', '')),
-                                ("Linguagem Matemática", criterios_inf_lm, data_inf.get('sin_lm', '')),
-                                ("Indivíduo e Sociedade", criterios_inf_is, data_inf.get('sin_is', '')),
-                                ("Arte", criterios_inf_arte, data_inf.get('sin_arte', '')),
-                                ("Cultura Corporal e Movimento", criterios_inf_ccm, data_inf.get('sin_ccm', ''))
+                                ("Linguagem Verbal", criterios_etapa["LV"], data_inf.get('sin_lv', '')),
+                                ("Linguagem Matemática", criterios_etapa["LM"], data_inf.get('sin_lm', '')),
+                                ("Indivíduo e Sociedade", criterios_etapa["IS"], data_inf.get('sin_is', '')),
+                                ("Arte", criterios_etapa["Arte"], data_inf.get('sin_arte', '')),
+                                ("Cultura Corporal e Movimento", criterios_etapa["CCM"], data_inf.get('sin_ccm', ''))
                             ]
                             
                             for i, (nome, crit, texto) in enumerate(disciplinas_inf):
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
+                                
+                                h_box = calc_lines(crit, 168) * 5 if crit else 5
+                                h_total = 5 + 2 + h_box + 2
+                                if pdf.get_y() + h_total > 275:
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 1, "", "LRB", 1)
+                                    pdf.add_page()
+                                    pdf.set_x(15)
+                                    pdf.cell(180, 2, "", "LTR", 1)
+                                
+                                pdf.set_font("Arial", "B", 10)
+                                pdf.set_x(15)
                                 pdf.cell(180, 5, clean_pdf_text(f"  {chr(149)}  {nome}: descrever o desenvolvimento da classe referente a:"), "LR", 1, 'L')
                                 
-                                pdf.set_font("Arial", "", 9)
                                 pdf.set_x(15)
-                                pdf.multi_cell(180, 5, clean_pdf_text(f"    {crit}"), "LR", 'J')
+                                pdf.cell(180, 2, "", "LR", 1)
+                                
+                                y_start = pdf.get_y()
+                                pdf.set_font("Arial", "", 9)
+                                pdf.set_x(20)
+                                pdf.multi_cell(170, 5, clean_pdf_text(crit if crit else "Critérios não configurados para esta etapa."), 1, 'J')
+                                y_end = pdf.get_y()
+                                
+                                pdf.line(15, y_start, 15, y_end)
+                                pdf.line(195, y_start, 195, y_end)
+                                
+                                pdf.set_x(15)
+                                pdf.cell(180, 2, "", "LR", 1)
                                 
                                 if texto.strip():
-                                    pdf.set_x(15)
-                                    pdf.cell(180, 2, "", "LR", 1)
                                     pdf.set_font("Arial", "", 10)
+                                    h_texto = calc_lines(texto, 178) * 5
+                                    if pdf.get_y() + h_texto > 275:
+                                        pdf.set_x(15)
+                                        pdf.cell(180, 1, "", "LRB", 1)
+                                        pdf.add_page()
+                                        pdf.set_x(15)
+                                        pdf.cell(180, 2, "", "LTR", 1)
+                                        
                                     pdf.set_x(15)
-                                    pdf.multi_cell(180, 5, clean_pdf_text(f"    {texto}"), "LR", 'J')
+                                    pdf.multi_cell(180, 5, clean_pdf_text(f"  {texto}"), "LR", 'J')
                                 
                                 if i < len(disciplinas_inf) - 1:
                                     pdf.set_x(15)
@@ -6791,38 +6882,50 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 st.success("✅ Textos atualizados!")
 
         with t_conf[1]:
-            st.info("💡 Configure os textos base e os conteúdos curriculares avaliados (eles mudam conforme a Etapa/Maternal).")
+            st.info("💡 Escolha a Etapa/Maternal e defina os conteúdos cobrados para aquela idade.")
+            
+            etapa_edit = st.selectbox("Selecione a Etapa para editar os conteúdos:", ["1ª Etapa", "2ª Etapa", "Maternal II"])
+            criterios_tela = get_criterios_infantil(etapa_edit)
+            
             novo_texto_base_inf = st.text_area("Texto Base da Síntese Avaliativa (Infantil)", value=texto_base_ata_inf, height=120)
             novas_propostas_inf = st.text_area("Propostas de Intervenção (Infantil)", value=propostas_ata_inf, height=120)
             
-            st.markdown("**Conteúdos Avaliados por Campo de Experiência**")
-            novo_crit_lv = st.text_area("Linguagem Verbal", value=criterios_inf_lv)
-            novo_crit_lm = st.text_area("Linguagem Matemática", value=criterios_inf_lm)
-            novo_crit_is = st.text_area("Indivíduo e Sociedade", value=criterios_inf_is)
-            novo_crit_arte = st.text_area("Arte", value=criterios_inf_arte)
-            novo_crit_ccm = st.text_area("Cultura Corporal e Movimento", value=criterios_inf_ccm)
+            st.markdown(f"**Conteúdos Avaliados - {etapa_edit}**")
+            novo_crit_lv = st.text_area("Linguagem Verbal", value=criterios_tela["LV"])
+            novo_crit_lm = st.text_area("Linguagem Matemática", value=criterios_tela["LM"])
+            novo_crit_is = st.text_area("Indivíduo e Sociedade", value=criterios_tela["IS"])
+            novo_crit_arte = st.text_area("Arte", value=criterios_tela["Arte"])
+            novo_crit_ccm = st.text_area("Cultura Corporal e Movimento", value=criterios_tela["CCM"])
             
-            if st.button("💾 Salvar Textos Infantil", type="primary", use_container_width=True):
+            if st.button("💾 Salvar Textos e Conteúdos do Infantil", type="primary", use_container_width=True):
+                # Salva os textos base gerais
                 if not df_config.empty and "texto_base_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "texto_base_ata_inf", "valor"] = novo_texto_base_inf
                 else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "texto_base_ata_inf", "valor": novo_texto_base_inf}])], ignore_index=True)
                 
                 if not df_config.empty and "propostas_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "propostas_ata_inf", "valor"] = novas_propostas_inf
                 else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata_inf", "valor": novas_propostas_inf}])], ignore_index=True)
                 
-                # Salvando os Critérios
-                chaves_crit = [("criterios_inf_lv", novo_crit_lv), ("criterios_inf_lm", novo_crit_lm), ("criterios_inf_is", novo_crit_is), ("criterios_inf_arte", novo_crit_arte), ("criterios_inf_ccm", novo_crit_ccm)]
+                # Salva os critérios ESPECÍFICOS da Etapa Selecionada
+                chaves_crit = [
+                    (f"crit_lv_{etapa_edit}", novo_crit_lv), 
+                    (f"crit_lm_{etapa_edit}", novo_crit_lm), 
+                    (f"crit_is_{etapa_edit}", novo_crit_is), 
+                    (f"crit_arte_{etapa_edit}", novo_crit_arte), 
+                    (f"crit_ccm_{etapa_edit}", novo_crit_ccm)
+                ]
+                
                 for k, v in chaves_crit:
                     if not df_config.empty and k in df_config["chave"].values: df_config.loc[df_config["chave"] == k, "valor"] = v
                     else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": k, "valor": v}])], ignore_index=True)
 
                 safe_update("Config_Ata", df_config)
-                st.success("✅ Textos e Conteúdos do Infantil atualizados!")
+                st.success(f"✅ Textos e Conteúdos salvos com sucesso para a {etapa_edit}!")
 
         with t_conf[2]:
             st.info("💡 Edite a tabela para alterar a atribuição de aulas.")
             
             config_col_matriz = {
-                "Ciclo": st.column_config.SelectboxColumn("Ciclo", options=["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)", "Educação Infantil", "EJA"]),
+                "Ciclo": st.column_config.SelectboxColumn("Ciclo", options=["Ciclo I (1º ao 3º ano)", "Ciclo II (4º e 5º ano)", "1ª Etapa", "2ª Etapa", "Maternal II", "Educação Infantil"]),
                 "Turma": st.column_config.TextColumn("Turma (Ex: 5º Ano 1)"),
                 "Disciplina": st.column_config.TextColumn("Disciplina (Ex: Polivalente, Matemática)"),
                 "Professor": st.column_config.TextColumn("Nome do Professor")
