@@ -5386,20 +5386,24 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         padrao_is = "Sistema biológico: Saúde (Princípios de higiene pessoal: banho diário, cuidado com os dentes, lavagem das mãos); Sujeito histórico: Dados pessoais, Identidade e Escola (Nome e Sobrenome; nomes dos colegas e educadores; regras de convivência no ambiente escolar)."
         padrao_arte = "Identificação e nomeação de formas geométricas básicas; Identificação e nomeação de cores; Identificação de instrumentos e suas famílias; Relação do som com a fonte sonora; Expressão de forma oral, gestual, utilizando a imaginação na representação teatral."
         padrao_ccm = "Vivência de diversas formas de deslocamento nas situações de brincadeira (andar para frente, andar para trás, quadrupejar, saltar com um dos pés, saltitar, correr); Participação em brincadeira(s) cantada(s), realizando os movimentos sugeridos; Participação em brincadeira envolvendo a imitação, utilizando a linguagem corporal; Reconhecimento em si das diversas partes do corpo; Identificação da relação entre seu corpo e o espaço: Experimentação de movimentos estáticos e dinâmicos de equilíbrio."
+        padrao_lt = "Exploração de mídias e tecnologias; Interação com diferentes linguagens midiáticas; Uso criativo de recursos tecnológicos de forma orientada e lúdica."
+        padrao_libras = "Contato inicial com a Língua Brasileira de Sinais; Percepção visual e espacial; Reconhecimento e imitação de sinais básicos e expressões faciais do cotidiano escolar."
         
         # Se for outra etapa e não tiver configurado ainda, volta vazio para a escola preencher
         if etapa != "1ª Etapa":
-            padrao_lv, padrao_lm, padrao_is, padrao_arte, padrao_ccm = "", "", "", "", ""
+            padrao_lv, padrao_lm, padrao_is, padrao_arte, padrao_ccm, padrao_lt, padrao_libras = "", "", "", "", "", "", ""
             
         return {
             "LV": get_config(f"crit_lv_{etapa}", padrao_lv),
             "LM": get_config(f"crit_lm_{etapa}", padrao_lm),
             "IS": get_config(f"crit_is_{etapa}", padrao_is),
             "Arte": get_config(f"crit_arte_{etapa}", padrao_arte),
-            "CCM": get_config(f"crit_ccm_{etapa}", padrao_ccm)
+            "CCM": get_config(f"crit_ccm_{etapa}", padrao_ccm),
+            "LT": get_config(f"crit_lt_{etapa}", padrao_lt),
+            "LIBRAS": get_config(f"crit_libras_{etapa}", padrao_libras)
         }
     
-    # Matriz de Professores Padrão (Semente Atualizada)
+    # Matriz de Professores Padrão (Semente)
     MATRIZ_SEED = [
         {"Ciclo": "Ciclo I (1º ao 3º ano)", "Turma": "1º Ano 1", "Disciplina": "Polivalente", "Professor": "Juliana Aparecida da Silva"},
         {"Ciclo": "Ciclo I (1º ao 3º ano)", "Turma": "1º Ano 1", "Disciplina": "Artes", "Professor": "Jordana Lima Alvez"},
@@ -5824,7 +5828,23 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_auto_page_break(auto=True, margin=20)
                             pdf.add_page()
                             
-                            # --- CABEÇALHO ---
+                            # Função auxiliar para calcular altura no PDF
+                            def calc_lines(txt, w):
+                                if not txt: return 1
+                                lines = 0
+                                for par in txt.split('\n'):
+                                    words = par.split(' ')
+                                    curr_w = 0
+                                    for word in words:
+                                        word_w = pdf.get_string_width(word + ' ')
+                                        if curr_w + word_w > w:
+                                            lines += 1; curr_w = word_w
+                                        else:
+                                            curr_w += word_w
+                                    lines += 1
+                                return lines
+                            
+                            # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
                             pdf.set_font("Arial", "B", 10)
                             escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
                             pdf.set_x(15)
@@ -5851,12 +5871,18 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                             
+                            df_config = safe_read("Config_Ata", ["chave", "valor"])
+                            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
+                                texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
+                            else:
+                                texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
+                            
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1) 
                             
                             pdf.set_font("Arial", "", 10)
                             pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_ata_ef), "LR", 'J')
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
                             
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
@@ -5988,21 +6014,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             pdf.set_font("Arial", "", 10)
                             lista_basico = data_ata.get('basico', [])
-                                
-                            def calc_lines(txt, w):
-                                if not txt: return 1
-                                lines = 0
-                                for par in txt.split('\n'):
-                                    words = par.split(' ')
-                                    curr_w = 0
-                                    for word in words:
-                                        word_w = pdf.get_string_width(word + ' ')
-                                        if curr_w + word_w > w:
-                                            lines += 1; curr_w = word_w
-                                        else:
-                                            curr_w += word_w
-                                    lines += 1
-                                return lines
 
                             for row in lista_basico:
                                 estudante = str(row.get('Estudante', '')).strip()
@@ -6200,7 +6211,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         elif "Infantil" in modalidade_ata:
             if 'data_ata_inf' not in st.session_state:
                 st.session_state.data_ata_inf = {
-                    'abaixo_basico': [{"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": ""}],
+                    'abaixo_basico': [{"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": "", "LT": "", "LIBRAS": ""}],
                     'obs_especiais': [{"Estudante": "", "Desempenho/Observação": ""}],
                     'encaminhamentos': [{"Estudante": "", "Motivo": ""}],
                     'mat_tardia': [{"Estudante": "", "Data Matrícula": "", "Total Frequência": ""}],
@@ -6280,7 +6291,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     c5.text_input("Etapa/Fase", value=st.session_state.ata_ciclo_confirmado_inf, disabled=True, key="inf_ciclo")
 
                 with tabs[1]:
-                    st.subheader("Síntese Avaliativa da Classe - Campos de Experiência")
+                    st.subheader("Síntese Avaliativa da Classe - Campos de Experiência e Disciplinas")
                     st.info("Abaixo de cada campo, digite a síntese correspondente à turma. Os conteúdos avaliados (configurados para esta etapa) já estão listados como referência e constarão no PDF gerado.")
                     
                     st.markdown("**Linguagem Verbal:** descrever o desenvolvimento da classe referente a:")
@@ -6303,6 +6314,14 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     if criterios_etapa["CCM"]: st.caption(f"_{criterios_etapa['CCM']}_")
                     data_inf['sin_ccm'] = st.text_area("Síntese - Cultura Corporal", value=data_inf.get('sin_ccm', ''), height=100, label_visibility="collapsed", key="txt_ccm")
 
+                    st.markdown("**Linguagens e Tecnologias:** descrever o desenvolvimento da classe em relação a:")
+                    if criterios_etapa["LT"]: st.caption(f"_{criterios_etapa['LT']}_")
+                    data_inf['sin_lt'] = st.text_area("Síntese - Linguagens e Tecnologias", value=data_inf.get('sin_lt', ''), height=100, label_visibility="collapsed", key="txt_lt_inf")
+
+                    st.markdown("**Libras:** descrever o desenvolvimento da classe em relação a:")
+                    if criterios_etapa["LIBRAS"]: st.caption(f"_{criterios_etapa['LIBRAS']}_")
+                    data_inf['sin_libras'] = st.text_area("Síntese - Libras", value=data_inf.get('sin_libras', ''), height=100, label_visibility="collapsed", key="txt_libras_inf")
+
                 with tabs[2]:
                     st.subheader("Plano de Ação")
                     st.caption("Estudantes com desenvolvimento abaixo do esperado em relação aos conteúdos do currículo.")
@@ -6315,16 +6334,18 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             if c_del.button("🗑️", key=f"inf_del_ab_{i}"):
                                 data_inf['abaixo_basico'].pop(i); st.rerun()
                             
-                            cc = st.columns(5)
+                            cc = st.columns(7)
                             row['LV'] = cc[0].text_input("LV", value=row.get('LV', ''), key=f"inf_ab_lv_{i}")
                             row['LM'] = cc[1].text_input("LM", value=row.get('LM', ''), key=f"inf_ab_lm_{i}")
                             row['IS'] = cc[2].text_input("IS", value=row.get('IS', ''), key=f"inf_ab_is_{i}")
                             row['A'] = cc[3].text_input("A", value=row.get('A', ''), key=f"inf_ab_a_{i}")
                             row['CCM'] = cc[4].text_input("CCM", value=row.get('CCM', ''), key=f"inf_ab_ccm_{i}")
+                            row['LT'] = cc[5].text_input("LT", value=row.get('LT', ''), key=f"inf_ab_lt_{i}")
+                            row['LIBRAS'] = cc[6].text_input("LIB", value=row.get('LIBRAS', ''), key=f"inf_ab_lib_{i}")
                             st.markdown("<hr style='margin: 10px 0;'>", unsafe_allow_html=True)
                     
                     if st.button("➕ Adicionar Estudante", key="inf_add_ab"):
-                        data_inf['abaixo_basico'].append({"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": ""})
+                        data_inf['abaixo_basico'].append({"Estudante": "", "LV": "", "LM": "", "IS": "", "A": "", "CCM": "", "LT": "", "LIBRAS": ""})
                         st.rerun()
                     
                     st.markdown("<br>", unsafe_allow_html=True)
@@ -6378,9 +6399,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.subheader("Finalização e Assinaturas")
                     
                     if st.button("🤖 Preencher Assinaturas Automaticamente", type="primary", key="inf_btn_auto"):
-                        ciclo_atual = st.session_state.ata_ciclo_confirmado_inf
                         turma_atual = st.session_state.ata_turma_confirmada_inf
-                        
                         df_turma = df_matriz[(df_matriz['Turma'] == turma_atual)]
                         
                         if not df_turma.empty:
@@ -6534,13 +6553,16 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 ("Linguagem Matemática", criterios_etapa["LM"], data_inf.get('sin_lm', '')),
                                 ("Indivíduo e Sociedade", criterios_etapa["IS"], data_inf.get('sin_is', '')),
                                 ("Arte", criterios_etapa["Arte"], data_inf.get('sin_arte', '')),
-                                ("Cultura Corporal e Movimento", criterios_etapa["CCM"], data_inf.get('sin_ccm', ''))
+                                ("Cultura Corporal e Movimento", criterios_etapa["CCM"], data_inf.get('sin_ccm', '')),
+                                ("Linguagens e Tecnologias", criterios_etapa["LT"], data_inf.get('sin_lt', '')),
+                                ("Libras", criterios_etapa["LIBRAS"], data_inf.get('sin_libras', ''))
                             ]
                             
                             for i, (nome, crit, texto) in enumerate(disciplinas_inf):
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
                                 
+                                # Verifica quebra de página antes de desenhar o quadro do conteúdo
                                 h_box = calc_lines(crit, 168) * 5 if crit else 5
                                 h_total = 5 + 2 + h_box + 2
                                 if pdf.get_y() + h_total > 275:
@@ -6557,12 +6579,14 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.set_x(15)
                                 pdf.cell(180, 2, "", "LR", 1)
                                 
+                                # Desenha o Quadro Interno com o Conteúdo
                                 y_start = pdf.get_y()
                                 pdf.set_font("Arial", "", 9)
                                 pdf.set_x(20)
                                 pdf.multi_cell(170, 5, clean_pdf_text(crit if crit else "Critérios não configurados para esta etapa."), 1, 'J')
                                 y_end = pdf.get_y()
                                 
+                                # Fecha a linha lateral do quadro principal
                                 pdf.line(15, y_start, 15, y_end)
                                 pdf.line(195, y_start, 195, y_end)
                                 
@@ -6599,9 +6623,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 3, "", "LR", 1)
                             
-                            pdf.set_font("Arial", "B", 10)
-                            col_w = [80, 20, 20, 20, 20, 20]
-                            headers = ["Estudante", "LV", "LM", "IS", "A", "CCM"]
+                            pdf.set_font("Arial", "B", 9)
+                            col_w = [54, 18, 18, 18, 18, 18, 18, 18]
+                            headers = ["Estudante", "LV", "LM", "IS", "A", "CCM", "LT", "LIB"]
                             pdf.set_x(15)
                             for i, h in enumerate(headers):
                                 pdf.cell(col_w[i], 6, h, 1, 0, 'C')
@@ -6624,7 +6648,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     pdf.cell(col_w[2], 6, clean_pdf_text(str(row.get('LM', ''))), 1, 0, 'C')
                                     pdf.cell(col_w[3], 6, clean_pdf_text(str(row.get('IS', ''))), 1, 0, 'C')
                                     pdf.cell(col_w[4], 6, clean_pdf_text(str(row.get('A', ''))), 1, 0, 'C')
-                                    pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('CCM', ''))), 1, 1, 'C')
+                                    pdf.cell(col_w[5], 6, clean_pdf_text(str(row.get('CCM', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[6], 6, clean_pdf_text(str(row.get('LT', ''))), 1, 0, 'C')
+                                    pdf.cell(col_w[7], 6, clean_pdf_text(str(row.get('LIBRAS', ''))), 1, 1, 'C')
                             
                             pdf.set_x(15)
                             pdf.cell(180, 3, "", "LR", 1) 
@@ -6896,22 +6922,24 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             novo_crit_is = st.text_area("Indivíduo e Sociedade", value=criterios_tela["IS"])
             novo_crit_arte = st.text_area("Arte", value=criterios_tela["Arte"])
             novo_crit_ccm = st.text_area("Cultura Corporal e Movimento", value=criterios_tela["CCM"])
+            novo_crit_lt = st.text_area("Linguagens e Tecnologias", value=criterios_tela["LT"])
+            novo_crit_libras = st.text_area("Libras", value=criterios_tela["LIBRAS"])
             
             if st.button("💾 Salvar Textos e Conteúdos do Infantil", type="primary", use_container_width=True):
-                # Salva os textos base gerais
                 if not df_config.empty and "texto_base_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "texto_base_ata_inf", "valor"] = novo_texto_base_inf
                 else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "texto_base_ata_inf", "valor": novo_texto_base_inf}])], ignore_index=True)
                 
                 if not df_config.empty and "propostas_ata_inf" in df_config["chave"].values: df_config.loc[df_config["chave"] == "propostas_ata_inf", "valor"] = novas_propostas_inf
                 else: df_config = pd.concat([df_config, pd.DataFrame([{"chave": "propostas_ata_inf", "valor": novas_propostas_inf}])], ignore_index=True)
                 
-                # Salva os critérios ESPECÍFICOS da Etapa Selecionada
                 chaves_crit = [
                     (f"crit_lv_{etapa_edit}", novo_crit_lv), 
                     (f"crit_lm_{etapa_edit}", novo_crit_lm), 
                     (f"crit_is_{etapa_edit}", novo_crit_is), 
                     (f"crit_arte_{etapa_edit}", novo_crit_arte), 
-                    (f"crit_ccm_{etapa_edit}", novo_crit_ccm)
+                    (f"crit_ccm_{etapa_edit}", novo_crit_ccm),
+                    (f"crit_lt_{etapa_edit}", novo_crit_lt),
+                    (f"crit_libras_{etapa_edit}", novo_crit_libras)
                 ]
                 
                 for k, v in chaves_crit:
