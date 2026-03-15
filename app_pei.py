@@ -5344,6 +5344,7 @@ elif app_mode == "👥 Gestão de Alunos":
         if 'pdf_bytes_dec' in st.session_state:
             st.download_button("📥 BAIXAR DECLARAÇÃO", st.session_state.pdf_bytes_dec, f"Declaracao_{data_dec.get('nome','aluno')}.pdf", "application/pdf", type="primary")
 
+
 elif modulo_atuacao == "🏫 Ensino Regular":
     
     # ==============================================================================
@@ -5828,7 +5829,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_auto_page_break(auto=True, margin=20)
                             pdf.add_page()
                             
-                            # Função auxiliar para calcular altura no PDF
                             def calc_lines(txt, w):
                                 if not txt: return 1
                                 lines = 0
@@ -5844,7 +5844,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                     lines += 1
                                 return lines
                             
-                            # --- CABEÇALHO CENTRALIZADO - FONTE 10 ---
+                            # --- CABEÇALHO ---
                             pdf.set_font("Arial", "B", 10)
                             escola_nome = data_ata.get('escola', 'CEIEF Rafael Affonso Leite').upper()
                             pdf.set_x(15)
@@ -5871,18 +5871,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 6, "SÍNTESE AVALIATIVA", "LTR", 1, 'C', True)
                             
-                            df_config = safe_read("Config_Ata", ["chave", "valor"])
-                            if not df_config.empty and "texto_base_ata" in df_config["chave"].values:
-                                texto_base_pdf = df_config.loc[df_config["chave"] == "texto_base_ata", "valor"].values[0]
-                            else:
-                                texto_base_pdf = "Com base: na Resolução SME nº 07/2024..."
-                            
                             pdf.set_x(15)
                             pdf.cell(180, 2, "", "LR", 1) 
                             
                             pdf.set_font("Arial", "", 10)
                             pdf.set_x(15)
-                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_pdf), "LR", 'J')
+                            pdf.multi_cell(180, 5, clean_pdf_text(texto_base_ata_ef), "LR", 'J')
                             
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
@@ -6242,8 +6236,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 c_c, c_t = st.columns(2)
                 ciclo_sel = c_c.selectbox("1. Selecione a Fase/Etapa:", ["Maternal II", "1ª Etapa", "2ª Etapa", "Educação Infantil"])
                 
-                # Para o infantil, vamos buscar todas as turmas que correspondam ao ciclo ou que tenham a palavra no nome
-                turmas_bd = df_matriz[df_matriz['Ciclo'].str.contains("Infantil|Etapa|Maternal", na=False)]['Turma'].unique().tolist()
+                if ciclo_sel == "Educação Infantil":
+                    turmas_bd = df_matriz[df_matriz['Ciclo'].str.contains("Infantil|Etapa|Maternal", na=False)]['Turma'].unique().tolist()
+                else:
+                    turmas_bd = df_matriz[df_matriz['Ciclo'] == ciclo_sel]['Turma'].unique().tolist()
+                
                 turmas_disp = turmas_bd + ["Outra Turma..."]
                 
                 turma_sel = c_t.selectbox("2. Selecione a Turma:", turmas_disp)
@@ -6269,7 +6266,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     st.session_state.ata_turma_confirmada_inf = None
                     st.rerun()
                 
-                # Busca os critérios da etapa selecionada para mostrar na tela e imprimir no PDF
                 criterios_etapa = get_criterios_infantil(st.session_state.ata_ciclo_confirmado_inf)
                     
                 tabs = st.tabs(["1. Identificação", "2. Síntese Avaliativa", "3. Plano de Ação", "4. Observações", "5. Finalização"])
@@ -6545,7 +6541,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             pdf.set_x(15)
                             pdf.cell(180, 4, "", "LR", 1)
                             
-                            # Busca os critérios da etapa correta no momento de gerar o PDF
                             criterios_etapa = get_criterios_infantil(st.session_state.ata_ciclo_confirmado_inf)
                             
                             disciplinas_inf = [
@@ -6562,7 +6557,6 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.set_font("Arial", "B", 10)
                                 pdf.set_x(15)
                                 
-                                # Verifica quebra de página antes de desenhar o quadro do conteúdo
                                 h_box = calc_lines(crit, 168) * 5 if crit else 5
                                 h_total = 5 + 2 + h_box + 2
                                 if pdf.get_y() + h_total > 275:
@@ -6579,14 +6573,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                                 pdf.set_x(15)
                                 pdf.cell(180, 2, "", "LR", 1)
                                 
-                                # Desenha o Quadro Interno com o Conteúdo
                                 y_start = pdf.get_y()
                                 pdf.set_font("Arial", "", 9)
                                 pdf.set_x(20)
                                 pdf.multi_cell(170, 5, clean_pdf_text(crit if crit else "Critérios não configurados para esta etapa."), 1, 'J')
                                 y_end = pdf.get_y()
                                 
-                                # Fecha a linha lateral do quadro principal
                                 pdf.line(15, y_start, 15, y_end)
                                 pdf.line(195, y_start, 195, y_end)
                                 
