@@ -1411,7 +1411,7 @@ if app_mode == "📊 Painel de Gestão":
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                 for idx, row in df_casos.iterrows():
                     try:
-                        # Lê os dados do aluno
+                        # ESSA É A LINHA QUE PRECISA SER CORRIGIDA:
                         data = json.loads(row['dados_json'])
                         
                         # ====================================================================
