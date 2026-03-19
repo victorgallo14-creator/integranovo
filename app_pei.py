@@ -15,7 +15,6 @@ import uuid
 import threading
 import random
 import time
-import zipfile
 
 MIN_DATA = date(1900, 1, 1)
 MAX_DATA = date(2100, 12, 31)
@@ -721,13 +720,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- INICIALIZAÇÃO DE ESTADO ---
-if 'data_declaracao' not in st.session_state:
-    st.session_state.data_declaracao = {}
-# --- NOVAS VARIÁVEIS PARA O PORTÃO DE ENTRADA ---
-if 'ee_aluno_confirmado' not in st.session_state:
-    st.session_state.ee_aluno_confirmado = None
-if 'ee_doc_confirmado' not in st.session_state:
-    st.session_state.ee_doc_confirmado = None
 if 'data_pei' not in st.session_state: 
     st.session_state.data_pei = {
         'terapias': {}, 'avaliacao': {}, 'flex': {}, 'plano_ensino': {},
@@ -923,18 +915,27 @@ with st.sidebar:
 
 
 # --- SEÇÃO GESTÃO DE ALUNOS ---
-    # --- SEÇÃO GESTÃO DE ALUNOS (SIDEBAR LIMPA) ---
     if app_mode == "👥 Gestão de Alunos":
         st.divider()
-        st.info("👉 Selecione o aluno e o documento na tela principal ao lado.")
+        df_db = load_db()
+        # Garante que a lista tenha apenas os nomes cadastrados
+        lista_nomes = df_db["nome"].dropna().unique().tolist() if not df_db.empty else []
         
-        # Puxamos as variáveis confirmadas para a sidebar saber o que exibir de foto
-        selected_student = st.session_state.get('ee_aluno_confirmado', "-- Novo Registro --")
-        doc_mode = st.session_state.get('ee_doc_confirmado', "Dashboard")
+        st.markdown('<p class="section-label">🎓 Selecionar Estudante</p>', unsafe_allow_html=True)
+        
+        selected_student = st.selectbox(
+            "Estudante", 
+            lista_nomes,
+            index=None, 
+            placeholder="🔍 Selecione ou digite o nome...", 
+            key="aluno_selecionado",
+            on_change=carregar_dados_aluno,
+            label_visibility="collapsed"
+        )
 
-        # Foto na Sidebar (só renderiza se o aluno estiver confirmado)
+        # Foto na Sidebar
         current_photo_sb = None
-        if selected_student and selected_student != "-- Novo Registro --":
+        if selected_student != "-- Novo Registro --":
             if st.session_state.get('data_pei', {}).get('nome') == selected_student:
                  current_photo_sb = st.session_state.data_pei.get('foto_base64')
             elif st.session_state.get('data_case', {}).get('nome') == selected_student:
@@ -946,7 +947,38 @@ with st.sidebar:
                 st.image(img_bytes_sb, use_container_width=True)
             except: pass
         
+        # Auto-seleção de documento
+        default_doc_idx = 0
+        if selected_student != "-- Novo Registro --":
+            pass
+
+        st.markdown('<p class="section-label">📂 Tipo de Documento</p>', unsafe_allow_html=True)
+        doc_sub_mode = st.radio(
+            "Modo Doc", 
+            ["Estudo de Caso", "PEI", "PDI", "Protocolo de Conduta", "Avaliação de Apoio", "Relatório de Acompanhamento", "Declaração de Matrícula"],
+            index=default_doc_idx, 
+            key="doc_option",
+            label_visibility="collapsed"
+        )
+        
+        doc_mode = doc_sub_mode # Variavel de controle principal
+
+        if doc_mode == "PEI":
+            st.markdown('<p class="section-label">🏫 Nível de Ensino</p>', unsafe_allow_html=True)
+            pei_level = st.selectbox(
+                "Nível", 
+                ["Fundamental", "Infantil"], 
+                key="pei_level_choice",
+                label_visibility="collapsed"
+            )
+        
         st.markdown('<div style="flex-grow: 1;"></div>', unsafe_allow_html=True)
+        st.divider()
+        
+        c_del1, c_del2 = st.columns(2)
+        if selected_student != "-- Novo Registro --" and not is_monitor:
+            if c_del2.button("🗑️", type="secondary", help="Excluir Aluno"):
+                st.session_state.confirm_delete = True
 
     # 4. RODAPÉ FIXO
     if st.sidebar.button("🚪 Sair", use_container_width=True):
@@ -973,27 +1005,6 @@ with st.sidebar:
 # ==============================================================================
 # VIEW: DASHBOARD
 # ==============================================================================
-def gerar_pdf_pei_em_lote(data_aluno):
-    """
-    Função dedicada para gerar o PDF nos bastidores, sem depender do session_state da tela.
-    """
-    pdf = OfficialPDF('L', 'mm', 'A4')
-    pdf.add_page()
-    pdf.set_margins(10, 10, 10)
-    
-    # Adicione a assinatura
-    pdf.set_signature_footer(data_aluno.get('signatures', []), data_aluno.get('doc_uuid', ''))
-    
-    # --- COLE AQUI TODO O SEU CÓDIGO DE DESENHAR O PDF DO PEI ---
-    # Exemplo resumido:
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(297, 8, clean_pdf_text("PLANO EDUCACIONAL INDIVIDUALIZADO - PEI"), 0, 1, 'C')
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 10, clean_pdf_text(f"Aluno: {data_aluno.get('nome', '')}"), 0, 1, 'L')
-    # ... (resto do código de desenho) ...
-    
-    return get_pdf_bytes(pdf)
-
 if app_mode == "📊 Painel de Gestão":
     # Data e Hora (Fuso BR)
     fuso_br = timezone(timedelta(hours=-3))
@@ -1357,133 +1368,10 @@ if app_mode == "📊 Painel de Gestão":
             else:
                 st.write("Agenda vazia.")
 
-st.divider()
-        st.subheader("📥 Exportação em Lote (Download em Massa)")
-        st.caption("Gere um arquivo ZIP contendo todos os documentos concluídos (100% preenchidos).")
-        
-        c_zip1, c_zip2 = st.columns(2)
-        tipo_exportacao = c_zip1.selectbox("Qual documento deseja exportar?", ["PEI", "Estudo de Caso", "PDI"])
-        
-        if c_zip2.button(f"Compactar todos os {tipo_exportacao}s prontos", type="primary"):
-            with st.spinner("Gerando dezenas de PDFs e compactando... Isso pode levar um minuto. ☕"):
-                
-                # 1. Prepara um arquivo ZIP na memória do servidor
-                zip_buffer = io.BytesIO()
-                
-                # 2. Abre o ZIP para escrita
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                    
-                    df_export = load_db()
-                    documentos_gerados = 0
-                    
-                    # 3. Percorre todos os alunos no banco de dados
-                    for idx, row in df_export[df_export["tipo_doc"] == tipo_exportacao].iterrows():
-                        d = json.loads(row['dados_json'])
-                        
-                        # Regra: Só exporta se o progresso for 100% (usando sua função calc_progress)
-                        # Obs: Se quiser exportar TODOS, independente de estar pronto, basta tirar esse IF.
-                        progresso = 0
-                        if tipo_exportacao == "PEI":
-                            progresso = calc_progress(row['dados_json'], keys_pei)
-                        elif tipo_exportacao == "Estudo de Caso":
-                            progresso = calc_progress(row['dados_json'], keys_caso)
-                            
-                        if progresso >= 90: # Considera pronto acima de 90%
-                            
-                            # Chama a função que desenha o PDF
-                            if tipo_exportacao == "PEI":
-                                pdf_bytes = gerar_pdf_pei_em_lote(d)
-                            
-                            # Limpa o nome do arquivo para não dar erro no Windows/Mac
-                            nome_limpo = d.get('nome', 'Desconhecido').replace("/", "-").replace(":", "")
-                            nome_arquivo = f"{tipo_exportacao}_{nome_limpo}.pdf"
-                            
-                            # Salva o PDF dentro do arquivo ZIP
-                            zip_file.writestr(nome_arquivo, pdf_bytes)
-                            documentos_gerados += 1
-                
-                # 4. Finaliza e exibe o botão de Download do ZIP
-                if documentos_gerados > 0:
-                    st.success(f"✅ Sucesso! {documentos_gerados} documentos compactados.")
-                    st.download_button(
-                        label="📦 CLIQUE AQUI PARA BAIXAR O ARQUIVO .ZIP",
-                        data=zip_buffer.getvalue(),
-                        file_name=f"Lote_{tipo_exportacao}_{datetime.now().strftime('%d-%m-%Y')}.zip",
-                        mime="application/zip",
-                        type="primary"
-                    )
-                else:
-                    st.warning("Nenhum documento atingiu o progresso mínimo para exportação.")
-
-# ==============================================================================
-# VIEW: GESTÃO DE ALUNOS (PEI / CASO)
-# ==============================================================================
 # ==============================================================================
 # VIEW: GESTÃO DE ALUNOS (PEI / CASO)
 # ==============================================================================
 elif app_mode == "👥 Gestão de Alunos":
-    
-    # --- PORTÃO DE ENTRADA ---
-    if not st.session_state.ee_aluno_confirmado or not st.session_state.ee_doc_confirmado:
-        st.markdown("""
-        <div style='background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;'>
-            <h3 style='color: #1e293b; margin-top:0;'>🚪 Selecione o Estudante e o Documento</h3>
-            <p style='color: #64748b;'>Para iniciar o preenchimento ou edição, selecione abaixo o estudante e o tipo de documento desejado.</p>
-        </div>
-        <br>
-        """, unsafe_allow_html=True)
-
-        df_db = load_db()
-        lista_nomes = df_db["nome"].dropna().unique().tolist() if not df_db.empty else []
-        opcoes_nomes = ["-- Novo Registro --"] + lista_nomes
-
-        c_aluno, c_doc = st.columns(2)
-        aluno_sel = c_aluno.selectbox("1. Selecione o Estudante:", opcoes_nomes)
-
-        # Se for novo registro, abre campo para digitar o nome
-        nome_novo = ""
-        if aluno_sel == "-- Novo Registro --":
-            nome_novo = c_aluno.text_input("Digite o nome completo do novo estudante:")
-
-        docs_disponiveis = ["Estudo de Caso", "PEI", "PDI", "Protocolo de Conduta", "Avaliação de Apoio", "Relatório de Acompanhamento", "Declaração de Matrícula"]
-        doc_sel = c_doc.selectbox("2. Selecione o Documento:", docs_disponiveis)
-
-        st.write("")
-        if st.button("✅ Confirmar e Acessar Documento", type="primary", use_container_width=True):
-            nome_final = nome_novo if aluno_sel == "-- Novo Registro --" else aluno_sel
-            if nome_final and nome_final.strip() != "":
-                st.session_state.ee_aluno_confirmado = nome_final
-                st.session_state.ee_doc_confirmado = doc_sel
-                
-                # Seta o nome para a função carregar_dados_aluno puxar do banco
-                st.session_state.aluno_selecionado = nome_final 
-                carregar_dados_aluno()
-                st.rerun()
-            else:
-                st.warning("⚠️ Por favor, informe o nome do estudante.")
-
-        # Interrompe a renderização para não mostrar os docs em branco embaixo
-        st.stop() 
-
-    # --- BARRA DE INFORMAÇÃO E NAVEGAÇÃO ---
-    c_info, c_btn, c_del = st.columns([6, 2, 1])
-    c_info.success(f"📌 **Documento em edição:** {st.session_state.ee_doc_confirmado} - do estudante {st.session_state.ee_aluno_confirmado}")
-    
-    if c_btn.button("⬅️ Trocar Aluno/Documento", use_container_width=True):
-        st.session_state.ee_aluno_confirmado = None
-        st.session_state.ee_doc_confirmado = None
-        st.session_state.aluno_selecionado = None
-        st.rerun()
-        
-    if not is_monitor:
-        if c_del.button("🗑️ Excluir Aluno", use_container_width=True, help="Atenção: Isso excluirá o estudante e TODOS os seus documentos do banco."):
-            st.session_state.confirm_delete = True
-
-    # Define as variáveis que o restante do código já usa para exibir os forms
-    doc_mode = st.session_state.ee_doc_confirmado
-    selected_student = st.session_state.ee_aluno_confirmado
-
-    st.divider()
     
     # PEI COM FORMULÁRIOS
     if doc_mode == "PEI":
