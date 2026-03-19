@@ -15,6 +15,8 @@ import uuid
 import threading
 import random
 import time
+import zipfile
+import io
 
 MIN_DATA = date(1900, 1, 1)
 MAX_DATA = date(2100, 12, 31)
@@ -1336,8 +1338,88 @@ if app_mode == "📊 Painel de Gestão":
                 st.write("Agenda vazia.")
 
 # ==============================================================================
-# VIEW: GESTÃO DE ALUNOS (PEI / CASO)
-# ==============================================================================
+    # EXPORTAÇÃO EM LOTE (DOWNLOAD EM MASSA PARA GESTÃO)
+    # ==============================================================================
+    st.divider()
+    st.markdown("### 📦 Exportação em Lote")
+    st.caption("Baixe todos os Estudos de Caso preenchidos em um único arquivo ZIP.")
+
+    if st.button("Gerar ZIP com todos os Estudos de Caso", type="primary"):
+        with st.spinner("Gerando dezenas de PDFs... Isso pode levar um minuto. ☕"):
+            
+            zip_buffer = io.BytesIO()
+            df_export = load_db()
+            
+            # Filtra apenas os Estudos de Caso
+            df_casos = df_export[df_export["tipo_doc"] == "CASO"]
+            qtd_gerados = 0
+            
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for idx, row in df_casos.iterrows():
+                    try:
+                        # Lê os dados do aluno atual no loop
+                        data = json.loads(row['dados_json'])
+                        
+                        # --- INÍCIO DO DESENHO DO PDF DO ESTUDO DE CASO ---
+                        pdf = OfficialPDF('P', 'mm', 'A4')
+                        pdf.add_page()
+                        pdf.set_margins(15, 15, 15)
+                        pdf.set_signature_footer(data.get('signatures', []), data.get('doc_uuid', ''))
+                        
+                        if os.path.exists("logo_prefeitura.png"): pdf.image("logo_prefeitura.png", 15, 10, 25)
+                        if os.path.exists("logo_escola.png"): pdf.image("logo_escola.png", 170, 6, 25)
+
+                        pdf.set_xy(0, 15); pdf.set_font("Arial", "B", 12)
+                        pdf.cell(210, 6, clean_pdf_text("PREFEITURA MUNICIPAL DE LIMEIRA"), 0, 1, 'C')
+                        pdf.cell(180, 6, clean_pdf_text("CEIEF RAFAEL AFFONSO LEITE"), 0, 1, 'C')
+                        pdf.ln(8)
+                        pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, "ESTUDO DE CASO", 0, 1, 'C')
+                        pdf.ln(5)
+                        
+                        pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
+                        pdf.ln(4)
+                        
+                        pdf.set_fill_color(240, 240, 240)
+                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
+                        
+                        pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Nome:", 1, 0, 'L', 1)
+                        pdf.set_font("Arial", "", 10); pdf.cell(110, 8, clean_pdf_text(data.get('nome', '')), 1, 0)
+                        pdf.set_font("Arial", "B", 10); pdf.cell(15, 8, "D.N.:", 1, 0, 'C', 1)
+                        pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(str(data.get('d_nasc', ''))), 1, 1, 'C')
+                        
+                        pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Escolaridade:", 1, 0, 'L', 1)
+                        pdf.set_font("Arial", "", 10); pdf.cell(25, 8, clean_pdf_text(data.get('ano_esc', '')), 1, 0)
+                        pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Período:", 1, 0, 'C', 1)
+                        pdf.set_font("Arial", "", 10); pdf.cell(20, 8, clean_pdf_text(data.get('periodo', '')), 1, 0, 'C')
+                        pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Unidade:", 1, 0, 'C', 1)
+                        pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('unidade', '')), 1, 1)
+                        # --- FIM DO DESENHO DO PDF ---
+                        
+                        # Transforma em arquivo e joga no ZIP
+                        pdf_bytes = get_pdf_bytes(pdf)
+                        nome_limpo = data.get('nome', 'aluno').replace(' ', '_').replace('/', '-')
+                        nome_arquivo = f"Estudo_Caso_{nome_limpo}.pdf"
+                        zip_file.writestr(nome_arquivo, pdf_bytes)
+                        
+                        qtd_gerados += 1
+                        
+                    except Exception as e:
+                        # Se um aluno der erro de formatação, ele pula e faz os próximos
+                        continue
+                        
+            # Quando terminar de ler todos os alunos, exibe o botão de baixar
+            if qtd_gerados > 0:
+                st.success(f"✅ Arquivo ZIP criado com {qtd_gerados} Estudos de Caso!")
+                st.download_button(
+                    label="📥 CLIQUE AQUI PARA BAIXAR O LOTE (.ZIP)",
+                    data=zip_buffer.getvalue(),
+                    file_name=f"Lote_Estudos_Caso_{datetime.now().strftime('%d%m%Y')}.zip",
+                    mime="application/zip",
+                    type="primary",
+                    use_container_width=True
+                )
+            else:
+                st.warning("Nenhum Estudo de Caso encontrado no banco de dados.")
 # ==============================================================================
 # VIEW: GESTÃO DE ALUNOS (PEI / CASO)
 # ==============================================================================
