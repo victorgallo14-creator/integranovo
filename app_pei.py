@@ -21,6 +21,58 @@ import io
 MIN_DATA = date(1900, 1, 1)
 MAX_DATA = date(2100, 12, 31)
 
+# --- FUNÇÕES AUXILIARES DE DESENHO (GLOBAIS) ---
+def calc_lines(pdf, text, w):
+    if not text: return 1
+    lines = 0
+    for p in str(text).split('\n'):
+        words = p.split(' ')
+        line_w = 0
+        for word in words:
+            word_w = pdf.get_string_width(word + ' ')
+            if line_w + word_w > w - 2:
+                lines += 1
+                line_w = word_w
+            else:
+                line_w += word_w
+        lines += 1
+    return max(1, lines)
+
+def draw_flex_row(pdf, col_data, line_h=6, font_size=9, fill_color=(240, 240, 240)):
+    max_lines = 1
+    x_start_measure = pdf.get_x()
+    for w, text, weight, align, fill in col_data:
+        pdf.set_font("Arial", weight, font_size)
+        real_w = w if w > 0 else (210 - 15 - x_start_measure)
+        lines = calc_lines(pdf, text, real_w)
+        if lines > max_lines: max_lines = lines
+        x_start_measure += real_w
+        
+    row_h = max_lines * line_h
+    if pdf.get_y() + row_h > 275:
+        pdf.add_page()
+        
+    x_start = pdf.get_x()
+    y_start = pdf.get_y()
+    for w, text, weight, align, fill in col_data:
+        real_w = w if w > 0 else (210 - 15 - x_start)
+        pdf.set_font("Arial", weight, font_size)
+        if fill: pdf.set_fill_color(*fill_color)
+        else: pdf.set_fill_color(255, 255, 255)
+        
+        pdf.set_xy(x_start, y_start)
+        pdf.cell(real_w, row_h, "", border=1, fill=fill)
+        
+        y_text = y_start + 1
+        if max_lines > 1 and calc_lines(pdf, text, real_w) == 1:
+            y_text = y_start + (row_h - line_h) / 2
+            
+        pdf.set_xy(x_start + 1, y_text)
+        pdf.multi_cell(real_w - 2, line_h, str(text), border=0, align=align)
+        x_start += real_w
+        
+    pdf.set_xy(15, y_start + row_h)
+
 # --- CONEXÃO COM GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
