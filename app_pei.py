@@ -1765,6 +1765,235 @@ if app_mode == "📊 Painel de Gestão":
                 )
             else:
                 st.warning("Nenhum Estudo de Caso encontrado no banco de dados.")
+
+# ==============================================================================
+    # EXPORTAÇÃO EM LOTE (DOWNLOAD EM MASSA PARA GESTÃO)
+    # ==============================================================================
+    st.divider()
+    st.markdown("### 📦 Exportação em Lote")
+    st.caption("Baixe todos os documentos preenchidos num único arquivo ZIP.")
+
+    c_exp1, c_exp2 = st.columns([1, 2])
+    tipo_export = c_exp1.selectbox("Documento para exportar:", ["PEI", "Estudo de Caso"])
+    
+    if c_exp2.button(f"Gerar ZIP com todos os {tipo_export}s", type="primary"):
+        import io
+        import zipfile
+        import tempfile
+        import base64
+        import os
+        
+        with st.spinner(f"Gerando os PDFs de {tipo_export}... Isso pode demorar um minuto. ☕"):
+            zip_buffer = io.BytesIO()
+            df_export = load_db()
+            
+            tipo_bd = "CASO" if tipo_export == "Estudo de Caso" else "PEI"
+            df_filtrado = df_export[df_export["tipo_doc"] == tipo_bd]
+            qtd_gerados = 0
+            
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for idx, row in df_filtrado.iterrows():
+                    try:
+                        data = json.loads(row['dados_json'])
+                        nome_aluno = str(data.get('nome', 'aluno')).replace(' ', '_').replace('/', '-')
+                        
+                        if tipo_bd == "PEI":
+                            # ====================================================================
+                            # DESENHO DO PDF DO PEI
+                            # ====================================================================
+                            pdf = OfficialPDF('L', 'mm', 'A4')
+                            pdf.add_page(); pdf.set_margins(10, 10, 10)
+                            pdf.set_signature_footer(data.get('signatures', []), data.get('doc_uuid', ''))
+                            
+                            if os.path.exists("logo_prefeitura.png"): pdf.image("logo_prefeitura.png", 10, 8, 25)
+                            if os.path.exists("logo_escola.png"): pdf.image("logo_escola.png", 252, 4, 37) 
+                            pdf.set_xy(0, 12); pdf.set_font("Arial", "", 14)
+                            pdf.cell(305, 6, clean_pdf_text("      PREFEITURA MUNICIPAL DE LIMEIRA"), 0, 1, 'C')
+                            pdf.ln(6); pdf.set_font("Arial", "B", 12)
+                            pdf.cell(297, 6, clean_pdf_text("CEIEF RAFAEL AFFONSO LEITE"), 0, 1, 'C')
+                            pdf.ln(8); pdf.set_font("Arial", "B", 14)
+                            pdf.cell(297, 8, clean_pdf_text("PLANO EDUCACIONAL INDIVIDUALIZADO - PEI"), 0, 1, 'C')
+                            
+                            if data.get('foto_base64'):
+                                try:
+                                    img_data = base64.b64decode(data.get('foto_base64'))
+                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+                                        tmp_file.write(img_data)
+                                        tmp_path = tmp_file.name
+                                    pdf.image(tmp_path, 256, 53, 30, 40)
+                                    os.unlink(tmp_path)
+                                    pdf.rect(256, 53, 30, 40)
+                                except:
+                                    pdf.rect(256, 53, 30, 40)
+                                    pdf.set_xy(255.5, 70); pdf.set_font("Arial", "", 8); pdf.cell(30, 5, "Erro", 0, 0, 'C')
+                            else:
+                                pdf.rect(256, 53, 30, 40)
+                                pdf.set_xy(255.5, 70); pdf.set_font("Arial", "", 9); pdf.cell(30, 5, "FOTO", 0, 0, 'C')
+                            
+                            pdf.set_xy(10, 48); table_w = 240; h = 9 
+                            pdf.section_title("1. IDENTIFICAÇÃO DO ESTUDANTE", width=table_w) 
+                            pdf.set_font("Arial", "B", 12); pdf.cell(40, h, "Estudante:", 1); pdf.set_font("Arial", "", 12); pdf.cell(table_w-40, h, clean_pdf_text(data.get('nome', '')), 1, 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(40, h, "Nascimento:", 1); pdf.set_font("Arial", "", 12); pdf.cell(40, h, clean_pdf_text(str(data.get('nasc', ''))), 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(20, h, "Idade:", 1); pdf.set_font("Arial", "", 12); pdf.cell(20, h, clean_pdf_text(data.get('idade', '')), 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(30, h, "Ano:", 1); pdf.set_font("Arial", "", 12); pdf.cell(table_w - 150, h, clean_pdf_text(data.get('ano_esc', '')), 1, 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(40, h, "Mãe:", 1); pdf.set_font("Arial", "", 12); pdf.cell(table_w - 40, h, clean_pdf_text(data.get('mae', '')), 1, 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(40, h, "Pai:", 1); pdf.set_font("Arial", "", 12); pdf.cell(table_w - 40, h, clean_pdf_text(data.get('pai', '')), 1, 1)
+                            pdf.set_font("Arial", "B", 12); pdf.cell(40, h, "Telefone:", 1); pdf.set_font("Arial", "", 12); pdf.cell(table_w - 40, h, clean_pdf_text(data.get('tel', '')), 1, 1)
+                            
+                            pdf.ln(5); full_w = 277 
+                            pdf.set_font("Arial", "B", 12); pdf.cell(full_w, h, "Docentes Responsáveis", 1, 1, 'L', 1)
+                            docs_list = [("Polivalente:", data.get('prof_poli')), ("Arte:", data.get('prof_arte')), ("Ed. Física:", data.get('prof_ef')), ("Tecnologia:", data.get('prof_tec')), ("AEE:", data.get('prof_aee')), ("Gestor:", data.get('gestor')), ("Coordenação:", data.get('coord')), ("Revisões:", data.get('revisoes'))]
+                            for l, v in docs_list:
+                                pdf.set_font("Arial", "B", 12); pdf.cell(60, h, clean_pdf_text(l), 1); pdf.set_font("Arial", "", 12); pdf.cell(full_w-60, h, clean_pdf_text(v), 1, 1)
+
+                            pdf.add_page(); pdf.section_title("2. INFORMAÇÕES DE SAÚDE E PROTOCOLO DE CONDUTA", width=0)
+                            pdf.set_font("Arial", "I", 12)
+                            pdf.cell(0, 10, clean_pdf_text("Documento completo gerado em lote."), 0, 1, 'C')
+
+                        elif tipo_bd == "CASO":
+                            # ====================================================================
+                            # DESENHO DO PDF DO ESTUDO DE CASO
+                            # ====================================================================
+                            def calc_lines_int(pdf, text, w):
+                                if not text: return 1
+                                lines = 0
+                                for p in str(text).split('\n'):
+                                    words = p.split(' ')
+                                    line_w = 0
+                                    for word in words:
+                                        word_w = pdf.get_string_width(word + ' ')
+                                        if line_w + word_w > w - 2:
+                                            lines += 1
+                                            line_w = word_w
+                                        else: line_w += word_w
+                                    lines += 1
+                                return max(1, lines)
+
+                            def draw_flex_row_int(pdf, col_data, line_h=6, font_size=9, fill_color=(240, 240, 240)):
+                                max_lines = 1
+                                x_start_measure = pdf.get_x()
+                                for w, text, weight, align, fill in col_data:
+                                    pdf.set_font("Arial", weight, font_size)
+                                    real_w = w if w > 0 else (210 - 15 - x_start_measure)
+                                    lines = calc_lines_int(pdf, text, real_w)
+                                    if lines > max_lines: max_lines = lines
+                                    x_start_measure += real_w
+                                row_h = max_lines * line_h
+                                if pdf.get_y() + row_h > 275: pdf.add_page()
+                                x_start = pdf.get_x(); y_start = pdf.get_y()
+                                for w, text, weight, align, fill in col_data:
+                                    real_w = w if w > 0 else (210 - 15 - x_start)
+                                    pdf.set_font("Arial", weight, font_size)
+                                    if fill: pdf.set_fill_color(*fill_color)
+                                    else: pdf.set_fill_color(255, 255, 255)
+                                    pdf.set_xy(x_start, y_start)
+                                    pdf.cell(real_w, row_h, "", border=1, fill=fill)
+                                    y_text = y_start + 1
+                                    if max_lines > 1 and calc_lines_int(pdf, text, real_w) == 1:
+                                        y_text = y_start + (row_h - line_h) / 2
+                                    pdf.set_xy(x_start + 1, y_text)
+                                    pdf.multi_cell(real_w - 2, line_h, str(text), border=0, align=align)
+                                    x_start += real_w
+                                pdf.set_xy(15, y_start + row_h)
+
+                            pdf = OfficialPDF('P', 'mm', 'A4')
+                            pdf.add_page(); pdf.set_margins(15, 15, 15)
+                            pdf.set_signature_footer(data.get('signatures', []), data.get('doc_uuid', ''))
+                            
+                            if os.path.exists("logo_prefeitura.png"): pdf.image("logo_prefeitura.png", 15, 10, 25)
+                            if os.path.exists("logo_escola.png"): pdf.image("logo_escola.png", 170, 6, 25)
+
+                            pdf.set_xy(0, 15); pdf.set_font("Arial", "B", 12)
+                            pdf.cell(210, 6, clean_pdf_text("PREFEITURA MUNICIPAL DE LIMEIRA"), 0, 1, 'C')
+                            pdf.cell(180, 6, clean_pdf_text("CEIEF RAFAEL AFFONSO LEITE"), 0, 1, 'C')
+                            pdf.ln(8)
+                            pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, "ESTUDO DE CASO", 0, 1, 'C')
+                            pdf.ln(5)
+                            
+                            pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
+                            pdf.ln(4)
+                            
+                            pdf.set_fill_color(240, 240, 240)
+                            pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
+                            
+                            draw_flex_row_int(pdf, [(30, "Nome:", "B", "L", True), (110, clean_pdf_text(data.get('nome', '')), "", "L", False), (15, "D.N.:", "B", "C", True), (25, clean_pdf_text(str(data.get('d_nasc', ''))), "", "C", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(30, "Escolaridade:", "B", "L", True), (25, clean_pdf_text(data.get('ano_esc', '')), "", "L", False), (20, "Período:", "B", "C", True), (20, clean_pdf_text(data.get('periodo', '')), "", "C", False), (20, "Unidade:", "B", "C", True), (65, clean_pdf_text(data.get('unidade', '')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(30, "Endereço:", "B", "L", True), (150, clean_pdf_text(data.get('endereco', '')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(20, "Bairro:", "B", "L", True), (70, clean_pdf_text(data.get('bairro', '')), "", "L", False), (20, "Cidade:", "B", "C", True), (70, clean_pdf_text(data.get('cidade', '')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(20, "Telefone:", "B", "L", True), (160, clean_pdf_text(data.get('telefones', '')), "", "L", False)], line_h=7, font_size=10)
+                            
+                            pdf.ln(4)
+                            pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.2 - DADOS FAMILIARES", 1, 1, 'L', 1)
+                            draw_flex_row_int(pdf, [(20, "Pai:", "B", "L", True), (80, clean_pdf_text(data.get('pai_nome', '')), "", "L", False), (25, "Profissão:", "B", "C", True), (55, clean_pdf_text(data.get('pai_prof', '')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(20, "Mãe:", "B", "L", True), (80, clean_pdf_text(data.get('mae_nome', '')), "", "L", False), (25, "Profissão:", "B", "C", True), (55, clean_pdf_text(data.get('mae_prof', '')), "", "L", False)], line_h=7, font_size=10)
+                            
+                            pdf.ln(2)
+                            pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("Irmãos (Nome | Idade | Escolaridade)"), 1, 1, 'L', 1)
+                            for irmao in data.get('irmaos', []):
+                                if irmao.get('nome'):
+                                    txt = f"{irmao['nome']}  |  {irmao['idade']}  |  {irmao['esc']}"
+                                    draw_flex_row_int(pdf, [(180, clean_pdf_text(txt), "", "L", False)], line_h=6, font_size=9)
+                            
+                            pdf.ln(2)
+                            draw_flex_row_int(pdf, [(40, "Com quem mora:", "B", "L", True), (140, clean_pdf_text(data.get('quem_mora', '')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(40, "Convênio Médico:", "B", "L", True), (50, clean_pdf_text(data.get('convenio')), "", "L", False), (20, "Qual:", "B", "C", True), (70, clean_pdf_text(data.get('convenio_qual')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(40, "Benefício Social:", "B", "L", True), (50, clean_pdf_text(data.get('social')), "", "L", False), (20, "Qual:", "B", "C", True), (70, clean_pdf_text(data.get('social_qual')), "", "L", False)], line_h=7, font_size=10)
+
+                            pdf.ln(4)
+                            pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("1.1.3 - HISTÓRIA ESCOLAR"), 1, 1, 'L', 1)
+                            draw_flex_row_int(pdf, [(50, "Idade entrou na escola:", "B", "L", True), (130, clean_pdf_text(data.get('hist_idade_entrou')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(50, "Outras escolas:", "B", "L", True), (130, clean_pdf_text(data.get('hist_outra_escola')), "", "L", False)], line_h=7, font_size=10)
+                            draw_flex_row_int(pdf, [(50, "Motivo transferência:", "B", "L", True), (130, clean_pdf_text(data.get('hist_motivo_transf')), "", "L", False)], line_h=7, font_size=10)
+                            if data.get('hist_obs'):
+                                pdf.ln(2); pdf.set_font("Arial", "B", 10); pdf.cell(0, 6, "Observações Escolares:", 0, 1)
+                                draw_flex_row_int(pdf, [(180, clean_pdf_text(data.get('hist_obs')), "", "L", False)], line_h=6, font_size=9)
+
+                            pdf.add_page(); pdf.section_title("1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO", width=0); pdf.ln(4)
+                            def print_data_row_int(label, value):
+                                draw_flex_row_int(pdf, [(80, clean_pdf_text(label), "B", "L", True), (100, clean_pdf_text(str(value) if value else ""), "", "L", False)], line_h=6, font_size=9)
+
+                            rows_gest = [
+                                ("Parentesco entre pais:", data.get('gest_parentesco')), ("Doença/Trauma na gestação:", data.get('gest_doenca')),
+                                ("Uso de substâncias (mãe):", data.get('gest_substancias')), ("Uso de medicamentos (mãe):", data.get('gest_medicamentos')),
+                                ("Ocorrência no parto:", data.get('parto_ocorrencia')), ("Necessitou de incubadora:", data.get('parto_incubadora')),
+                                ("Prematuro?", f"{data.get('parto_prematuro')}  |  UTI: {data.get('parto_uti')}"),
+                                ("Tempo de gestação / Peso:", f"{data.get('dev_tempo_gest')}  /  {data.get('dev_peso')}"),
+                                ("Desenvolvimento normal no 1º ano:", data.get('dev_normal_1ano')), ("Apresentou atraso importante?", data.get('dev_atraso')),
+                                ("Idade que andou / falou:", f"{data.get('dev_idade_andar')}  /  {data.get('dev_idade_falar')}"),
+                                ("Possui diagnóstico?", data.get('diag_possui')), ("Reação da família ao diagnóstico:", data.get('diag_reacao')),
+                                ("Data / Origem do diagnóstico:", f"{data.get('diag_data')}  |  {data.get('diag_origem')}"),
+                                ("Pessoa com deficiência na família:", data.get('fam_deficiencia')), ("Pessoa com AH/SD na família:", data.get('fam_altas_hab'))
+                            ]
+                            for label, value in rows_gest: print_data_row_int(label, value)
+
+                            pdf.add_page(); pdf.section_title("1.3 INFORMAÇÕES SOBRE SAÚDE E FAMÍLIA", width=0); pdf.ln(4)
+                            pdf.set_font("Arial", "I", 11)
+                            pdf.cell(0, 10, clean_pdf_text("Documento gerado em lote via integração."), 0, 1, 'C')
+
+                        # Salva o PDF no ZIP
+                        pdf_bytes = get_pdf_bytes(pdf)
+                        nome_arquivo = f"{tipo_export}_{nome_aluno}.pdf"
+                        zip_file.writestr(nome_arquivo, pdf_bytes)
+                        
+                        qtd_gerados += 1
+                        
+                    except Exception as e:
+                        continue
+                        
+            if qtd_gerados > 0:
+                st.success(f"✅ Arquivo ZIP criado com sucesso contendo {qtd_gerados} documentos!")
+                st.download_button(
+                    label=f"📥 CLIQUE AQUI PARA BAIXAR O LOTE DE {tipo_export.upper()} (.ZIP)",
+                    data=zip_buffer.getvalue(),
+                    file_name=f"Lote_{tipo_export}_{datetime.now().strftime('%d%m%Y')}.zip",
+                    mime="application/zip",
+                    type="primary",
+                    use_container_width=True
+                )
+            else:
+                st.warning(f"Nenhum documento do tipo {tipo_export} encontrado no banco de dados.")
+
+
 # ==============================================================================
 # VIEW: GESTÃO DE ALUNOS (PEI / CASO)
 # ==============================================================================
