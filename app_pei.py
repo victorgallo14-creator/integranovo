@@ -3192,196 +3192,196 @@ elif app_mode == "👥 Gestão de Alunos":
                 # --- 1.1 DADOS GERAIS ---
                 pdf.add_page()
                 pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
-                        pdf.ln(4)
-                        
-                        # 1.1.1 IDENTIFICAÇÃO
-                        pdf.set_fill_color(240, 240, 240)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
-                        
-                        draw_flex_row(pdf, [
-                            (30, "Nome:", "B", "L", True),
-                            (110, clean_pdf_text(data.get('nome', '')), "", "L", False),
-                            (15, "D.N.:", "B", "C", True),
-                            (25, clean_pdf_text(str(data.get('d_nasc', ''))), "", "C", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (30, "Escolaridade:", "B", "L", True),
-                            (25, clean_pdf_text(data.get('ano_esc', '')), "", "L", False),
-                            (20, "Período:", "B", "C", True),
-                            (20, clean_pdf_text(data.get('periodo', '')), "", "C", False),
-                            (20, "Unidade:", "B", "C", True),
-                            (65, clean_pdf_text(data.get('unidade', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (30, "Endereço:", "B", "L", True),
-                            (150, clean_pdf_text(data.get('endereco', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
+                pdf.ln(4)
+                
+                # 1.1.1 IDENTIFICAÇÃO
+                pdf.set_fill_color(240, 240, 240)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
+                
+                draw_flex_row(pdf, [
+                    (30, "Nome:", "B", "L", True),
+                    (110, clean_pdf_text(data.get('nome', '')), "", "L", False),
+                    (15, "D.N.:", "B", "C", True),
+                    (25, clean_pdf_text(str(data.get('d_nasc', ''))), "", "C", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (30, "Escolaridade:", "B", "L", True),
+                    (25, clean_pdf_text(data.get('ano_esc', '')), "", "L", False),
+                    (20, "Período:", "B", "C", True),
+                    (20, clean_pdf_text(data.get('periodo', '')), "", "C", False),
+                    (20, "Unidade:", "B", "C", True),
+                    (65, clean_pdf_text(data.get('unidade', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (30, "Endereço:", "B", "L", True),
+                    (150, clean_pdf_text(data.get('endereco', '')), "", "L", False)
+                ], line_h=7, font_size=10)
 
-                        draw_flex_row(pdf, [
-                            (20, "Bairro:", "B", "L", True),
-                            (70, clean_pdf_text(data.get('bairro', '')), "", "L", False),
-                            (20, "Cidade:", "B", "C", True),
-                            (70, clean_pdf_text(data.get('cidade', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (20, "Telefone:", "B", "L", True),
-                            (160, clean_pdf_text(data.get('telefones', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        # 1.1.2 DADOS FAMILIARES
-                        pdf.ln(4)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.2 - DADOS FAMILIARES", 1, 1, 'L', 1)
-                        
-                        draw_flex_row(pdf, [
-                            (20, "Pai:", "B", "L", True),
-                            (80, clean_pdf_text(data.get('pai_nome', '')), "", "L", False),
-                            (25, "Profissão:", "B", "C", True),
-                            (55, clean_pdf_text(data.get('pai_prof', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (20, "Mãe:", "B", "L", True),
-                            (80, clean_pdf_text(data.get('mae_nome', '')), "", "L", False),
-                            (25, "Profissão:", "B", "C", True),
-                            (55, clean_pdf_text(data.get('mae_prof', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        # Irmãos
-                        pdf.ln(2)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("Irmãos (Nome | Idade | Escolaridade)"), 1, 1, 'L', 1)
-                        for i, irmao in enumerate(data.get('irmaos', [])):
-                            if irmao['nome']:
-                                txt = f"{irmao['nome']}  |  {irmao['idade']}  |  {irmao['esc']}"
-                                draw_flex_row(pdf, [(180, clean_pdf_text(txt), "", "L", False)], line_h=6, font_size=9)
-                        
-                        pdf.ln(2)
-                        draw_flex_row(pdf, [
-                            (40, "Com quem mora:", "B", "L", True),
-                            (140, clean_pdf_text(data.get('quem_mora', '')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (40, "Convênio Médico:", "B", "L", True),
-                            (50, clean_pdf_text(data.get('convenio')), "", "L", False),
-                            (20, "Qual:", "B", "C", True),
-                            (70, clean_pdf_text(data.get('convenio_qual')), "", "L", False)
-                        ], line_h=7, font_size=10)
-                        
-                        draw_flex_row(pdf, [
-                            (40, "Benefício Social:", "B", "L", True),
-                            (50, clean_pdf_text(data.get('social')), "", "L", False),
-                            (20, "Qual:", "B", "C", True),
-                            (70, clean_pdf_text(data.get('social_qual')), "", "L", False)
-                        ], line_h=7, font_size=10)
+                draw_flex_row(pdf, [
+                    (20, "Bairro:", "B", "L", True),
+                    (70, clean_pdf_text(data.get('bairro', '')), "", "L", False),
+                    (20, "Cidade:", "B", "C", True),
+                    (70, clean_pdf_text(data.get('cidade', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (20, "Telefone:", "B", "L", True),
+                    (160, clean_pdf_text(data.get('telefones', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                # 1.1.2 DADOS FAMILIARES
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.2 - DADOS FAMILIARES", 1, 1, 'L', 1)
+                
+                draw_flex_row(pdf, [
+                    (20, "Pai:", "B", "L", True),
+                    (80, clean_pdf_text(data.get('pai_nome', '')), "", "L", False),
+                    (25, "Profissão:", "B", "C", True),
+                    (55, clean_pdf_text(data.get('pai_prof', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (20, "Mãe:", "B", "L", True),
+                    (80, clean_pdf_text(data.get('mae_nome', '')), "", "L", False),
+                    (25, "Profissão:", "B", "C", True),
+                    (55, clean_pdf_text(data.get('mae_prof', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                # Irmãos
+                pdf.ln(2)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("Irmãos (Nome | Idade | Escolaridade)"), 1, 1, 'L', 1)
+                for i, irmao in enumerate(data.get('irmaos', [])):
+                    if irmao['nome']:
+                        txt = f"{irmao['nome']}  |  {irmao['idade']}  |  {irmao['esc']}"
+                        draw_flex_row(pdf, [(180, clean_pdf_text(txt), "", "L", False)], line_h=6, font_size=9)
+                
+                pdf.ln(2)
+                draw_flex_row(pdf, [
+                    (40, "Com quem mora:", "B", "L", True),
+                    (140, clean_pdf_text(data.get('quem_mora', '')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (40, "Convênio Médico:", "B", "L", True),
+                    (50, clean_pdf_text(data.get('convenio')), "", "L", False),
+                    (20, "Qual:", "B", "C", True),
+                    (70, clean_pdf_text(data.get('convenio_qual')), "", "L", False)
+                ], line_h=7, font_size=10)
+                
+                draw_flex_row(pdf, [
+                    (40, "Benefício Social:", "B", "L", True),
+                    (50, clean_pdf_text(data.get('social')), "", "L", False),
+                    (20, "Qual:", "B", "C", True),
+                    (70, clean_pdf_text(data.get('social_qual')), "", "L", False)
+                ], line_h=7, font_size=10)
 
-                        # 1.1.3 HISTÓRIA ESCOLAR
-                        pdf.ln(4)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("1.1.3 - HISTÓRIA ESCOLAR"), 1, 1, 'L', 1)
-                        
-                        draw_flex_row(pdf, [(50, "Idade entrou na escola:", "B", "L", True), (130, clean_pdf_text(data.get('hist_idade_entrou')), "", "L", False)], line_h=7, font_size=10)
-                        draw_flex_row(pdf, [(50, "Outras escolas:", "B", "L", True), (130, clean_pdf_text(data.get('hist_outra_escola')), "", "L", False)], line_h=7, font_size=10)
-                        draw_flex_row(pdf, [(50, "Motivo transferência:", "B", "L", True), (130, clean_pdf_text(data.get('hist_motivo_transf')), "", "L", False)], line_h=7, font_size=10)
-                        
-                        if data.get('hist_obs'):
-                            pdf.ln(2)
-                            pdf.set_font("Arial", "B", 10); pdf.cell(0, 6, "Observações Escolares:", 0, 1)
-                            draw_flex_row(pdf, [(180, clean_pdf_text(data.get('hist_obs')), "", "L", False)], line_h=6, font_size=9)
+                # 1.1.3 HISTÓRIA ESCOLAR
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("1.1.3 - HISTÓRIA ESCOLAR"), 1, 1, 'L', 1)
+                
+                draw_flex_row(pdf, [(50, "Idade entrou na escola:", "B", "L", True), (130, clean_pdf_text(data.get('hist_idade_entrou')), "", "L", False)], line_h=7, font_size=10)
+                draw_flex_row(pdf, [(50, "Outras escolas:", "B", "L", True), (130, clean_pdf_text(data.get('hist_outra_escola')), "", "L", False)], line_h=7, font_size=10)
+                draw_flex_row(pdf, [(50, "Motivo transferência:", "B", "L", True), (130, clean_pdf_text(data.get('hist_motivo_transf')), "", "L", False)], line_h=7, font_size=10)
+                
+                if data.get('hist_obs'):
+                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 10); pdf.cell(0, 6, "Observações Escolares:", 0, 1)
+                    draw_flex_row(pdf, [(180, clean_pdf_text(data.get('hist_obs')), "", "L", False)], line_h=6, font_size=9)
 
-                        # --- 1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO ---
-                        pdf.add_page()
-                        pdf.section_title("1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO", width=0)
-                        pdf.ln(4)
-                        
-                        def print_data_row(label, value):
-                            draw_flex_row(pdf, [
-                                (80, clean_pdf_text(label), "B", "L", True),
-                                (100, clean_pdf_text(str(value) if value else ""), "", "L", False)
-                            ], line_h=6, font_size=9)
+                # --- 1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO ---
+                pdf.add_page()
+                pdf.section_title("1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO", width=0)
+                pdf.ln(4)
+                
+                def print_data_row(label, value):
+                    draw_flex_row(pdf, [
+                        (80, clean_pdf_text(label), "B", "L", True),
+                        (100, clean_pdf_text(str(value) if value else ""), "", "L", False)
+                    ], line_h=6, font_size=9)
 
-                        rows_gest = [
-                            ("Parentesco entre pais:", data.get('gest_parentesco')),
-                            ("Doença/Trauma na gestação:", data.get('gest_doenca')),
-                            ("Uso de substâncias (mãe):", data.get('gest_substancias')),
-                            ("Uso de medicamentos (mãe):", data.get('gest_medicamentos')),
-                            ("Ocorrência no parto:", data.get('parto_ocorrencia')),
-                            ("Necessitou de incubadora:", data.get('parto_incubadora')),
-                            ("Prematuro?", f"{data.get('parto_prematuro')}  |  UTI: {data.get('parto_uti')}"),
-                            ("Tempo de gestação / Peso:", f"{data.get('dev_tempo_gest')}  /  {data.get('dev_peso')}"),
-                            ("Desenvolvimento normal no 1º ano:", data.get('dev_normal_1ano')),
-                            ("Apresentou atraso importante?", data.get('dev_atraso')),
-                            ("Idade que andou / falou:", f"{data.get('dev_idade_andar')}  /  {data.get('dev_idade_falar')}"),
-                            ("Possui diagnóstico?", data.get('diag_possui')),
-                            ("Reação da família ao diagnóstico:", data.get('diag_reacao')),
-                            ("Data / Origem do diagnóstico:", f"{data.get('diag_data')}  |  {data.get('diag_origem')}"),
-                            ("Pessoa com deficiência na família:", data.get('fam_deficiencia')),
-                            ("Pessoa com AH/SD na família:", data.get('fam_altas_hab'))
-                        ]
-                        
-                        for label, value in rows_gest:
-                            print_data_row(label, value)
+                rows_gest = [
+                    ("Parentesco entre pais:", data.get('gest_parentesco')),
+                    ("Doença/Trauma na gestação:", data.get('gest_doenca')),
+                    ("Uso de substâncias (mãe):", data.get('gest_substancias')),
+                    ("Uso de medicamentos (mãe):", data.get('gest_medicamentos')),
+                    ("Ocorrência no parto:", data.get('parto_ocorrencia')),
+                    ("Necessitou de incubadora:", data.get('parto_incubadora')),
+                    ("Prematuro?", f"{data.get('parto_prematuro')}  |  UTI: {data.get('parto_uti')}"),
+                    ("Tempo de gestação / Peso:", f"{data.get('dev_tempo_gest')}  /  {data.get('dev_peso')}"),
+                    ("Desenvolvimento normal no 1º ano:", data.get('dev_normal_1ano')),
+                    ("Apresentou atraso importante?", data.get('dev_atraso')),
+                    ("Idade que andou / falou:", f"{data.get('dev_idade_andar')}  /  {data.get('dev_idade_falar')}"),
+                    ("Possui diagnóstico?", data.get('diag_possui')),
+                    ("Reação da família ao diagnóstico:", data.get('diag_reacao')),
+                    ("Data / Origem do diagnóstico:", f"{data.get('diag_data')}  |  {data.get('diag_origem')}"),
+                    ("Pessoa com deficiência na família:", data.get('fam_deficiencia')),
+                    ("Pessoa com AH/SD na família:", data.get('fam_altas_hab'))
+                ]
+                
+                for label, value in rows_gest:
+                    print_data_row(label, value)
 
-                        # --- 1.3 INFORMAÇÕES SOBRE SAÚDE ---
-                        pdf.add_page()
-                        pdf.section_title("1.3 INFORMAÇÕES SOBRE SAÚDE", width=0)
-                        pdf.ln(4)
-                        
-                        saude_rows = [
-                            ("Problemas de saúde:", data.get('saude_prob')),
-                            ("Já necessitou de internação:", data.get('saude_internacao')),
-                            ("Restrição/Seletividade alimentar:", data.get('saude_restricao')),
-                            ("Uso de medicamentos controlados:", f"{data.get('med_uso')} - Quais: {data.get('med_quais')}"),
-                            ("Horário / Dosagem / Início:", f"{data.get('med_hor')}  |  {data.get('med_dos')}  |  {data.get('med_ini')}"),
-                            ("Qualidade do sono:", data.get('sono')),
-                            ("Última visita ao médico:", data.get('medico_ultimo'))
-                        ]
-                        for label, value in saude_rows:
-                            print_data_row(label, value)
-                        
-                        esf = []
-                        if data.get('esf_urina'): esf.append("Urina")
-                        if data.get('esf_fezes'): esf.append("Fezes")
-                        print_data_row("Controle de Esfíncter:", f"{', '.join(esf) if esf else 'Não'}  (Idade: {data.get('esf_idade')})")
-                        
-                        pdf.ln(4)
-                        pdf.set_font("Arial", "B", 10); pdf.set_fill_color(240, 240, 240)
-                        pdf.cell(0, 8, "Atendimentos Clínicos Extraescolares", 1, 1, 'L', 1)
-                        
-                        clins = data.get('clinicas', [])
-                        print_data_row("Realiza atendimento em:", ", ".join(clins) if clins else "Não realiza")
-                        print_data_row("Especialidade médica:", data.get('clinicas_med_esp'))
-                        print_data_row("Nome da Clínica/Profissional:", data.get('clinicas_nome'))
-                        
-                        if data.get('saude_obs_geral'):
-                            pdf.ln(2)
-                            pdf.set_font("Arial", "B", 9); pdf.cell(0, 6, "Outras observações de saúde:", 0, 1)
-                            draw_flex_row(pdf, [(180, clean_pdf_text(data.get('saude_obs_geral')), "", "L", False)], line_h=5, font_size=9)
+                # --- 1.3 INFORMAÇÕES SOBRE SAÚDE ---
+                pdf.add_page()
+                pdf.section_title("1.3 INFORMAÇÕES SOBRE SAÚDE", width=0)
+                pdf.ln(4)
+                
+                saude_rows = [
+                    ("Problemas de saúde:", data.get('saude_prob')),
+                    ("Já necessitou de internação:", data.get('saude_internacao')),
+                    ("Restrição/Seletividade alimentar:", data.get('saude_restricao')),
+                    ("Uso de medicamentos controlados:", f"{data.get('med_uso')} - Quais: {data.get('med_quais')}"),
+                    ("Horário / Dosagem / Início:", f"{data.get('med_hor')}  |  {data.get('med_dos')}  |  {data.get('med_ini')}"),
+                    ("Qualidade do sono:", data.get('sono')),
+                    ("Última visita ao médico:", data.get('medico_ultimo'))
+                ]
+                for label, value in saude_rows:
+                    print_data_row(label, value)
+                
+                esf = []
+                if data.get('esf_urina'): esf.append("Urina")
+                if data.get('esf_fezes'): esf.append("Fezes")
+                print_data_row("Controle de Esfíncter:", f"{', '.join(esf) if esf else 'Não'}  (Idade: {data.get('esf_idade')})")
+                
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.set_fill_color(240, 240, 240)
+                pdf.cell(0, 8, "Atendimentos Clínicos Extraescolares", 1, 1, 'L', 1)
+                
+                clins = data.get('clinicas', [])
+                print_data_row("Realiza atendimento em:", ", ".join(clins) if clins else "Não realiza")
+                print_data_row("Especialidade médica:", data.get('clinicas_med_esp'))
+                print_data_row("Nome da Clínica/Profissional:", data.get('clinicas_nome'))
+                
+                if data.get('saude_obs_geral'):
+                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 9); pdf.cell(0, 6, "Outras observações de saúde:", 0, 1)
+                    draw_flex_row(pdf, [(180, clean_pdf_text(data.get('saude_obs_geral')), "", "L", False)], line_h=5, font_size=9)
 
-                        # --- 1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST) ---
-                        pdf.add_page()
-                        pdf.section_title("1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST)", width=0)
-                        pdf.ln(4)
-                        
-                        draw_flex_row(pdf, [
-                            (110, "PERGUNTA / ASPECTO OBSERVADO", "B", "C", True),
-                            (25, "SIM/NÃO", "B", "C", True),
-                            (45, "OBSERVAÇÕES DA FAMÍLIA", "B", "C", True)
-                        ], line_h=8, font_size=9, fill_color=(220, 220, 220))
-                        
-                        checklist_items = [
-                            "Relata fatos do dia a dia? Apresentando boa memória?",
-                            "É organizado com seus pertences?",
-                            "Aceita regras de forma tranquila?",
-                            "Busca e aceita ajuda quando não sabe ou não consegue algo?",
-                            "Aceita alterações no ambiente?",
-                            "Tem algum medo?",
-                            "Tem alguma mania?",
-                            "Tem alguma área/assunto, brinquedo ou hiperfoco?",
-                            "Prefere brincar sozinho ou com outras crianças? Tem amigos?",
-                            "Qual a expectativa da família em relação à escolaridade da criança?"
-                        ]
+                # --- 1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST) ---
+                pdf.add_page()
+                pdf.section_title("1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST)", width=0)
+                pdf.ln(4)
+                
+                draw_flex_row(pdf, [
+                    (110, "PERGUNTA / ASPECTO OBSERVADO", "B", "C", True),
+                    (25, "SIM/NÃO", "B", "C", True),
+                    (45, "OBSERVAÇÕES DA FAMÍLIA", "B", "C", True)
+                ], line_h=8, font_size=9, fill_color=(220, 220, 220))
+                
+                checklist_items = [
+                    "Relata fatos do dia a dia? Apresentando boa memória?",
+                    "É organizado com seus pertences?",
+                    "Aceita regras de forma tranquila?",
+                    "Busca e aceita ajuda quando não sabe ou não consegue algo?",
+                    "Aceita alterações no ambiente?",
+                    "Tem algum medo?",
+                    "Tem alguma mania?",
+                    "Tem alguma área/assunto, brinquedo ou hiperfoco?",
+                    "Prefere brincar sozinho ou com outras crianças? Tem amigos?",
+                    "Qual a expectativa da família em relação à escolaridade da criança?"
+                ]
                 
                 pdf.set_font("Arial", "", 9)
                 
