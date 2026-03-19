@@ -3241,6 +3241,7 @@ elif app_mode == "👥 Gestão de Alunos":
                 # INÍCIO DO CONTEÚDO DO ESTUDO DE CASO (INTEGRADO NO PDI)
                 # ==========================================================
                 data = data_case  # <--- ADICIONE ESTA LINHA AQUI!
+                pdf.set_margins(15, 15, 15)
                 # --- 1.1 DADOS GERAIS ---
                 pdf.add_page()
                 pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
@@ -3464,6 +3465,7 @@ elif app_mode == "👥 Gestão de Alunos":
                 # ==========================================================
                 # FIM DO CONTEÚDO DO ESTUDO DE CASO
                 # RETOMADA DO PDI
+                pdf.set_margins(10, 10, 10)
                 # ==========================================================
 
                 # --- CAPA SECUNDÁRIA: PLANO DE AEE ---
