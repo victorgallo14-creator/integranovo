@@ -1960,7 +1960,17 @@ elif app_mode == "👥 Gestão de Alunos":
         if aluno_sel == "-- Novo Registro --":
             nome_novo = c_aluno.text_input("Digite o nome completo do novo estudante:")
 
-        docs_disponiveis = ["Estudo de Caso", "PEI", "PDI", "Protocolo de Conduta", "Avaliação de Apoio", "Relatório de Acompanhamento", "Declaração de Matrícula"]
+        # LISTA DE DOCUMENTOS ATUALIZADA (PEI Dividido)
+        docs_disponiveis = [
+            "Estudo de Caso", 
+            "PEI - Ensino Fundamental", 
+            "PEI - Educação Infantil", 
+            "PDI", 
+            "Protocolo de Conduta", 
+            "Avaliação de Apoio", 
+            "Relatório de Acompanhamento", 
+            "Declaração de Matrícula"
+        ]
         doc_sel = c_doc.selectbox("2. Selecione o Documento:", docs_disponiveis)
 
         st.write("")
@@ -1994,15 +2004,25 @@ elif app_mode == "👥 Gestão de Alunos":
         if c_del.button("🗑️ Excluir Aluno", use_container_width=True, help="Atenção: Isso excluirá o estudante e TODOS os seus documentos do banco."):
             st.session_state.confirm_delete = True
 
-    # Define as variáveis que o restante do código já usa para exibir os forms
-    doc_mode = st.session_state.ee_doc_confirmado
+    # --- LÓGICA DE INTERPRETAÇÃO DO DOCUMENTO (PEI Fundamental vs Infantil) ---
+    escolha_doc = st.session_state.ee_doc_confirmado
     selected_student = st.session_state.ee_aluno_confirmado
+    
+    if escolha_doc == "PEI - Ensino Fundamental":
+        doc_mode = "PEI"
+        pei_level = "Fundamental"
+    elif escolha_doc == "PEI - Educação Infantil":
+        doc_mode = "PEI"
+        pei_level = "Infantil"
+    else:
+        doc_mode = escolha_doc
+        pei_level = "Fundamental" # Padrão para os outros documentos
 
     st.divider()
-    
+
     # PEI COM FORMULÁRIOS
     if doc_mode == "PEI":
-        st.markdown(f"""<div class="header-box"><div class="header-title">Plano Educacional Individualizado - PEI</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="header-box"><div class="header-title">Plano Educacional Individualizado - PEI ({pei_level})</div></div>""", unsafe_allow_html=True)
         
         st.markdown("""<style>div[data-testid="stFormSubmitButton"] > button {width: 100%; background-color: #dcfce7; color: #166534; border: 1px solid #166534;}</style>""", unsafe_allow_html=True)
 
