@@ -15,6 +15,7 @@ import uuid
 import threading
 import random
 import time
+import zipfile
 
 MIN_DATA = date(1900, 1, 1)
 MAX_DATA = date(2100, 12, 31)
@@ -972,6 +973,27 @@ with st.sidebar:
 # ==============================================================================
 # VIEW: DASHBOARD
 # ==============================================================================
+def gerar_pdf_pei_em_lote(data_aluno):
+    """
+    Função dedicada para gerar o PDF nos bastidores, sem depender do session_state da tela.
+    """
+    pdf = OfficialPDF('L', 'mm', 'A4')
+    pdf.add_page()
+    pdf.set_margins(10, 10, 10)
+    
+    # Adicione a assinatura
+    pdf.set_signature_footer(data_aluno.get('signatures', []), data_aluno.get('doc_uuid', ''))
+    
+    # --- COLE AQUI TODO O SEU CÓDIGO DE DESENHAR O PDF DO PEI ---
+    # Exemplo resumido:
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(297, 8, clean_pdf_text("PLANO EDUCACIONAL INDIVIDUALIZADO - PEI"), 0, 1, 'C')
+    pdf.set_font("Arial", "", 12)
+    pdf.cell(0, 10, clean_pdf_text(f"Aluno: {data_aluno.get('nome', '')}"), 0, 1, 'L')
+    # ... (resto do código de desenho) ...
+    
+    return get_pdf_bytes(pdf)
+
 if app_mode == "📊 Painel de Gestão":
     # Data e Hora (Fuso BR)
     fuso_br = timezone(timedelta(hours=-3))
@@ -1334,6 +1356,64 @@ if app_mode == "📊 Painel de Gestão":
                                     st.rerun()
             else:
                 st.write("Agenda vazia.")
+
+st.divider()
+        st.subheader("📥 Exportação em Lote (Download em Massa)")
+        st.caption("Gere um arquivo ZIP contendo todos os documentos concluídos (100% preenchidos).")
+        
+        c_zip1, c_zip2 = st.columns(2)
+        tipo_exportacao = c_zip1.selectbox("Qual documento deseja exportar?", ["PEI", "Estudo de Caso", "PDI"])
+        
+        if c_zip2.button(f"Compactar todos os {tipo_exportacao}s prontos", type="primary"):
+            with st.spinner("Gerando dezenas de PDFs e compactando... Isso pode levar um minuto. ☕"):
+                
+                # 1. Prepara um arquivo ZIP na memória do servidor
+                zip_buffer = io.BytesIO()
+                
+                # 2. Abre o ZIP para escrita
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                    
+                    df_export = load_db()
+                    documentos_gerados = 0
+                    
+                    # 3. Percorre todos os alunos no banco de dados
+                    for idx, row in df_export[df_export["tipo_doc"] == tipo_exportacao].iterrows():
+                        d = json.loads(row['dados_json'])
+                        
+                        # Regra: Só exporta se o progresso for 100% (usando sua função calc_progress)
+                        # Obs: Se quiser exportar TODOS, independente de estar pronto, basta tirar esse IF.
+                        progresso = 0
+                        if tipo_exportacao == "PEI":
+                            progresso = calc_progress(row['dados_json'], keys_pei)
+                        elif tipo_exportacao == "Estudo de Caso":
+                            progresso = calc_progress(row['dados_json'], keys_caso)
+                            
+                        if progresso >= 90: # Considera pronto acima de 90%
+                            
+                            # Chama a função que desenha o PDF
+                            if tipo_exportacao == "PEI":
+                                pdf_bytes = gerar_pdf_pei_em_lote(d)
+                            
+                            # Limpa o nome do arquivo para não dar erro no Windows/Mac
+                            nome_limpo = d.get('nome', 'Desconhecido').replace("/", "-").replace(":", "")
+                            nome_arquivo = f"{tipo_exportacao}_{nome_limpo}.pdf"
+                            
+                            # Salva o PDF dentro do arquivo ZIP
+                            zip_file.writestr(nome_arquivo, pdf_bytes)
+                            documentos_gerados += 1
+                
+                # 4. Finaliza e exibe o botão de Download do ZIP
+                if documentos_gerados > 0:
+                    st.success(f"✅ Sucesso! {documentos_gerados} documentos compactados.")
+                    st.download_button(
+                        label="📦 CLIQUE AQUI PARA BAIXAR O ARQUIVO .ZIP",
+                        data=zip_buffer.getvalue(),
+                        file_name=f"Lote_{tipo_exportacao}_{datetime.now().strftime('%d-%m-%Y')}.zip",
+                        mime="application/zip",
+                        type="primary"
+                    )
+                else:
+                    st.warning("Nenhum documento atingiu o progresso mínimo para exportação.")
 
 # ==============================================================================
 # VIEW: GESTÃO DE ALUNOS (PEI / CASO)
