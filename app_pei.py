@@ -1362,37 +1362,290 @@ if app_mode == "📊 Painel de Gestão":
                         
                         # --- INÍCIO DO DESENHO DO PDF DO ESTUDO DE CASO ---
                         pdf = OfficialPDF('P', 'mm', 'A4')
-                        pdf.add_page()
-                        pdf.set_margins(15, 15, 15)
-                        pdf.set_signature_footer(data.get('signatures', []), data.get('doc_uuid', ''))
-                        
-                        if os.path.exists("logo_prefeitura.png"): pdf.image("logo_prefeitura.png", 15, 10, 25)
-                        if os.path.exists("logo_escola.png"): pdf.image("logo_escola.png", 170, 6, 25)
+                pdf.add_page(); pdf.set_margins(15, 15, 15)
+                
+                # SET SIGNATURE FOOTER
+                pdf.set_signature_footer(data.get('signatures', []), data.get('doc_uuid', ''))
+                
+                # --- CABEÇALHO ---
+                if os.path.exists("logo_prefeitura.png"): pdf.image("logo_prefeitura.png", 15, 10, 25)
+                if os.path.exists("logo_escola.png"): pdf.image("logo_escola.png", 170, 6, 25)
 
-                        pdf.set_xy(0, 15); pdf.set_font("Arial", "B", 12)
-                        pdf.cell(210, 6, clean_pdf_text("PREFEITURA MUNICIPAL DE LIMEIRA"), 0, 1, 'C')
-                        pdf.cell(180, 6, clean_pdf_text("CEIEF RAFAEL AFFONSO LEITE"), 0, 1, 'C')
-                        pdf.ln(8)
-                        pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, "ESTUDO DE CASO", 0, 1, 'C')
-                        pdf.ln(5)
+                # Títulos Centralizados
+                pdf.set_xy(0, 15); pdf.set_font("Arial", "B", 12)
+                pdf.cell(210, 6, clean_pdf_text("PREFEITURA MUNICIPAL DE LIMEIRA"), 0, 1, 'C')
+                pdf.cell(180, 6, clean_pdf_text("CEIEF RAFAEL AFFONSO LEITE"), 0, 1, 'C')
+                pdf.ln(8)
+                pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, "ESTUDO DE CASO", 0, 1, 'C')
+                pdf.ln(5)
+                
+                # --- 1.1 DADOS GERAIS ---
+                pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
+                pdf.ln(4)
+                
+                # 1.1.1 IDENTIFICAÇÃO
+                pdf.set_fill_color(240, 240, 240)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Nome:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(110, 8, clean_pdf_text(data.get('nome', '')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(15, 8, "D.N.:", 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(str(data.get('d_nasc', ''))), 1, 1, 'C')
+                
+                # --- LINHA CORRIGIDA (ESCOLARIDADE, PERÍODO E UNIDADE) ---
+                pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Escolaridade:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(25, 8, clean_pdf_text(data.get('ano_esc', '')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Período:", 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(20, 8, clean_pdf_text(data.get('periodo', '')), 1, 0, 'C')
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Unidade:", 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('unidade', '')), 1, 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, clean_pdf_text("Endereço:"), 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('endereco', '')), 1, 1)
+
+                # --- LINHA DIVIDIDA: BAIRRO E CIDADE ---
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Bairro:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(70, 8, clean_pdf_text(data.get('bairro', '')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Cidade:", 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('cidade', '')), 1, 1)
+                
+                # --- LINHA EXCLUSIVA: TELEFONE ---
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Telefone:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('telefones', '')), 1, 1)
+                
+                # 1.1.2 DADOS FAMILIARES
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.2 - DADOS FAMILIARES", 1, 1, 'L', 1)
+                
+                # Pai
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Pai:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(80, 8, clean_pdf_text(data.get('pai_nome', '')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(25, 8, clean_pdf_text("Profissão:"), 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('pai_prof', '')), 1, 1)
+                
+                # Mãe
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, clean_pdf_text("Mãe:"), 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(80, 8, clean_pdf_text(data.get('mae_nome', '')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(25, 8, clean_pdf_text("Profissão:"), 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('mae_prof', '')), 1, 1)
+                
+                # Irmãos
+                pdf.ln(2)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("Irmãos (Nome | Idade | Escolaridade)"), 1, 1, 'L', 1)
+                pdf.set_font("Arial", "", 9)
+                for i, irmao in enumerate(data.get('irmaos', [])):
+                    if irmao['nome']:
+                        txt = f"{irmao['nome']}  |  {irmao['idade']}  |  {irmao['esc']}"
+                        pdf.cell(0, 6, clean_pdf_text(txt), 1, 1)
+                
+                pdf.ln(2)
+                pdf.set_font("Arial", "B", 10); pdf.cell(40, 8, "Com quem mora:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('quem_mora', '')), 1, 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(40, 8, clean_pdf_text("Convênio Médico:"), 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(50, 8, clean_pdf_text(data.get('convenio')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, clean_pdf_text("Qual:"), 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('convenio_qual')), 1, 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(40, 8, clean_pdf_text("Benefício Social:"), 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(50, 8, clean_pdf_text(data.get('social')), 1, 0)
+                pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, clean_pdf_text("Qual:"), 1, 0, 'C', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('social_qual')), 1, 1)
+
+                # 1.1.3 HISTÓRIA ESCOLAR
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, clean_pdf_text("1.1.3 - HISTÓRIA ESCOLAR"), 1, 1, 'L', 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(50, 8, "Idade entrou na escola:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('hist_idade_entrou')), 1, 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(50, 8, "Outras escolas:", 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('hist_outra_escola')), 1, 1)
+                
+                pdf.set_font("Arial", "B", 10); pdf.cell(50, 8, clean_pdf_text("Motivo transferência:"), 1, 0, 'L', 1)
+                pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('hist_motivo_transf')), 1, 1)
+                
+                if data.get('hist_obs'):
+                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 10); pdf.cell(0, 6, "Observações Escolares:", 0, 1)
+                    pdf.set_font("Arial", "", 9); pdf.multi_cell(0, 5, clean_pdf_text(data.get('hist_obs')), 1)
+
+                # --- 1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO ---
+                pdf.add_page()
+                pdf.section_title("1.2 GESTAÇÃO, PARTO E DESENVOLVIMENTO", width=0)
+                pdf.ln(4)
+                
+                def print_data_row(label, value):
+                    val_text = clean_pdf_text(str(value) if value else "")
+                    pdf.set_font("Arial", "", 9)
+                    
+                    # Espaço disponível para o texto (Total 180 - 80 da primeira coluna)
+                    w_val = 100 
+                    str_width = pdf.get_string_width(val_text)
+                    
+                    # Se o texto for curto, imprime na linha normal
+                    if str_width <= w_val - 2:
+                        pdf.set_font("Arial", "B", 9); pdf.set_fill_color(240, 240, 240)
+                        pdf.cell(80, 7, clean_pdf_text(label), 1, 0, 'L', 1)
+                        pdf.set_font("Arial", "", 9); pdf.set_fill_color(255, 255, 255)
+                        pdf.cell(0, 7, val_text, 1, 1, 'L')
+                    else:
+                        # Se o texto for longo, calcula quantas linhas vai precisar
+                        line_height = 5
+                        linhas = int(str_width / (w_val - 4)) + 1
+                        total_height = (linhas * line_height) + 2 # Altura total da caixa com margem
                         
-                        pdf.section_title("1.1 DADOS GERAIS DO ESTUDANTE", width=0)
-                        pdf.ln(4)
+                        x = pdf.get_x()
+                        y = pdf.get_y()
                         
-                        pdf.set_fill_color(240, 240, 240)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, "1.1.1 - IDENTIFICAÇÃO", 1, 1, 'L', 1)
+                        # 1. Desenha a caixa cinza do título esticada para a altura total
+                        pdf.set_font("Arial", "B", 9); pdf.set_fill_color(240, 240, 240)
+                        pdf.cell(80, total_height, clean_pdf_text(label), 1, 0, 'L', 1)
                         
-                        pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Nome:", 1, 0, 'L', 1)
-                        pdf.set_font("Arial", "", 10); pdf.cell(110, 8, clean_pdf_text(data.get('nome', '')), 1, 0)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(15, 8, "D.N.:", 1, 0, 'C', 1)
-                        pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(str(data.get('d_nasc', ''))), 1, 1, 'C')
+                        # 2. Desenha a caixa em branco do lado com a mesma altura
+                        pdf.set_fill_color(255, 255, 255)
+                        pdf.cell(0, total_height, "", 1, 1, 'L', 1)
                         
-                        pdf.set_font("Arial", "B", 10); pdf.cell(30, 8, "Escolaridade:", 1, 0, 'L', 1)
-                        pdf.set_font("Arial", "", 10); pdf.cell(25, 8, clean_pdf_text(data.get('ano_esc', '')), 1, 0)
-                        pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Período:", 1, 0, 'C', 1)
-                        pdf.set_font("Arial", "", 10); pdf.cell(20, 8, clean_pdf_text(data.get('periodo', '')), 1, 0, 'C')
-                        pdf.set_font("Arial", "B", 10); pdf.cell(20, 8, "Unidade:", 1, 0, 'C', 1)
-                        pdf.set_font("Arial", "", 10); pdf.cell(0, 8, clean_pdf_text(data.get('unidade', '')), 1, 1)
+                        # 3. Retorna o cursor para dentro da caixa em branco e quebra o texto
+                        pdf.set_xy(x + 80, y + 1)
+                        pdf.set_font("Arial", "", 9)
+                        pdf.multi_cell(0, line_height, val_text, 0, 'L')
+                        
+                        # 4. Ajusta o cursor para baixo para a próxima linha da tabela não encavalar
+                        pdf.set_xy(x, y + total_height)
+
+                rows_gest = [
+                    ("Parentesco entre pais:", data.get('gest_parentesco')),
+                    ("Doença/Trauma na gestação:", data.get('gest_doenca')),
+                    ("Uso de substâncias (mãe):", data.get('gest_substancias')),
+                    ("Uso de medicamentos (mãe):", data.get('gest_medicamentos')),
+                    ("Ocorrência no parto:", data.get('parto_ocorrencia')),
+                    ("Necessitou de incubadora:", data.get('parto_incubadora')),
+                    ("Prematuro?", f"{data.get('parto_prematuro')}  |  UTI: {data.get('parto_uti')}"),
+                    ("Tempo de gestação / Peso:", f"{data.get('dev_tempo_gest')}  /  {data.get('dev_peso')}"),
+                    ("Desenvolvimento normal no 1º ano:", data.get('dev_normal_1ano')),
+                    ("Apresentou atraso importante?", data.get('dev_atraso')),
+                    ("Idade que andou / falou:", f"{data.get('dev_idade_andar')}  /  {data.get('dev_idade_falar')}"),
+                    ("Possui diagnóstico?", data.get('diag_possui')),
+                    ("Reação da família ao diagnóstico:", data.get('diag_reacao')),
+                    ("Data / Origem do diagnóstico:", f"{data.get('diag_data')}  |  {data.get('diag_origem')}"),
+                    ("Pessoa com deficiência na família:", data.get('fam_deficiencia')),
+                    ("Pessoa com AH/SD na família:", data.get('fam_altas_hab'))
+                ]
+                
+                for label, value in rows_gest:
+                    print_data_row(label, value)
+
+                # --- 1.3 INFORMAÇÕES SOBRE SAÚDE ---
+                pdf.add_page()
+                pdf.section_title("1.3 INFORMAÇÕES SOBRE SAÚDE", width=0)
+                pdf.ln(4)
+                
+                saude_rows = [
+                    ("Problemas de saúde:", data.get('saude_prob')),
+                    ("Já necessitou de internação:", data.get('saude_internacao')),
+                    ("Restrição/Seletividade alimentar:", data.get('saude_restricao')),
+                    ("Uso de medicamentos controlados:", f"{data.get('med_uso')} - Quais: {data.get('med_quais')}"),
+                    ("Horário / Dosagem / Início:", f"{data.get('med_hor')}  |  {data.get('med_dos')}  |  {data.get('med_ini')}"),
+                    ("Qualidade do sono:", data.get('sono')),
+                    ("Última visita ao médico:", data.get('medico_ultimo'))
+                ]
+                for label, value in saude_rows:
+                    print_data_row(label, value)
+                
+                esf = []
+                if data.get('esf_urina'): esf.append("Urina")
+                if data.get('esf_fezes'): esf.append("Fezes")
+                print_data_row("Controle de Esfíncter:", f"{', '.join(esf) if esf else 'Não'}  (Idade: {data.get('esf_idade')})")
+                
+                pdf.ln(4)
+                pdf.set_font("Arial", "B", 10); pdf.set_fill_color(240, 240, 240)
+                pdf.cell(0, 8, "Atendimentos Clínicos Extraescolares", 1, 1, 'L', 1)
+                
+                clins = data.get('clinicas', [])
+                print_data_row("Realiza atendimento em:", ", ".join(clins) if clins else "Não realiza")
+                print_data_row("Especialidade médica:", data.get('clinicas_med_esp'))
+                print_data_row("Nome da Clínica/Profissional:", data.get('clinicas_nome'))
+                
+                if data.get('saude_obs_geral'):
+                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 9); pdf.cell(0, 6, "Outras observações de saúde:", 0, 1)
+                    pdf.set_font("Arial", "", 9); pdf.multi_cell(0, 5, clean_pdf_text(data.get('saude_obs_geral')), 1)
+
+                # --- 1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST) ---
+                pdf.add_page()
+                pdf.section_title("1.4 COMPREENSÃO DA FAMÍLIA (CHECKLIST)", width=0)
+                pdf.ln(4)
+                
+                pdf.set_fill_color(220, 220, 220); pdf.set_font("Arial", "B", 9)
+                pdf.cell(110, 8, "PERGUNTA / ASPECTO OBSERVADO", 1, 0, 'C', 1)
+                pdf.cell(25, 8, "SIM/NÃO", 1, 0, 'C', 1)
+                pdf.cell(0, 8, clean_pdf_text("OBSERVAÇÕES DA FAMÍLIA"), 1, 1, 'C', 1)
+                
+                # CORREÇÃO: Indentação alinhada corretamente
+                checklist_items = [
+                    "Relata fatos do dia a dia? Apresentando boa memória?",
+                    "É organizado com seus pertences?",
+                    "Aceita regras de forma tranquila?",
+                    "Busca e aceita ajuda quando não sabe ou não consegue algo?",
+                    "Aceita alterações no ambiente?",
+                    "Tem algum medo?",
+                    "Tem alguma mania?",
+                    "Tem alguma área/assunto, brinquedo ou hiperfoco?",
+                    "Prefere brincar sozinho ou com outras crianças? Tem amigos?",
+                    "Qual a expectativa da família em relação à escolaridade da criança?"
+                ]
+                
+                pdf.set_font("Arial", "", 9)
+                
+                for i, item in enumerate(checklist_items):
+                    
+                    key_base = f"itemcomport_{i}"
+                    
+                    # CORREÇÃO: Usando 'data' em vez de 'data_case' para ler as opções salvas
+                    opt = data.get('checklist', {}).get(f"{key_base}_opt", "Não")
+                    obs = data.get('checklist', {}).get(f"{key_base}_obs", "")
+                    
+                    line_height = 6
+                    num_lines = pdf.get_string_width(obs) / 50 
+                    cell_height = max(line_height, (int(num_lines) + 1) * line_height)
+                    
+                    x_start = pdf.get_x(); y_start = pdf.get_y()
+                    
+                    pdf.multi_cell(110, line_height, clean_pdf_text(item), 1, 'L')
+                    
+                    pdf.set_xy(x_start + 110, y_start)
+                    pdf.cell(25, cell_height, clean_pdf_text(opt), 1, 0, 'C')
+                    
+                    pdf.set_xy(x_start + 135, y_start)
+                    pdf.multi_cell(0, line_height, clean_pdf_text(obs), 1, 'L')
+                    
+                    pdf.set_xy(x_start, y_start + cell_height)
+
+                # --- FINALIZAÇÃO ---
+                pdf.ln(5)
+                pdf.set_font("Arial", "B", 10); pdf.set_fill_color(240, 240, 240)
+                pdf.cell(0, 8, clean_pdf_text("OUTRAS INFORMAÇÕES RELEVANTES"), 1, 1, 'L', 1)
+                pdf.set_font("Arial", "", 9)
+                pdf.multi_cell(0, 6, clean_pdf_text(data.get('entrevista_extra', '---')), 1)
+                
+                pdf.ln(10)
+                if pdf.get_y() > 240: pdf.add_page()
+                
+                pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", "B", 10)
+                pdf.cell(0, 8, "DADOS DA ENTREVISTA", 1, 1, 'L', 1)
+                
+                print_data_row("Responsável pelas informações:", data.get('entrevista_resp'))
+                print_data_row("Profissional Entrevistador:", data.get('entrevista_prof'))
+                print_data_row("Data da Entrevista:", str(data.get('entrevista_data', '')))
+                
+                pdf.ln(25) 
+                
+                y = pdf.get_y()
+                pdf.line(20, y, 90, y); pdf.line(110, y, 190, y)
+                pdf.set_font("Arial", "", 9)
+                pdf.set_xy(20, y+2); pdf.cell(70, 5, "Assinatura do Responsável Legal", 0, 0, 'C')
+                pdf.set_xy(110, y+2); pdf.cell(80, 5, "Assinatura do Docente/Gestor", 0, 1, 'C')
                         # --- FIM DO DESENHO DO PDF ---
                         
                         # Transforma em arquivo e joga no ZIP
