@@ -1661,8 +1661,8 @@ if app_mode == "📊 Painel de Gestão":
                             pdf.ln(2)
 
                             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", "B", 9)
-                            pdf.cell(70, 8, "DISCIPLINA", 1, 0, 'C', 1)
-                            pdf.cell(55, 8, clean_pdf_text("CONTEÚDO"), 1, 0, 'C', 1)
+                            pdf.cell(0, 8, "DISCIPLINA", 1, 0, 'C', 1)
+                            pdf.cell(0, 8, clean_pdf_text("CONTEÚDO"), 1, 0, 'C', 1)
                             pdf.cell(0, 8, "METODOLOGIA", 1, 1, 'C', 1)
 
                             if pei_level == "Fundamental":
