@@ -2807,7 +2807,7 @@ elif app_mode == "👥 Gestão de Alunos":
                     
                     if has_content:
                         pdf.ln(8)
-                        if pdf.get_y() > 230: pdf.add_page()
+                        if pdf.get_y() > 180: pdf.add_page()
                         pdf.set_font("Arial", "B", 12)
                         pdf.cell(0, 8, clean_pdf_text(f"7.2 PLANO DE ENSINO - {tri.upper()}"), 0, 1, 'L')
                         pdf.ln(2)
@@ -2815,7 +2815,8 @@ elif app_mode == "👥 Gestão de Alunos":
                         for disc in disciplinas_flex:
                             plan = dados_tri.get(disc, {'obj': '', 'cont': '', 'met': ''})
                             
-                            if pdf.get_y() > 220: pdf.add_page()
+                            if plan['obj'].strip() or plan['cont'].strip() or plan['met'].strip():
+                                if pdf.get_y() > 180: pdf.add_page()
                             
                             pdf.set_font("Arial", "B", 10); pdf.set_fill_color(230, 230, 230)
                             pdf.cell(0, 7, clean_pdf_text(disc), 1, 1, 'L', 1)
