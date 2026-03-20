@@ -1660,9 +1660,10 @@ if app_mode == "📊 Painel de Gestão":
                             pdf.cell(0, 6, clean_pdf_text("7.1 DISCIPLINAS QUE NECESSITAM DE ADAPTAÇÃO"), 0, 1)
                             pdf.ln(2)
 
+                            # --- CORREÇÃO DAS LARGURAS DAS COLUNAS ---
                             pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", "B", 9)
-                            pdf.cell(0, 8, "DISCIPLINA", 1, 0, 'C', 1)
-                            pdf.cell(0, 8, clean_pdf_text("CONTEÚDO"), 1, 0, 'C', 1)
+                            pdf.cell(80, 8, "DISCIPLINA", 1, 0, 'C', 1)
+                            pdf.cell(90, 8, clean_pdf_text("CONTEÚDO"), 1, 0, 'C', 1)
                             pdf.cell(0, 8, "METODOLOGIA", 1, 1, 'C', 1)
 
                             if pei_level == "Fundamental":
@@ -1675,9 +1676,12 @@ if app_mode == "📊 Painel de Gestão":
                                 vals = data.get('flex_matrix', {}).get(disc, {'conteudo': False, 'metodologia': False})
                                 chk_c_sim = "[X] Sim  [  ] Não" if vals['conteudo'] else "[  ] Sim  [X] Não"
                                 chk_m_sim = "[X] Sim  [  ] Não" if vals['metodologia'] else "[  ] Sim  [X] Não"
-                                pdf.cell(70, 8, clean_pdf_text(f" {disc}"), 1, 0, 'L')
-                                pdf.cell(55, 8, chk_c_sim, 1, 0, 'C')
+                                
+                                # Aplicar as mesmas larguras nas linhas de dados
+                                pdf.cell(80, 8, clean_pdf_text(f" {disc}"), 1, 0, 'L')
+                                pdf.cell(90, 8, chk_c_sim, 1, 0, 'C')
                                 pdf.cell(0, 8, chk_m_sim, 1, 1, 'C')
+                            # -------------------------------------------------------------
 
                             # --- 7.2 PLANO DE ENSINO (TRIMESTRES) ---
                             trimestres = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
