@@ -1300,35 +1300,29 @@ if app_mode == "📊 Painel de Gestão":
     with tab_com:
         c_aviso, c_agenda = st.columns([1, 1])
 
-        # --- NOVA ABA DE CONCLUÍDOS MULTIDOCUMENTOS ---
+        # --- ABA DE CONCLUÍDOS (Agora dentro da variável correta) ---
     with tab_concluidos:
         st.subheader("Documentos Prontos para Emissão")
-        st.caption("Lista consolidada de todos os documentos marcados como 'Concluído' pelos professores.")
+        st.caption("Lista consolidada de todos os documentos marcados como 'Concluído'.")
         
         lista_geral_concluidos = []
         
         if not df_dash.empty:
             for idx, row in df_dash.iterrows():
                 try:
-                    # Carrega o JSON de cada registro (seja PEI, CASO, AVALIACAO, etc)
                     d = json.loads(row['dados_json'])
-                    
-                    # Verifica se este documento específico está marcado como concluído
-                    # Nota: Certifique-se de usar a mesma chave 'status_elaboracao' nos outros formulários também
                     if d.get('status_elaboracao') == "Concluído":
                         lista_geral_concluidos.append({
                             "Estudante": row['nome'],
-                            "Tipo de Documento": row['tipo_doc'], # PEI, CASO, AVALIACAO, etc
-                            "Detalhe/Trimestre": d.get('trimestre_finalizado') or d.get('periodo_ref') or "Finalizado",
-                            "Data de Conclusão": d.get('data_emissao') or "---"
+                            "Tipo de Documento": row['tipo_doc'],
+                            "Referência": d.get('trimestre_finalizado') or d.get('periodo_ref') or "Finalizado",
+                            "Data": d.get('data_emissao') or "---"
                         })
                 except:
                     continue
     
         if lista_geral_concluidos:
             df_docs_prontos = pd.DataFrame(lista_geral_concluidos)
-            
-            # Filtro rápido por tipo de documento dentro da aba
             filtro_tipo = st.multiselect("Filtrar por tipo:", 
                                          options=df_docs_prontos["Tipo de Documento"].unique(),
                                          default=df_docs_prontos["Tipo de Documento"].unique())
@@ -1338,17 +1332,12 @@ if app_mode == "📊 Painel de Gestão":
             st.dataframe(
                 df_filtrado, 
                 use_container_width=True, 
-                hide_index=True,
-                column_config={
-                    "Estudante": st.column_config.TextColumn("Nome do Estudante", width="large"),
-                    "Tipo de Documento": st.column_config.TextColumn("Documento"),
-                    "Detalhe/Trimestre": st.column_config.TextColumn("Referência"),
-                    "Data de Conclusão": st.column_config.TextColumn("Data")
-                }
+                hide_index=True
             )
-            st.success(f"Total: {len(df_filtrado)} documentos prontos.")
+            st.success(f"Total: {len(df_filtrado)} documentos concluídos.")
         else:
-            st.info("Nenhum documento (PEI, Estudo de Caso ou Avaliação) foi marcado como 'Concluído' ainda.")
+            st.info("Nenhum documento foi marcado como 'Concluído' ainda.")
+        
         
         # --- MURAL DE AVISOS ---
         with c_aviso:
