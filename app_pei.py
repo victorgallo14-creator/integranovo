@@ -347,7 +347,7 @@ class OfficialPDF(FPDF):
                 
                 y_box = self.h - margin_bottom 
                 x_box = 10
-                w_box = self.w - 20 # Largura total (menos margens laterais de 10mm)
+                w_box = self.w - 18 # Largura total (menos margens laterais de 10mm)
 
                 # Caixa cinza claro para validação
                 self.set_fill_color(245, 245, 245)
