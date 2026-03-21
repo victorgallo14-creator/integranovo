@@ -2274,6 +2274,9 @@ elif app_mode == "👥 Gestão de Alunos":
                             
                             pdf.set_x(10)
                             largura_util = 277
+                            pdf.set_font("Arial", "B", 10); pdf.set_fill_color(230, 230, 230)  # Trocado 0 por largura_util para o título não vazar
+                            pdf.cell(largura_util, 7, clean_pdf_text(disc), 1, 1, 'L', 1)
+        
                             pdf.set_font("Arial", "B", 10); pdf.set_fill_color(230, 230, 230)
                             pdf.set_x(10)
                             pdf.cell(largura_util, 6, "Objetivos:", "LTR", 1, 'L', 1)
