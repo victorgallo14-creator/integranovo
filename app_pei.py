@@ -335,7 +335,7 @@ class OfficialPDF(FPDF):
     def footer(self):
         # O rodapé padrão só aparece se NÃO for a Ata
         if self.doc_type != "Ata":
-            self.set_y(-28)
+            self.set_y(-20)
             self.set_font('Arial', '', 8)
             self.set_text_color(80, 80, 80)
             
