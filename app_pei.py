@@ -1248,7 +1248,7 @@ if app_mode == "📊 Painel de Gestão":
     st.divider()
 
 # --- ABAS DO DASHBOARD ---
-    tab_graf, tab_com = st.tabs(["📊 Estatísticas & Progresso", "✅ Documentos Concluídos", "📢 Comunicação & Agenda"])
+    tab_graf, tab_concluidos, tab_com = st.tabs(["📊 Estatísticas & Progresso", "✅ Documentos Concluídos", "📢 Comunicação & Agenda"])
     
     with tab_graf:
         c_chart, c_prog = st.columns([1, 1])
