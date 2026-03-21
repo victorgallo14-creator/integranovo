@@ -2244,6 +2244,8 @@ elif app_mode == "👥 Gestão de Alunos":
                     pdf.cell(80, 8, clean_pdf_text(f" {disc}"), 1, 0, 'L')
                     pdf.cell(80, 8, chk_c_sim, 1, 0, 'C')
                     pdf.cell(0, 8, chk_m_sim, 1, 1, 'C')
+                    pdf.set_x(10) # Força o cursor a voltar para a margem esquerda (10mm)
+                    pdf.ln(5)     # Dá um pequeno espaçamento vertical
 
                 # --- 7.2 PLANO DE ENSINO (TRIMESTRES) ---
                 trimestres = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
