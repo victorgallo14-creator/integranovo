@@ -1483,6 +1483,57 @@ elif app_mode == "👥 Gestão de Alunos":
 
         tabs = st.tabs(["1. Identificação", "2. Saúde", "3. Conduta", "4. Escolar", "5. Acadêmico", "6. Metas/Flex", "7. Assinaturas", "8. Emissão", "9. Histórico"])
         data = st.session_state.data_pei
+
+        st.markdown("---")
+    
+        # Inicializa as chaves se não existirem no dicionário do aluno
+        if 'status_elaboracao' not in st.session_state.dados_pei:
+            st.session_state.dados_pei['status_elaboracao'] = "Em elaboração"
+    
+        # Criando as colunas para o Ícone, o Status e o Seletor de Trimestre
+        col_icon, col_status, col_trim = st.columns([0.1, 0.4, 0.5])
+    
+        with col_icon:
+            # Ícone muda conforme o que estiver salvo
+            if st.session_state.dados_pei['status_elaboracao'] == "Concluído":
+                st.markdown("### ✅")
+            else:
+                st.markdown("### 📝")
+    
+        with col_status:
+            status_selecionado = st.radio(
+                "**Situação do PEI:**",
+                ["Em elaboração", "Concluído"],
+                index=0 if st.session_state.dados_pei['status_elaboracao'] == "Em elaboração" else 1,
+                horizontal=True,
+                key="radio_status_pei"
+            )
+            # Guarda a escolha no dicionário para ser salvo depois
+            st.session_state.dados_pei['status_elaboracao'] = status_selecionado
+    
+        # Só mostra a escolha do trimestre se estiver como "Concluído"
+        if status_selecionado == "Concluído":
+            with col_trim:
+                trim_opcoes = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
+                # Pega o que já estava salvo ou assume 1º Trimestre
+                val_salvo = st.session_state.dados_pei.get('trimestre_finalizado', "1º Trimestre")
+                
+                # Garante que o valor salvo existe nas opções para não dar erro de index
+                idx_padrao = trim_opcoes.index(val_salvo) if val_salvo in trim_opcoes else 0
+                
+                trim_escolhido = st.selectbox(
+                    "Qual trimestre foi concluído?",
+                    trim_opcoes,
+                    index=idx_padrao,
+                    key="select_trim_final"
+                )
+                st.session_state.dados_pei['trimestre_finalizado'] = trim_escolhido
+        
+        st.markdown("---")
+
+else:
+    # Se não houver aluno, mostra apenas um aviso discreto ou nada
+    st.info("Aguardando seleção de estudante para definir status de conclusão.")
         
         # --- ABA 1: IDENTIFICAÇÃO ---
         with tabs[0]:
