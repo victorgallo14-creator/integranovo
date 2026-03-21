@@ -1479,8 +1479,13 @@ elif app_mode == "👥 Gestão de Alunos":
     # PEI COM FORMULÁRIOS
     if doc_mode == "PEI":
         st.markdown(f"""<div class="header-box"><div class="header-title">Plano Educacional Individualizado - PEI ({pei_level})</div></div>""", unsafe_allow_html=True)
+        st.markdown("""<style>div[data-testid="stFormSubmitButton"] > button {width: 100%; background-color: #dcfce7; color: #166534; border: 1px solid #166534;}</style>""", unsafe_allow_html=True)
 
-                # --- INÍCIO DO NOVO BLOCO DE STATUS ---
+        tabs = st.tabs(["1. Identificação", "2. Saúde", "3. Conduta", "4. Escolar", "5. Acadêmico", "6. Metas/Flex", "7. Assinaturas", "8. Emissão", "9. Histórico"])
+        data = st.session_state.data_pei
+
+
+        # --- INÍCIO DO NOVO BLOCO DE STATUS ---
         st.markdown("---") # Linha divisória para organização
         
         # Inicializa as variáveis no estado da sessão se não existirem
@@ -1527,14 +1532,7 @@ elif app_mode == "👥 Gestão de Alunos":
         
         st.markdown("---")
         # --- FIM DO BLOCO DE STATUS ---
-
-
         
-        st.markdown("""<style>div[data-testid="stFormSubmitButton"] > button {width: 100%; background-color: #dcfce7; color: #166534; border: 1px solid #166534;}</style>""", unsafe_allow_html=True)
-
-        tabs = st.tabs(["1. Identificação", "2. Saúde", "3. Conduta", "4. Escolar", "5. Acadêmico", "6. Metas/Flex", "7. Assinaturas", "8. Emissão", "9. Histórico"])
-        data = st.session_state.data_pei
-
         # --- ABA 1: IDENTIFICAÇÃO ---
         with tabs[0]:
             with st.form("form_pei_identificacao") if not is_monitor else st.container():
