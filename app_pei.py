@@ -1483,55 +1483,6 @@ elif app_mode == "👥 Gestão de Alunos":
 
         tabs = st.tabs(["1. Identificação", "2. Saúde", "3. Conduta", "4. Escolar", "5. Acadêmico", "6. Metas/Flex", "7. Assinaturas", "8. Emissão", "9. Histórico"])
         data = st.session_state.data_pei
-
-
-        # --- INÍCIO DO NOVO BLOCO DE STATUS ---
-        st.markdown("---") # Linha divisória para organização
-        
-        # Inicializa as variáveis no estado da sessão se não existirem
-        if 'status_geral' not in st.session_state.dados_pei:
-            st.session_state.dados_pei['status_geral'] = "Em elaboração"
-        
-        # Container para o ícone e seletor de status
-        col_icon, col_status, col_trim = st.columns([0.1, 0.4, 0.5])
-        
-        with col_icon:
-            # Ícone dinâmico
-            if st.session_state.dados_pei['status_geral'] == "Concluído":
-                st.markdown("### ✅")
-            else:
-                st.markdown("### 📝")
-        
-        with col_status:
-            status_opcoes = ["Em elaboração", "Concluído"]
-            idx_status = status_opcoes.index(st.session_state.dados_pei['status_geral'])
-            
-            status_selecionado = st.radio(
-                "**Situação do Documento:**",
-                status_opcoes,
-                index=idx_status,
-                horizontal=True,
-                key="radio_status_geral"
-            )
-            st.session_state.dados_pei['status_geral'] = status_selecionado
-        
-        # Só mostra a seleção de trimestre se estiver "Concluído"
-        if status_selecionado == "Concluído":
-            with col_trim:
-                # Recupera qual trimestre foi concluído (padrão 1º)
-                trim_concluido = st.session_state.dados_pei.get('trimestre_concluido', "1º Trimestre")
-                opcoes_trim = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
-                
-                escolha_trim = st.selectbox(
-                    "Indique qual trimestre foi concluído:",
-                    opcoes_trim,
-                    index=opcoes_trim.index(trim_concluido)
-                )
-                st.session_state.dados_pei['trimestre_concluido'] = escolha_trim
-                st.success(f"Pronto para impressão: {escolha_trim}")
-        
-        st.markdown("---")
-        # --- FIM DO BLOCO DE STATUS ---
         
         # --- ABA 1: IDENTIFICAÇÃO ---
         with tabs[0]:
