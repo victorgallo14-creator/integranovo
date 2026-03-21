@@ -2245,7 +2245,7 @@ elif app_mode == "👥 Gestão de Alunos":
                     pdf.cell(80, 8, chk_c_sim, 1, 0, 'C')
                     pdf.cell(0, 8, chk_m_sim, 1, 1, 'C')
                     pdf.set_x(10) # Força o cursor a voltar para a margem esquerda (10mm)
-                    pdf.ln(5)     # Dá um pequeno espaçamento vertical
+                    pdf.ln(0)     # Dá um pequeno espaçamento vertical
 
                 # --- 7.2 PLANO DE ENSINO (TRIMESTRES) ---
                 trimestres = ["1º Trimestre", "2º Trimestre", "3º Trimestre"]
@@ -2272,20 +2272,32 @@ elif app_mode == "👥 Gestão de Alunos":
                             if plan['obj'].strip() or plan['cont'].strip() or plan['met'].strip():
                                 if pdf.get_y() > 180: pdf.add_page()
                             
+                            pdf.set_x(10)
+                            largura_util = 277
                             pdf.set_font("Arial", "B", 10); pdf.set_fill_color(230, 230, 230)
-                            pdf.cell(0, 7, clean_pdf_text(disc), 1, 1, 'L', 1)
+                            pdf.set_x(10)
+                            pdf.cell(largura_util, 6, "Objetivos:", "LTR", 1, 'L', 1)
                             
-                            pdf.set_font("Arial", "B", 9); pdf.set_fill_color(250, 250, 250)
-                            pdf.cell(0, 6, "Objetivos:", "LTR", 1, 'L', 1); pdf.set_font("Arial", "", 9)
-                            pdf.multi_cell(0, 5, clean_pdf_text(plan['obj'] if plan['obj'] else "---"), "LRB")
-                            
-                            pdf.set_font("Arial", "B", 9)
-                            pdf.cell(0, 6, clean_pdf_text("Conteúdos Específicos:"), "LTR", 1, 'L', 1); pdf.set_font("Arial", "", 9)
-                            pdf.multi_cell(0, 5, clean_pdf_text(plan['cont'] if plan['cont'] else "---"), "LRB")
+                            pdf.set_font("Arial", "", 9)
+                            pdf.set_x(10)
+                            pdf.multi_cell(largura_util, 5, clean_pdf_text(plan['obj'] if plan['obj'] else "---"), "LRB")
                             
                             pdf.set_font("Arial", "B", 9)
-                            pdf.cell(0, 6, "Metodologia:", "LTR", 1, 'L', 1); pdf.set_font("Arial", "", 9)
-                            pdf.multi_cell(0, 5, clean_pdf_text(plan['met'] if plan['met'] else "---"), "LRB")
+                            pdf.set_x(10)
+                            pdf.cell(largura_util, 6, clean_pdf_text("Conteúdos Específicos:"), "LTR", 1, 'L', 1)
+                            
+                            pdf.set_font("Arial", "", 9)
+                            pdf.set_x(10)
+                            pdf.multi_cell(largura_util, 5, clean_pdf_text(plan['cont'] if plan['cont'] else "---"), "LRB")
+                            
+                            pdf.set_font("Arial", "B", 9)
+                            pdf.set_x(10)
+                            pdf.cell(largura_util, 6, "Metodologia:", "LTR", 1, 'L', 1)
+                            
+                            pdf.set_font("Arial", "", 9)
+                            pdf.set_x(10)
+                            pdf.multi_cell(largura_util, 5, clean_pdf_text(plan['met'] if plan['met'] else "---"), "LRB")
+                            
                             pdf.ln(2)
 
                         if dados_tri.get('obs'):
