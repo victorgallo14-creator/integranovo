@@ -343,11 +343,11 @@ class OfficialPDF(FPDF):
             if self.doc_uuid:
                 # Posicionamento dinâmico baseado na altura da página
                 box_h = 9  # Altura reduzida para ~2 linhas
-                margin_bottom = 22 # Distância da borda inferior
+                margin_bottom = 20 # Distância da borda inferior
                 
                 y_box = self.h - margin_bottom 
                 x_box = 10
-                w_box = self.w - 18 # Largura total (menos margens laterais de 10mm)
+                w_box = self.w - 20 # Largura total (menos margens laterais de 10mm)
 
                 # Caixa cinza claro para validação
                 self.set_fill_color(245, 245, 245)
