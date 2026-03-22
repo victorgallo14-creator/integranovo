@@ -7375,133 +7375,110 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 # ==============================================================================
     # NOVO MÓDULO: CARÔMETRO INTERATIVO (COM UPLOAD RÁPIDO)
     # ==============================================================================
-    elif doc_mode == "🖼️ Carômetro":
+    # DICA: Certifique-se de que o texto abaixo seja EXATAMENTE igual ao que está na sua sidebar
+    elif doc_mode in ["🖼️ Carômetro", "Carômetro"]:
         st.markdown('<div class="header-box"><div class="header-title">🖼️ Carômetro Interativo de Estudantes</div></div>', unsafe_allow_html=True)
-        st.markdown("Visualize todos os alunos e adicione/atualize fotos rapidamente. Essas fotos serão usadas em todos os documentos.")
+        st.markdown("Visualize todos os alunos e adicione/atualize fotos rapidamente. Estas fotos serão sincronizadas com os outros documentos.")
         st.divider()
         
-        # 1. Carregar Banco de Dados Estrito (Anti-Wipe Ativo)
-        df_carometro = load_db(strict=True)
+        # 1. Carregar Banco de Dados (sempre lendo a versão mais atual)
+        df_full = load_db()
         
-        if df_carometro.empty:
-            st.warning("Nenhum dado encontrado para gerar o carômetro.")
+        if df_full.empty:
+            st.warning("⚠️ Nenhum aluno cadastrado no sistema ainda.")
         else:
-            # Filtramos para pegar os registros principais (usaremos 'CASO' como base da foto, ou PEI se não houver CASO)
-            df_base_fotos = df_carometro[df_carometro["tipo_doc"] == "CASO"]
+            # 2. Lógica para pegar APENAS UMA linha por aluno (preferencialmente o Estudo de Caso)
+            # Isso evita que o aluno apareça repetido se ele tiver PEI e Estudo de Caso.
+            df_full['prioridade'] = df_full['tipo_doc'].map({'CASO': 1, 'PEI': 2}).fillna(3)
+            df_base_fotos = df_full.sort_values(by=['nome', 'prioridade']).drop_duplicates(subset=['nome'], keep='first')
             
-            if df_base_fotos.empty:
-                # Se não tem Estudo de Caso, tenta usar o PEI como base provisória
-                df_base_fotos = df_carometro[df_carometro["tipo_doc"] == "PEI"]
+            # Ordenar alfabeticamente para o Carômetro ficar organizado
+            df_base_fotos = df_base_fotos.sort_values(by="nome")
+            
+            # 3. Criar a grade de 5 colunas
+            cols = st.columns(5)
+            idx_col = 0
+            
+            # Estilo CSS para os cards (unificado e com altura fixa para não desalinharem)
+            st.markdown("""
+                <style>
+                .carometro-foto-container {
+                    height: 180px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                    border-radius: 8px;
+                    background-color: #f1f5f9;
+                    margin-bottom: 10px;
+                    border: 1px solid #e2e8f0;
+                }
+                .card-title {
+                    font-weight: 700;
+                    color: #1e3a8a;
+                    font-size: 12px;
+                    min-height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+                </style>
+            """, unsafe_allow_html=True)
 
-            if df_base_fotos.empty:
-                st.info("Nenhum registro base (Estudo de Caso ou PEI) encontrado para vincular fotos.")
-            else:
-                # Ordenar por nome para facilitar localização
-                df_base_fotos = df_base_fotos.sort_values(by="nome")
-                
-                # Criar a grade de 5 colunas
-                cols = st.columns(5)
-                idx_col = 0
-                
-                # Estilo CSS para os cards (unificado)
-                st.markdown("""
-                    <style>
-                    .carometro-card {
-                        background-color: white;
-                        padding: 10px;
-                        border-radius: 10px;
-                        border: 1px solid #e2e8f0;
-                        text-align: center;
-                        margin-bottom: 20px;
-                        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-                        height: 380px; /* Aumentado para caber o uploader */
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: space-between;
-                    }
-                    .carometro-foto-container {
-                        height: 180px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        overflow: hidden;
-                        border-radius: 5px;
-                        background-color: #f8fafc;
-                        margin-bottom: 5px;
-                    }
-                    </style>
-                """, unsafe_allow_html=True)
-
-                for _, row in df_base_fotos.iterrows():
-                    with cols[idx_col]:
-                        try:
-                            # Identificação Única do Aluno e Registro
-                            nome_completo = row["nome"]
-                            nomes = nome_completo.split()
-                            nome_curto = f"{nomes[0]} {nomes[-1]}" if len(nomes) > 1 else nomes[0]
-                            tipo_doc_base = row["tipo_doc"]
-                            
-                            # Carregar Dados JSON Atuais
-                            dados = json.loads(row["dados_json"])
-                            foto_b64 = dados.get("foto_base64")
-                            nome_prof = dados.get("prof_aee", dados.get("resp_ee", "AEE N/A")) # Tenta pegar Prof AEE ou Resp EE
-                            
-                            # -- RENDERIZAÇÃO DO CARD --
-                            
-                            # Título (Nome Completo)
-                            st.markdown(f'<div style="font-weight: bold; color: #1e3a8a; font-size: 13px; min-height: 35px; line-height: 1.2;">{nome_completo.upper()}</div>', unsafe_allow_html=True)
-                            
-                            # Container da Foto (HTML)
-                            foto_html = f"<img src='data:image/jpeg;base64,{foto_b64}' style='width: 100%; height: 100%; object-fit: cover;'>" if foto_b64 else "<span style='color: #cbd5e1; font-size: 50px;'>👤</span>"
-                            st.markdown(f'<div class="carometro-foto-container">{foto_html}</div>', unsafe_allow_html=True)
-                            
-                            # Nome da Professora (Subtítulo)
-                            st.markdown(f'<div style="font-size: 11px; color: #64748b;"><b>Prof(a) AEE:</b><br>{nome_prof}</div>', unsafe_allow_html=True)
-                            
-                            st.divider()
-
-                            # -- INTERAÇÃO DE UPLOAD RÁPIDO --
-                            # Chave única para o uploader deste aluno específico
-                            key_up = f"up_carometro_{nome_completo.replace(' ', '_')}"
-                            
-                            uploaded_file = st.file_uploader(
-                                "Nova Foto", 
-                                type=["jpg", "jpeg", "png"], 
-                                key=key_up, 
-                                label_visibility="collapsed",
-                                disabled=is_monitor
-                            )
-                            
-                            # Lógica de Salvamento Imediato se houver upload
-                            if uploaded_file and not is_monitor:
-                                try:
-                                    # Processamento da Imagem
-                                    img = Image.open(uploaded_file)
-                                    if img.mode != 'RGB': img = img.convert('RGB')
-                                    # Resize para otimização (não pesar o banco)
-                                    img.thumbnail((400, 500))
-                                    buf = io.BytesIO()
-                                    img.save(buf, format="JPEG", quality=80)
-                                    nova_foto_b64 = base64.b64encode(buf.getvalue()).decode()
-                                    
-                                    # Atualizar o registro base (Estudo de Caso ou PEI)
-                                    dados['foto_base64'] = nova_foto_b64
-                                    
-                                    # Chamar a função central de salvamento com a trava Anti-Wipe
-                                    # Ela garantirá que a foto vá para a linha correta na planilha
-                                    save_student(tipo_doc_base, nome_completo, dados, f"Upload Rápido Carômetro")
-                                    
-                                    st.success("Foto sincronizada!")
-                                    time.sleep(0.5) # Breve pausa para propagação
-                                    st.rerun()
-                                    
-                                except Exception as e_up:
-                                    st.error(f"Erro no processamento: {e_up}")
-
-                        except Exception as e:
-                            st.error(f"Erro no card de {nome_curto}")
+            for _, row in df_base_fotos.iterrows():
+                with cols[idx_col]:
+                    try:
+                        # Identificação do Aluno
+                        nome_completo = row["nome"]
+                        tipo_doc_base = row["tipo_doc"]
                         
-                        # Lógica para pular para a próxima coluna (fileiras de 5)
-                        idx_col += 1
-                        if idx_col >= 5:
-                            idx_col = 0
+                        # Carregar Dados JSON
+                        dados = json.loads(row["dados_json"])
+                        foto_b64 = dados.get("foto_base64")
+                        
+                        # Tenta pegar o nome da professora (pode estar em campos diferentes)
+                        nome_prof = dados.get("prof_poli") or dados.get("prof_aee") or dados.get("resp_ee") or "Não informado"
+                        
+                        # -- RENDERIZAÇÃO DO CARD --
+                        # Nome
+                        st.markdown(f'<div class="card-title">{nome_completo.upper()}</div>', unsafe_allow_html=True)
+                        
+                        # Foto
+                        if foto_b64:
+                            foto_html = f"<img src='data:image/jpeg;base64,{foto_b64}' style='width: 100%; height: 100%; object-fit: cover;'>"
+                        else:
+                            foto_html = "<div style='font-size: 50px; opacity: 0.3;'>👤</div>"
+                        
+                        st.markdown(f'<div class="carometro-foto-container">{foto_html}</div>', unsafe_allow_html=True)
+                        
+                        # Info Professora
+                        st.markdown(f'<div style="font-size: 11px; color: #64748b; text-align: center; margin-bottom: 10px;"><b>Prof(a):</b><br>{nome_prof}</div>', unsafe_allow_html=True)
+
+                        # -- UPLOAD RÁPIDO --
+                        key_up = f"up_caro_{nome_completo.replace(' ', '_')}"
+                        uploaded_file = st.file_uploader("Trocar Foto", type=["jpg", "png", "jpeg"], key=key_up, label_visibility="collapsed")
+                        
+                        if uploaded_file:
+                            # Processamento da Imagem
+                            img = Image.open(uploaded_file)
+                            if img.mode != 'RGB': img = img.convert('RGB')
+                            img.thumbnail((400, 500)) # Otimiza tamanho
+                            buf = io.BytesIO()
+                            img.save(buf, format="JPEG", quality=85)
+                            nova_foto_b64 = base64.b64encode(buf.getvalue()).decode()
+                            
+                            # Atualiza os dados e salva
+                            dados['foto_base64'] = nova_foto_b64
+                            save_student(tipo_doc_base, nome_completo, dados, "Upload Carômetro")
+                            st.success("✅ Foto salva!")
+                            time.sleep(1)
+                            st.rerun()
+
+                    except Exception as e:
+                        st.error(f"Erro no aluno: {nome_completo}")
+                    
+                    # Lógica de colunas (1 a 5)
+                    idx_col += 1
+                    if idx_col >= 5:
+                        idx_col = 0
