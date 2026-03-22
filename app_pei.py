@@ -1303,89 +1303,39 @@ if app_mode == "📊 Painel de Gestão":
         # --- ABA DE CONCLUÍDOS (Agora dentro da variável correta) ---
     with tab_concluidos:
         st.subheader("Documentos Prontos para Emissão")
-        st.caption("Lista de documentos marcados como 'Concluído'. Clique no botão individual ou baixe o lote completo.")
-        
-        lista_geral_concluidos = []
-        dict_pdfs_bytes = {} # Armazenará os arquivos gerados para o ZIP
         
         if not df_dash.empty:
-            # Spinner para o usuário saber que o sistema está preparando os arquivos
-            with st.spinner("Preparando visualização e arquivos..."):
-                for idx, row in df_dash.iterrows():
-                    try:
-                        d = json.loads(row['dados_json'])
-                        if d.get('status_elaboracao') == "Concluído":
-                            nome_aluno = row['nome']
-                            tipo_doc = row['tipo_doc']
-                            ref = d.get('trimestre_finalizado') or d.get('periodo') or "Final"
-                            nome_arq = f"{tipo_doc}_{nome_aluno}_{ref}.pdf".replace(" ", "_")
-                            
-                            # --- GERAÇÃO DOS BYTES DO PDF (Lógica simplificada para a lista) ---
-                            # Aqui criamos a instância do PDF. 
-                            # Se você tiver as funções de desenho separadas, chame-as aqui.
-                            pdf_inst = OfficialPDF('L' if tipo_doc == "PEI" else 'P', 'mm', 'A4')
-                            pdf_inst.add_page()
-                            pdf_inst.set_font("Arial", "B", 14)
-                            pdf_inst.cell(0, 10, clean_pdf_text(f"Documento Concluído: {tipo_doc}"), 0, 1, 'C')
-                            pdf_inst.set_font("Arial", "", 12)
-                            pdf_inst.cell(0, 10, clean_pdf_text(f"Estudante: {nome_aluno}"), 0, 1, 'C')
-                            pdf_inst.cell(0, 10, clean_pdf_text(f"Referência: {ref}"), 0, 1, 'C')
-                            pdf_inst.ln(10)
-                            pdf_inst.multi_cell(0, 5, clean_pdf_text("Este documento foi validado e marcado como concluído pelo professor responsável no Sistema Integra."))
-                            
-                            p_bytes = get_pdf_bytes(pdf_inst)
-                            dict_pdfs_bytes[nome_arq] = p_bytes
-                            
-                            lista_geral_concluidos.append({
-                                "Estudante": nome_aluno,
-                                "Documento": tipo_doc,
-                                "Referência": ref,
-                                "Arquivo": nome_arq,
-                                "Bytes": p_bytes
-                            })
-                    except:
-                        continue
+            # Criamos a tabela visual dos concluídos
+            lista_concluidos = []
+            for idx, row in df_dash.iterrows():
+                try:
+                    d = json.loads(row['dados_json'])
+                    if d.get('status_elaboracao') == "Concluído":
+                        lista_concluidos.append(row)
+                except: continue
     
-        if lista_geral_concluidos:
-            # --- BOTÃO DE LOTE (NO TOPO) ---
-            buf = io.BytesIO()
-            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                for nome_f, b_data in dict_pdfs_bytes.items():
-                    zip_file.writestr(nome_f, b_data)
-            
-            st.download_button(
-                label="📦 BAIXAR TODOS OS CONCLUÍDOS (ZIP)",
-                data=buf.getvalue(),
-                file_name=f"Lote_Concluidos_{date.today().strftime('%d_%m_%Y')}.zip",
-                mime="application/zip",
-                use_container_width=True,
-                type="primary"
-            )
-            
-            st.divider()
-    
-            # --- LISTAGEM COM BOTÃO LADO A LADO ---
-            for doc in lista_geral_concluidos:
-                # Cria colunas: Nome do aluno ganha mais espaço, botão fica no canto
-                c_nome, c_tipo, c_dl = st.columns([3, 2, 1])
-                
-                with c_nome:
-                    st.write(f"👤 **{doc['Estudante']}**")
-                
-                with c_tipo:
-                    st.caption(f"{doc['Documento']} ({doc['Referência']})")
+            if lista_concluidos:
+                for row in lista_concluidos:
+                    c_nome, c_tipo, c_btn = st.columns([3, 2, 1])
                     
-                with c_dl:
-                    st.download_button(
-                        label="⬇️ PDF",
-                        data=doc['Bytes'],
-                        file_name=doc['Arquivo'],
-                        mime="application/pdf",
-                        key=f"btn_dl_{doc['Arquivo']}", # Chave única essencial
-                        use_container_width=True
-                    )
-        else:
-            st.info("Nenhum documento concluído encontrado para geração de lote.")
+                    c_nome.write(f"👤 **{row['nome']}**")
+                    c_tipo.caption(f"{row['tipo_doc']}")
+                    
+                    # O TRUQUE: O botão abaixo apenas seleciona o aluno e muda o modo
+                    if c_btn.button("📄 Abrir para Baixar", key=f"go_{row['id']}"):
+                        st.session_state.ee_aluno_confirmado = row['nome']
+                        # Define o tipo de documento correto para o sistema carregar
+                        if row['tipo_doc'] == "PEI":
+                            st.session_state.ee_doc_confirmado = "PEI - Ensino Fundamental" # Ou Infantil conforme o banco
+                        else:
+                            st.session_state.ee_doc_confirmado = row['tipo_doc']
+                        
+                        st.session_state.aluno_selecionado = row['nome']
+                        # Força o sistema a ir para a aba de Gestão de Alunos onde o PDF já está pronto
+                        st.session_state.app_mode = "👥 Gestão de Alunos" 
+                        st.rerun()
+            else:
+                st.info("Nenhum documento concluído encontrado.")
             
         
         # --- MURAL DE AVISOS ---
