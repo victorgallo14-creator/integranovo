@@ -7375,7 +7375,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
 # ==============================================================================
     # NOVO MÓDULO: CARÔMETRO INTERATIVO (COM UPLOAD RÁPIDO)
     # ==============================================================================
-    elif doc_mode in ["🖼️ Carômetro", "Carômetro"]:
+    # Usamos .strip() e verificamos se o texto contém "Carômetro" para evitar erros de emoji ou espaços
+    elif "Carômetro" in doc_mode:
         st.markdown('<div class="header-box"><div class="header-title">🖼️ Carômetro de Estudantes</div></div>', unsafe_allow_html=True)
         st.markdown("Visualize todos os alunos e atualize as fotos rapidamente. A foto alterada aqui será replicada automaticamente em todos os documentos do aluno.")
         st.divider()
@@ -7383,124 +7384,137 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         # 1. Carregar Banco de Dados
         df_full = load_db()
         
-        if df_full.empty:
-            st.warning("⚠️ Nenhum aluno cadastrado no sistema.")
+        if df_full is None or df_full.empty:
+            st.warning("⚠️ Nenhum aluno cadastrado no sistema ou erro ao carregar banco de dados.")
         else:
             # 2. Lógica para evitar duplicidade de nomes (Pega apenas um registro por aluno)
-            # Priorizamos CASO depois PEI para extrair os dados iniciais
-            df_full['prioridade'] = df_full['tipo_doc'].map({'CASO': 1, 'PEI': 2}).fillna(3)
-            df_display = df_full.sort_values(by=['nome', 'prioridade']).drop_duplicates(subset=['nome'], keep='first')
+            # Criamos uma cópia para não afetar o original e definimos a prioridade
+            df_temp = df_full.copy()
+            df_temp['prioridade'] = df_temp['tipo_doc'].map({'CASO': 1, 'PEI': 2}).fillna(3)
+            
+            # Remove duplicados mantendo o registro com melhor prioridade (CASO > PEI)
+            df_display = df_temp.sort_values(by=['nome', 'prioridade']).drop_duplicates(subset=['nome'], keep='first')
             df_display = df_display.sort_values(by="nome")
             
-            # 3. Criar a grade de 5 colunas
-            cols = st.columns(5)
-            idx_col = 0
-            
-            # Estilo CSS para os cards (altura fixa e design limpo)
-            st.markdown("""
-                <style>
-                .caro-foto-frame {
-                    height: 160px;
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    overflow: hidden;
-                    border-radius: 8px;
-                    background-color: #f8fafc;
-                    margin: 10px 0;
-                    border: 1px dashed #cbd5e1;
-                }
-                .caro-nome {
-                    font-weight: 800;
-                    color: #1e3a8a;
-                    font-size: 11px;
-                    height: 35px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                    text-transform: uppercase;
-                    line-height: 1.1;
-                }
-                .caro-prof {
-                    font-size: 10px;
-                    color: #64748b;
-                    line-height: 1.2;
-                    margin-bottom: 8px;
-                    text-align: center;
-                    height: 25px;
-                }
-                </style>
-            """, unsafe_allow_html=True)
+            if df_display.empty:
+                st.info("Nenhum registro de PEI ou Estudo de Caso encontrado para exibir.")
+            else:
+                # 3. Criar a grade de 5 colunas
+                cols = st.columns(5)
+                idx_col = 0
+                
+                # Estilo CSS para os cards (altura fixa e design limpo)
+                st.markdown("""
+                    <style>
+                    .caro-foto-frame {
+                        height: 160px;
+                        width: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        overflow: hidden;
+                        border-radius: 8px;
+                        background-color: #f8fafc;
+                        margin: 10px 0;
+                        border: 1px dashed #cbd5e1;
+                    }
+                    .caro-nome {
+                        font-weight: 800;
+                        color: #1e3a8a;
+                        font-size: 11px;
+                        height: 35px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        text-align: center;
+                        text-transform: uppercase;
+                        line-height: 1.1;
+                        overflow: hidden;
+                    }
+                    .caro-prof {
+                        font-size: 10px;
+                        color: #64748b;
+                        line-height: 1.2;
+                        margin-bottom: 8px;
+                        text-align: center;
+                        height: 30px;
+                        overflow: hidden;
+                    }
+                    /* Força o uploader a ser menor */
+                    .stFileUploader section {
+                        padding: 0 !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
 
-            for _, row in df_display.iterrows():
-                with cols[idx_col]:
-                    try:
-                        nome_aluno = row["nome"]
-                        dados = json.loads(row["dados_json"])
-                        foto_b64 = dados.get("foto_base64")
-                        
-                        # Tenta pegar o nome da professora polivalente ou AEE
-                        prof_resp = dados.get("prof_poli") or dados.get("prof_aee") or dados.get("resp_ee") or "Não informado"
-                        
-                        # -- RENDERIZAÇÃO DO CARD --
-                        with st.container(border=True):
-                            st.markdown(f'<div class="caro-nome">{nome_aluno}</div>', unsafe_allow_html=True)
+                for _, row in df_display.iterrows():
+                    with cols[idx_col]:
+                        try:
+                            nome_aluno = row["nome"]
+                            dados = json.loads(row["dados_json"])
+                            foto_b64 = dados.get("foto_base64")
                             
-                            if foto_b64:
-                                img_html = f"<img src='data:image/jpeg;base64,{foto_b64}' style='width: 100%; height: 100%; object-fit: cover;'>"
-                            else:
-                                img_html = "<div style='font-size: 40px; opacity: 0.2;'>👤</div>"
+                            # Tenta pegar o nome da professora polivalente ou AEE
+                            prof_resp = dados.get("prof_poli") or dados.get("prof_aee") or dados.get("resp_ee") or "Não informado"
                             
-                            st.markdown(f'<div class="caro-foto-frame">{img_html}</div>', unsafe_allow_html=True)
-                            st.markdown(f'<div class="caro-prof"><b>Prof(a):</b><br>{prof_resp}</div>', unsafe_allow_html=True)
+                            # -- RENDERIZAÇÃO DO CARD --
+                            with st.container(border=True):
+                                st.markdown(f'<div class="caro-nome">{nome_aluno}</div>', unsafe_allow_html=True)
+                                
+                                if foto_b64:
+                                    img_html = f"<img src='data:image/jpeg;base64,{foto_b64}' style='width: 100%; height: 100%; object-fit: cover;'>"
+                                else:
+                                    img_html = "<div style='font-size: 40px; opacity: 0.2;'>👤</div>"
+                                
+                                st.markdown(f'<div class="caro-foto-frame">{img_html}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="caro-prof"><b>Prof(a):</b><br>{prof_resp}</div>', unsafe_allow_html=True)
 
-                            # -- INTERAÇÃO DE UPLOAD RÁPIDO --
-                            key_up = f"caro_up_{nome_aluno.replace(' ', '_')}"
-                            new_file = st.file_uploader("Trocar", type=["jpg", "png", "jpeg"], key=key_up, label_visibility="collapsed")
-                            
-                            if new_file:
-                                try:
-                                    # Processamento e Otimização da Imagem
-                                    img = Image.open(new_file)
-                                    if img.mode != 'RGB': img = img.convert('RGB')
-                                    img.thumbnail((400, 500)) # Redimensiona para não pesar a planilha
-                                    buf = io.BytesIO()
-                                    img.save(buf, format="JPEG", quality=85)
-                                    nova_foto_b64 = base64.b64encode(buf.getvalue()).decode()
-                                    
-                                    # --- SINCRONIZAÇÃO TOTAL NO BANCO DE DADOS ---
-                                    # Carregamos o banco completo para atualizar TODAS as linhas deste aluno
-                                    df_sync = load_db(strict=True)
-                                    foi_atualizado = False
-                                    
-                                    for i_sync, r_sync in df_sync.iterrows():
-                                        if r_sync['nome'] == nome_aluno:
-                                            d_sync = json.loads(r_sync['dados_json'])
-                                            d_sync['foto_base64'] = nova_foto_b64
-                                            df_sync.at[i_sync, 'dados_json'] = json.dumps(d_sync, ensure_ascii=False)
-                                            fo_atualizado = True
-                                    
-                                    if foi_atualizado:
-                                        conn.update(worksheet="Alunos", data=df_sync)
+                                # -- INTERAÇÃO DE UPLOAD RÁPIDO --
+                                # Usamos um ID único para cada botão baseado no nome
+                                key_up = f"caro_up_{nome_aluno.replace(' ', '_')}"
+                                new_file = st.file_uploader("Trocar", type=["jpg", "png", "jpeg"], key=key_up, label_visibility="collapsed")
+                                
+                                if new_file:
+                                    try:
+                                        # Processamento e Otimização da Imagem
+                                        img = Image.open(new_file)
+                                        if img.mode != 'RGB': img = img.convert('RGB')
+                                        img.thumbnail((400, 500)) # Redimensiona para não pesar a planilha
+                                        buf = io.BytesIO()
+                                        img.save(buf, format="JPEG", quality=85)
+                                        nova_foto_b64 = base64.b64encode(buf.getvalue()).decode()
                                         
-                                        # Atualiza também o estado da sessão atual para refletir nos outros formulários na hora
-                                        if st.session_state.get('aluno_selecionado') == nome_aluno:
-                                            if 'data_pei' in st.session_state: st.session_state.data_pei['foto_base64'] = nova_foto_b64
-                                            if 'data_case' in st.session_state: st.session_state.data_case['foto_base64'] = nova_foto_b64
-                                            if 'data_pdi' in st.session_state: st.session_state.data_pdi['foto_base64'] = nova_foto_b64
+                                        # --- SINCRONIZAÇÃO TOTAL NO BANCO DE DADOS ---
+                                        # Carregamos o banco completo para atualizar TODAS as linhas deste aluno
+                                        df_sync = load_db(strict=True)
+                                        foi_atualizado = False
                                         
-                                        st.success(f"✅ Foto de {nome_aluno.split()[0]} sincronizada!")
-                                        time.sleep(1)
-                                        st.rerun()
-                                except Exception as e_img:
-                                    st.error("Erro ao processar imagem.")
+                                        for i_sync, r_sync in df_sync.iterrows():
+                                            if r_sync['nome'] == nome_aluno:
+                                                d_sync = json.loads(r_sync['dados_json'])
+                                                d_sync['foto_base64'] = nova_foto_b64
+                                                df_sync.at[i_sync, 'dados_json'] = json.dumps(d_sync, ensure_ascii=False)
+                                                fo_atualizado = True
+                                        
+                                        if foi_atualizado:
+                                            conn.update(worksheet="Alunos", data=df_sync)
+                                            
+                                            # Atualiza também o estado da sessão atual para refletir nos outros formulários na hora
+                                            if st.session_state.get('aluno_selecionado') == nome_aluno:
+                                                if 'data_pei' in st.session_state: st.session_state.data_pei['foto_base64'] = nova_foto_b64
+                                                if 'data_case' in st.session_state: st.session_state.data_case['foto_base64'] = nova_foto_b64
+                                                if 'data_pdi' in st.session_state: st.session_state.data_pdi['foto_base64'] = nova_foto_b64
+                                            
+                                            st.success(f"✅ Foto sincronizada!")
+                                            time.sleep(1)
+                                            st.rerun()
+                                    except Exception as e_img:
+                                        st.error("Erro ao processar imagem.")
                         
-                    except Exception as e:
-                        st.error(f"Erro no card")
-                    
-                    # Lógica para pular para a próxima coluna (fileiras de 5)
-                    idx_col += 1
-                    if idx_col >= 5:
-                        idx_col = 0
+                        except Exception as e:
+                            st.error(f"Erro no card")
+                        
+                        # Lógica para pular para a próxima coluna (fileiras de 5)
+                        idx_col += 1
+                        if idx_col >= 5:
+                            idx_col = 0
