@@ -1495,7 +1495,7 @@ elif app_mode == "👥 Gestão de Alunos":
         st.rerun()
         
     if not is_monitor:
-        if c_del.button("🗑️ Excluir Aluno", use_container_width=True, help="Atenção: Isso excluirá o estudante e TODOS os seus documentos do banco."):
+        if c_del.button("🗑️ Excluir", use_container_width=True, help="Atenção: Isso excluirá o estudante e TODOS os seus documentos do banco."):
             st.session_state.confirm_delete = True
 
     # --- LÓGICA DE INTERPRETAÇÃO DO DOCUMENTO (PEI Fundamental vs Infantil) ---
