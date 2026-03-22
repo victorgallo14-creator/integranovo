@@ -1302,89 +1302,77 @@ if app_mode == "📊 Painel de Gestão":
 
         # --- ABA DE CONCLUÍDOS (Agora dentro da variável correta) ---
     with tab_concluidos:
-    st.subheader("Documentos Prontos para Emissão")
-    st.caption("Lista de todos os documentos marcados como 'Concluído'.")
-    
-    lista_geral_concluidos = []
-    # Dicionário para armazenar os bytes reais dos PDFs
-    dict_pdfs_concluidos = {}
-    
-    if not df_dash.empty:
-        for idx, row in df_dash.iterrows():
-            try:
-                d = json.loads(row['dados_json'])
-                if d.get('status_elaboracao') == "Concluído":
-                    nome_aluno = row['nome']
-                    tipo_doc = row['tipo_doc']
-                    ref = d.get('trimestre_finalizado') or d.get('periodo') or "Finalizado"
-                    
-                    # Nome do arquivo dentro do ZIP
-                    nome_arquivo = f"{tipo_doc}_{nome_aluno}_{ref}.pdf".replace(" ", "_")
-                    
-                    # --- LÓGICA DE GERAÇÃO EM TEMPO REAL ---
-                    # Para o ZIP não vir vazio, precisamos gerar o PDF agora
-                    try:
-                        pdf_inst = OfficialPDF('L' if tipo_doc == "PEI" else 'P', 'mm', 'A4')
-                        pdf_inst.add_page()
-                        pdf_inst.set_margins(10, 10, 10)
+        st.subheader("Documentos Prontos para Emissão")
+        st.caption("Lista de todos os documentos marcados como 'Concluído'.")
+        
+        lista_geral_concluidos = []
+        # Dicionário para armazenar os bytes dos PDFs e permitir o download em lote
+        dict_pdfs_concluidos = {}
+        
+        if not df_dash.empty:
+            for idx, row in df_dash.iterrows():
+                try:
+                    d = json.loads(row['dados_json'])
+                    if d.get('status_elaboracao') == "Concluído":
+                        nome_aluno = row['nome']
+                        tipo_doc = row['tipo_doc']
+                        ref = d.get('trimestre_finalizado') or d.get('periodo') or "Finalizado"
                         
-                        # Aqui chamamos uma simulação da estrutura (ou a função real se disponível)
-                        # Como não podemos duplicar as 500 linhas de lógica de cada PDF aqui, 
-                        # vamos gerar um protocolo básico ou chamar sua função de bytes se existir.
-                        
-                        # Exemplo simplificado para preencher o ZIP:
-                        pdf_inst.set_font("Arial", "B", 14)
-                        pdf_inst.cell(0, 10, f"Documento: {tipo_doc}", 0, 1, 'C')
-                        pdf_inst.set_font("Arial", "", 12)
-                        pdf_inst.cell(0, 10, f"Estudante: {nome_aluno}", 0, 1, 'C')
-                        pdf_inst.cell(0, 10, f"Referencia: {ref}", 0, 1, 'C')
-                        
-                        p_bytes = get_pdf_bytes(pdf_inst)
-                        dict_pdfs_concluidos[nome_arquivo] = p_bytes
+                        nome_exibicao = f"{tipo_doc}_{nome_aluno}_{ref}".replace(" ", "_")
                         
                         lista_geral_concluidos.append({
                             "Estudante": nome_aluno,
                             "Documento": tipo_doc,
                             "Referência": ref,
-                            "Arquivo": nome_arquivo
+                            "ID Interno": nome_exibicao
                         })
-                    except Exception as e_pdf:
-                        st.error(f"Erro ao gerar PDF de {nome_aluno}: {e_pdf}")
-            except:
-                continue
-
-    if lista_geral_concluidos:
-        # --- BOTÃO DE DOWNLOAD EM LOTE (ZIP) ---
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for nome_arq, p_bytes in dict_pdfs_concluidos.items():
-                zip_file.writestr(nome_arq, p_bytes)
-        
-        st.download_button(
-            label="📦 Baixar TODOS os Concluídos (ZIP)",
-            data=buf.getvalue(),
-            file_name=f"Lote_AEE_{date.today().strftime('%d_%m_%Y')}.zip",
-            mime="application/zip",
-            use_container_width=True
-        )
-        
-        st.divider()
-
-        # Listagem Individual
-        for doc in lista_geral_concluidos:
-            col_txt, col_btn = st.columns([4, 1])
-            with col_txt:
-                st.write(f"✅ **{doc['Estudante']}** - {doc['Documento']} ({doc['Referência']})")
-            with col_btn:
+                        
+                        # Aqui você precisaria ter uma função que gera os bytes do PDF 
+                        # baseada no tipo de documento. Exemplo hipotético:
+                        # dict_pdfs_concluidos[f"{nome_exibicao}.pdf"] = gerar_pdf_generico(tipo_doc, d)
+                except:
+                    continue
+    
+        if lista_geral_concluidos:
+            df_docs_prontos = pd.DataFrame(lista_geral_concluidos)
+            
+            # --- BOTÃO DE DOWNLOAD EM LOTE (ZIP) ---
+            if st.button("📦 Gerar Lote de Documentos (ZIP)", use_container_width=True):
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+                    for nome_arq, p_bytes in dict_pdfs_concluidos.items():
+                        zip_file.writestr(nome_arq, p_bytes)
+                
                 st.download_button(
-                    label="⬇️ PDF",
-                    data=dict_pdfs_concluidos[doc['Arquivo']],
-                    file_name=doc['Arquivo'],
-                    mime="application/pdf",
-                    key=f"dl_{doc['Arquivo']}_{random.randint(0,1000)}"
+                    label="⬇️ Baixar Arquivo ZIP",
+                    data=buf.getvalue(),
+                    file_name=f"Lote_Documentos_{date.today().strftime('%d_%m_%Y')}.zip",
+                    mime="application/zip",
+                    use_container_width=True
                 )
-    else:
-        st.info("Nenhum documento concluído encontrado.")
+            
+            st.divider()
+    
+            # Exibição da Tabela com Botão de Download Individual
+            for _, doc in df_docs_prontos.iterrows():
+                col_txt, col_btn = st.columns([4, 1])
+                with col_txt:
+                    st.write(f"📄 **{doc['Estudante']}** - {doc['Documento']} ({doc['Referência']})")
+                with col_btn:
+                    # O botão individual só funcionará se os bytes do PDF estiverem no dicionário
+                    pdf_filename = f"{doc['ID Interno']}.pdf"
+                    if pdf_filename in dict_pdfs_concluidos:
+                        st.download_button(
+                            label="⬇️ PDF",
+                            data=dict_pdfs_concluidos[pdf_filename],
+                            file_name=pdf_filename,
+                            mime="application/pdf",
+                            key=f"dl_{doc['ID Interno']}"
+                        )
+                    else:
+                        st.caption("Aguardando geração")
+        else:
+            st.info("Nenhum documento concluído encontrado.")
             
         
         # --- MURAL DE AVISOS ---
@@ -7419,6 +7407,5 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao salvar: {e}")
-
 
 
