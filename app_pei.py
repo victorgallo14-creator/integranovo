@@ -5037,7 +5037,7 @@ elif app_mode == "👥 Gestão de Alunos":
                         elif "Nível 1" in col1: 
                             lines_left = 1; lines_right = 1
                         elif "Nível 2" in col1: 
-                            lines_left = 2; lines_right = 1
+                            lines_left = 1; lines_right = 1
                         elif "Nível 3" in col1: 
                             lines_left = 1; lines_right = 2
                         else:
