@@ -4900,7 +4900,7 @@ elif app_mode == "👥 Gestão de Alunos":
                     # 4. LEGAL TEXT (INTEGRAL) - Justified
                     pdf.set_font("Arial", "B", 10)
                     pdf.cell(0, 6, clean_pdf_text("PRESSUPOSTOS LEGAIS:"), 0, 1, 'L')
-                    pdf.set_font("Arial", "", 8)
+                    pdf.set_font("Arial", "", 10)
                     
                     # Full width (0) uses 180mm. 
                     pdf.multi_cell(0, 4, clean_pdf_text("1- Lei nº 12.764/2012, em seu artigo 3º que trata dos direitos da pessoa com transtorno do espectro autista indica:"), 0, 'J')
