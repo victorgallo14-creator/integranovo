@@ -4847,10 +4847,10 @@ elif app_mode == "👥 Gestão de Alunos":
                     if c_pd.form_submit_button("👁️ Gerar PDF Avaliação"): gen_pdf_aval = True
 
                 if gen_pdf_aval:
-            def check_page_break(pdf, required_height=30):
-                # A folha tem 297mm. Deixamos uma margem inferior segura (ex: até o Y=275)
-                if pdf.get_y() + required_height > 275:
-                    pdf.add_page()
+                    def check_page_break(pdf, required_height=30):
+                        # A folha tem 297mm. Deixamos uma margem inferior segura (ex: até o Y=275)
+                        if pdf.get_y() + required_height > 275:
+                            pdf.add_page()
                     # --- PDF GENERATION EXPERT MODE ---
                     pdf = OfficialPDF('P', 'mm', 'A4')
                     pdf.add_page(); pdf.set_margins(15, 15, 15)
