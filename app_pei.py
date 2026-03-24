@@ -4847,6 +4847,10 @@ elif app_mode == "👥 Gestão de Alunos":
                     if c_pd.form_submit_button("👁️ Gerar PDF Avaliação"): gen_pdf_aval = True
 
                 if gen_pdf_aval:
+            def check_page_break(pdf, required_height=30):
+                # A folha tem 297mm. Deixamos uma margem inferior segura (ex: até o Y=275)
+                if pdf.get_y() + required_height > 275:
+                    pdf.add_page()
                     # --- PDF GENERATION EXPERT MODE ---
                     pdf = OfficialPDF('P', 'mm', 'A4')
                     pdf.add_page(); pdf.set_margins(15, 15, 15)
@@ -4969,12 +4973,14 @@ elif app_mode == "👥 Gestão de Alunos":
                     print_question_options_fix(pdf, "3. LOCOMOÇÃO:", opts_loc, data_aval.get('loc_nivel'), data_aval.get('loc_obs'))
                     
                     # PART II
-                    if pdf.get_y() > 220: pdf.add_page()
+                    check_page_break(pdf, 40) # Verifica se tem 40mm livres, se não, pula a página
                     print_section_header_fix(pdf, "PARTE II - HABILIDADE SOCIAIS E DE INTERAÇÃO")
                     print_question_options_fix(pdf, "4. COMPORTAMENTO:", opts_comp, data_aval.get('comportamento'), data_aval.get('comp_obs'))
-                    if pdf.get_y() > 230: pdf.add_page()
+                    
+                    check_page_break(pdf, 40)
                     print_question_options_fix(pdf, "5. PARTICIPAÇÃO EM GRUPO:", opts_part, data_aval.get('part_grupo'), data_aval.get('part_obs'))
                     
+                    check_page_break(pdf, 35)
                     pdf.set_font("Arial", "B", 10); pdf.cell(0, 6, "6. INTERAÇÃO:", 0, 1)
                     pdf.set_font("Arial", "", 10)
                     for opt in opts_int[:-1]:
@@ -4985,22 +4991,23 @@ elif app_mode == "👥 Gestão de Alunos":
                     pdf.ln(4)
 
                     # PART III
-                    if pdf.get_y() > 230: pdf.add_page()
+                    check_page_break(pdf, 40)
                     print_section_header_fix(pdf, "PARTE III - HABILIDADES PEDAGÓGICAS")
                     print_question_options_fix(pdf, "7. ROTINA EM SALA:", opts_rot, data_aval.get('rotina'), data_aval.get('rotina_obs'))
                     print_question_options_fix(pdf, "8. ATIVIDADES PEDAGÓGICAS:", opts_ativ, data_aval.get('ativ_pedag'))
 
                     # PART IV
-                    if pdf.get_y() > 220: pdf.add_page()
+                    check_page_break(pdf, 40)
                     print_section_header_fix(pdf, "PARTE IV - HABILIDADES DE COMUNICAÇÃO E ATENÇÃO")
                     print_question_options_fix(pdf, "9. ATENÇÃO SUSTENTADA:", opts_at_sust, data_aval.get('atencao_sust'))
                     print_question_options_fix(pdf, "10. ATENÇÃO DIVIDIDA:", opts_at_div, data_aval.get('atencao_div'))
-                    if pdf.get_y() > 240: pdf.add_page()
+                    
+                    check_page_break(pdf, 40)
                     print_question_options_fix(pdf, "11. ATENÇÃO SELETIVA:", opts_at_sel, data_aval.get('atencao_sel'))
                     print_question_options_fix(pdf, "12. LINGUAGEM:", opts_ling, data_aval.get('linguagem'), data_aval.get('ling_obs'))
 
                     # 6. ZEBRA STRIPED TABLE - IMPROVED
-                    if pdf.get_y() > 200: pdf.add_page()
+                    check_page_break(pdf, 60) # A tabela precisa de mais espaço
                     pdf.ln(2); pdf.set_font("Arial", "B", 10)
                     pdf.set_fill_color(200, 200, 200)
                     # Use width 180 total (60+120)
