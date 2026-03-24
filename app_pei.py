@@ -1937,36 +1937,21 @@ elif app_mode == "👥 Gestão de Alunos":
                 else:
                     disciplinas_flex = ["Linguagem Verbal", "Linguagem Matemática", "Indivíduo e Sociedade", "Arte", "Educação Física", "Linguagens e Tecnologia"]
 
+                if 'flex_matrix' not in data: data['flex_matrix'] = {}
+                
+                st.markdown("**7.1 Disciplinas que necessitam de adaptação**")
+                c_h1, c_h2, c_h3 = st.columns([2, 1, 1])
+                c_h1.write("**Disciplina**")
+                c_h2.write("**Conteúdo?**")
+                c_h3.write("**Metodologia?**")
+                
                 for disc in disciplinas_flex:
-                # 1. Garante estrutura (correção anterior)
-                if disc not in data['flex_matrix']: 
-                    data['flex_matrix'][disc] = {}
-                if 'conteudo' not in data['flex_matrix'][disc]:
-                    data['flex_matrix'][disc]['conteudo'] = False
-                if 'metodologia' not in data['flex_matrix'][disc]:
-                    data['flex_matrix'][disc]['metodologia'] = False
-                
-                # Pegamos o UUID para garantir que a chave seja única no app todo
-                u_id = data.get('doc_uuid', 'default')
-            
-                c1, c2, c3 = st.columns([2, 1, 1])
-                c1.write(disc)
-                
-                # Adicionamos o u_id no final da key para torná-la exclusiva
-                data['flex_matrix'][disc]['conteudo'] = c2.checkbox(
-                    "Sim", 
-                    key=f"flex_c_{aluno_id}_{disc}_{u_id}", 
-                    value=data['flex_matrix'][disc]['conteudo'], 
-                    disabled=is_monitor
-                )
-                
-                data['flex_matrix'][disc]['metodologia'] = c3.checkbox(
-                    "Sim", 
-                    key=f"flex_m_{aluno_id}_{disc}_{u_id}", 
-                    value=data['flex_matrix'][disc]['metodologia'], 
-                    disabled=is_monitor
-                )
-                
+                    if disc not in data['flex_matrix']: data['flex_matrix'][disc] = {'conteudo': False, 'metodologia': False}
+                    
+                    c1, c2, c3 = st.columns([2, 1, 1])
+                    c1.write(disc)
+                    data['flex_matrix'][disc]['conteudo'] = c2.checkbox("Sim", key=f"flex_c_{aluno_id}_{disc}", value=data['flex_matrix'][disc]['conteudo'], disabled=is_monitor)
+                    data['flex_matrix'][disc]['metodologia'] = c3.checkbox("Sim", key=f"flex_m_{aluno_id}_{disc}", value=data['flex_matrix'][disc]['metodologia'], disabled=is_monitor)
 
                 st.divider()
                 st.subheader("7.2 Plano de Ensino Anual")
@@ -4836,33 +4821,8 @@ elif app_mode == "👥 Gestão de Alunos":
                     data_aval['ling_obs'] = st.text_input("Obs Linguagem:", value=data_aval.get('ling_obs', ''), disabled=is_monitor)
 
                 st.markdown("### Conclusão e Responsáveis")
-                
-                # 1. Defina a lista de opções para garantir que o texto seja idêntico ao do banco
-                opcoes_apoio = ["Não necessita de apoio", "Nível 1", "Nível 2", "Nível 3"]
-                
-                # 2. Busque o valor salvo. Se não houver nada, o padrão será "Não necessita de apoio"
-                valor_salvo = data_aval.get('conclusao_nivel', "Não necessita de apoio")
-                
-                # 3. Descubra o índice (posição) desse valor na lista
-                # Se por algum motivo o valor do banco não estiver na lista, ele volta para o 0
-                try:
-                    indice_salvo = opcoes_apoio.index(valor_salvo)
-                except ValueError:
-                    indice_salvo = 0
-                
-                # 4. Agora use o indice_salvo no componente
-                data_aval['conclusao_nivel'] = st.selectbox(
-                    "Nível de Apoio Concluído", 
-                    opcoes_apoio, 
-                    index=indice_salvo, 
-                    disabled=is_monitor
-                )
-                
-                data_aval['apoio_existente'] = st.text_input(
-                    "Se este apoio já é oferecido, explicitar aqui:", 
-                    value=data_aval.get('apoio_existente', ''), 
-                    disabled=is_monitor
-                )
+                data_aval['conclusao_nivel'] = st.selectbox("Nível de Apoio Concluído", ["Não necessita de apoio", "Nível 1", "Nível 2", "Nível 3"], index=0, disabled=is_monitor)
+                data_aval['apoio_existente'] = st.text_input("Se este apoio já é oferecido, explicitar aqui:", value=data_aval.get('apoio_existente', ''), disabled=is_monitor)
                 
                 c_resp1, c_resp2 = st.columns(2)
                 data_aval['resp_sala'] = c_resp1.text_input("Prof. Sala Regular", value=data_aval.get('resp_sala', ''), disabled=is_monitor)
