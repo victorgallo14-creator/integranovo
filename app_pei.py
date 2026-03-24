@@ -5092,7 +5092,7 @@ elif app_mode == "👥 Gestão de Alunos":
                     
                     pdf.ln(3); pdf.set_font("Arial", "", 10)
                     apoio_txt = data_aval.get('apoio_existente') if data_aval.get('apoio_existente') else "______________________________________________________"
-                    pdf.multi_cell(0, 5, clean_pdf_text(f"Profissional de Apoio Escolar (se houver): {apoio_txt}"), 0, 'L')
+                    pdf.multi_cell(0, 5, clean_pdf_text(f"Profissional de Apoio Escolar (se houver): {apoio_txt}"), 0, 'J')
 
                     pdf.ln(10)
                     if pdf.get_y() > 240: pdf.add_page()
