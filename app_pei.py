@@ -4821,8 +4821,33 @@ elif app_mode == "👥 Gestão de Alunos":
                     data_aval['ling_obs'] = st.text_input("Obs Linguagem:", value=data_aval.get('ling_obs', ''), disabled=is_monitor)
 
                 st.markdown("### Conclusão e Responsáveis")
-                data_aval['conclusao_nivel'] = st.selectbox("Nível de Apoio Concluído", ["Não necessita de apoio", "Nível 1", "Nível 2", "Nível 3"], index=0, disabled=is_monitor)
-                data_aval['apoio_existente'] = st.text_input("Se este apoio já é oferecido, explicitar aqui:", value=data_aval.get('apoio_existente', ''), disabled=is_monitor)
+                
+                # 1. Defina a lista de opções para garantir que o texto seja idêntico ao do banco
+                opcoes_apoio = ["Não necessita de apoio", "Nível 1", "Nível 2", "Nível 3"]
+                
+                # 2. Busque o valor salvo. Se não houver nada, o padrão será "Não necessita de apoio"
+                valor_salvo = data_aval.get('conclusao_nivel', "Não necessita de apoio")
+                
+                # 3. Descubra o índice (posição) desse valor na lista
+                # Se por algum motivo o valor do banco não estiver na lista, ele volta para o 0
+                try:
+                    indice_salvo = opcoes_apoio.index(valor_salvo)
+                except ValueError:
+                    indice_salvo = 0
+                
+                # 4. Agora use o indice_salvo no componente
+                data_aval['conclusao_nivel'] = st.selectbox(
+                    "Nível de Apoio Concluído", 
+                    opcoes_apoio, 
+                    index=indice_salvo, 
+                    disabled=is_monitor
+                )
+                
+                data_aval['apoio_existente'] = st.text_input(
+                    "Se este apoio já é oferecido, explicitar aqui:", 
+                    value=data_aval.get('apoio_existente', ''), 
+                    disabled=is_monitor
+                )
                 
                 c_resp1, c_resp2 = st.columns(2)
                 data_aval['resp_sala'] = c_resp1.text_input("Prof. Sala Regular", value=data_aval.get('resp_sala', ''), disabled=is_monitor)
