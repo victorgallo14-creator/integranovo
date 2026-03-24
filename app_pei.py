@@ -1938,40 +1938,35 @@ elif app_mode == "👥 Gestão de Alunos":
                     disciplinas_flex = ["Linguagem Verbal", "Linguagem Matemática", "Indivíduo e Sociedade", "Arte", "Educação Física", "Linguagens e Tecnologia"]
 
                 for disc in disciplinas_flex:
-                    # 1. Garante que a disciplina existe
-                    if disc not in data['flex_matrix']: 
-                        data['flex_matrix'][disc] = {}
-                    
-                    # 2. Garante que as chaves internas existem (evita o KeyError)
-                    if 'conteudo' not in data['flex_matrix'][disc]:
-                        data['flex_matrix'][disc]['conteudo'] = False
-                    if 'metodologia' not in data['flex_matrix'][disc]:
-                        data['flex_matrix'][disc]['metodologia'] = False
-                    
-                    c1, c2, c3 = st.columns([2, 1, 1])
-                    c1.write(disc)
-                    
-                    # Agora o acesso é seguro porque garantimos a existência acima
-                    data['flex_matrix'][disc]['conteudo'] = c2.checkbox(
-                        "Sim", 
-                        key=f"flex_c_{aluno_id}_{disc}", 
-                        value=data['flex_matrix'][disc]['conteudo'], 
-                        disabled=is_monitor
-                    )
-                    data['flex_matrix'][disc]['metodologia'] = c3.checkbox(
-                        "Sim", 
-                        key=f"flex_m_{aluno_id}_{disc}", 
-                        value=data['flex_matrix'][disc]['metodologia'], 
-                        disabled=is_monitor
-                    )
+                # 1. Garante estrutura (correção anterior)
+                if disc not in data['flex_matrix']: 
+                    data['flex_matrix'][disc] = {}
+                if 'conteudo' not in data['flex_matrix'][disc]:
+                    data['flex_matrix'][disc]['conteudo'] = False
+                if 'metodologia' not in data['flex_matrix'][disc]:
+                    data['flex_matrix'][disc]['metodologia'] = False
                 
-                for disc in disciplinas_flex:
-                    if disc not in data['flex_matrix']: data['flex_matrix'][disc] = {'conteudo': False, 'metodologia': False}
-                    
-                    c1, c2, c3 = st.columns([2, 1, 1])
-                    c1.write(disc)
-                    data['flex_matrix'][disc]['conteudo'] = c2.checkbox("Sim", key=f"flex_c_{aluno_id}_{disc}", value=data['flex_matrix'][disc]['conteudo'], disabled=is_monitor)
-                    data['flex_matrix'][disc]['metodologia'] = c3.checkbox("Sim", key=f"flex_m_{aluno_id}_{disc}", value=data['flex_matrix'][disc]['metodologia'], disabled=is_monitor)
+                # Pegamos o UUID para garantir que a chave seja única no app todo
+                u_id = data.get('doc_uuid', 'default')
+            
+                c1, c2, c3 = st.columns([2, 1, 1])
+                c1.write(disc)
+                
+                # Adicionamos o u_id no final da key para torná-la exclusiva
+                data['flex_matrix'][disc]['conteudo'] = c2.checkbox(
+                    "Sim", 
+                    key=f"flex_c_{aluno_id}_{disc}_{u_id}", 
+                    value=data['flex_matrix'][disc]['conteudo'], 
+                    disabled=is_monitor
+                )
+                
+                data['flex_matrix'][disc]['metodologia'] = c3.checkbox(
+                    "Sim", 
+                    key=f"flex_m_{aluno_id}_{disc}_{u_id}", 
+                    value=data['flex_matrix'][disc]['metodologia'], 
+                    disabled=is_monitor
+                )
+                
 
                 st.divider()
                 st.subheader("7.2 Plano de Ensino Anual")
