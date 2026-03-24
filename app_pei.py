@@ -1937,13 +1937,33 @@ elif app_mode == "👥 Gestão de Alunos":
                 else:
                     disciplinas_flex = ["Linguagem Verbal", "Linguagem Matemática", "Indivíduo e Sociedade", "Arte", "Educação Física", "Linguagens e Tecnologia"]
 
-                if 'flex_matrix' not in data: data['flex_matrix'] = {}
-                
-                st.markdown("**7.1 Disciplinas que necessitam de adaptação**")
-                c_h1, c_h2, c_h3 = st.columns([2, 1, 1])
-                c_h1.write("**Disciplina**")
-                c_h2.write("**Conteúdo?**")
-                c_h3.write("**Metodologia?**")
+                for disc in disciplinas_flex:
+                    # 1. Garante que a disciplina existe
+                    if disc not in data['flex_matrix']: 
+                        data['flex_matrix'][disc] = {}
+                    
+                    # 2. Garante que as chaves internas existem (evita o KeyError)
+                    if 'conteudo' not in data['flex_matrix'][disc]:
+                        data['flex_matrix'][disc]['conteudo'] = False
+                    if 'metodologia' not in data['flex_matrix'][disc]:
+                        data['flex_matrix'][disc]['metodologia'] = False
+                    
+                    c1, c2, c3 = st.columns([2, 1, 1])
+                    c1.write(disc)
+                    
+                    # Agora o acesso é seguro porque garantimos a existência acima
+                    data['flex_matrix'][disc]['conteudo'] = c2.checkbox(
+                        "Sim", 
+                        key=f"flex_c_{aluno_id}_{disc}", 
+                        value=data['flex_matrix'][disc]['conteudo'], 
+                        disabled=is_monitor
+                    )
+                    data['flex_matrix'][disc]['metodologia'] = c3.checkbox(
+                        "Sim", 
+                        key=f"flex_m_{aluno_id}_{disc}", 
+                        value=data['flex_matrix'][disc]['metodologia'], 
+                        disabled=is_monitor
+                    )
                 
                 for disc in disciplinas_flex:
                     if disc not in data['flex_matrix']: data['flex_matrix'][disc] = {'conteudo': False, 'metodologia': False}
