@@ -5079,7 +5079,7 @@ elif app_mode == "👥 Gestão de Alunos":
 
                     print_zebra_row_fix(pdf, "Não há necessidade de apoio", "O estudante apresenta autonomia. As ações disponibilizadas aos demais estudantes são suficientes, acrescidas de ações do AEE.", False)
                     print_zebra_row_fix(pdf, "Nível 1 - Apoio pouco substancial", "Não há necessidade de apoio constante, apenas em ações pontuais.", True)
-                    print_zebra_row_fix(pdf, "Nível 2 - Apoio substancial (sala de aula)", "Há necessidade de apoio constante ao estudante.", False)
+                    print_zebra_row_fix(pdf, "Nível 2 - Apoio substancial", "Há necessidade de apoio constante ao estudante.", False)
                     print_zebra_row_fix(pdf, "Nível 3 - Apoio muito substancial", "Casos severos com necessidade de monitor e ações específicas: flexibilização de horário e espaços.", True)
 
                     pdf.ln(5)
