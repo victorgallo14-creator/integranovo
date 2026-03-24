@@ -5031,46 +5031,50 @@ elif app_mode == "👥 Gestão de Alunos":
                     pdf.cell(120, 8, clean_pdf_text("CARACTERÍSTICAS"), 1, 1, 'C', True)
                     
                     def print_zebra_row_fix(pdf, col1, col2, fill):
-                        # Approximate line counting for better cell height
-                        # Col1 width 60mm. approx 28 chars per line (Arial 9).
-                        # Col2 width 120mm. approx 65 chars per line (Arial 9).
-                        
-                        lines_left = max(1, len(col1) // 28 + (1 if len(col1) % 28 > 0 else 0))
-                        lines_right = max(1, len(col2) // 65 + (1 if len(col2) % 65 > 0 else 0))
-                        
-                        # Adjust for known texts to ensure clean look
-                        if "Não há necessidade" in col1: lines_right = 3
-                        if "Nível 1" in col1: lines_right = 2
-                        if "Nível 2" in col1: lines_left = 2; lines_right = 1
-                        if "Nível 3" in col1: lines_right = 2
+                        # Mapeamento cirúrgico de linhas baseado no visual real do PDF
+                        if "Não há necessidade" in col1: 
+                            lines_left = 1; lines_right = 2
+                        elif "Nível 1" in col1: 
+                            lines_left = 1; lines_right = 1
+                        elif "Nível 2" in col1: 
+                            lines_left = 2; lines_right = 1
+                        elif "Nível 3" in col1: 
+                            lines_left = 1; lines_right = 2
+                        else:
+                            lines_left = 1; lines_right = 1
 
+                        # Calcula a altura exata: 5mm por linha + 4mm de margem total
                         max_lines = max(lines_left, lines_right)
-                        row_height = max_lines * 5 + 4 # 5mm per line + 4mm padding
+                        row_height = (max_lines * 5) + 4 
+                        
+                        # Verifica se cabe na página usando a nossa função inteligente
+                        check_page_break(pdf, row_height)
                         
                         x, y = 15, pdf.get_y()
-                        # Check page break
-                        if y + row_height > 270:
-                            pdf.add_page()
-                            y = pdf.get_y()
                         
-                        pdf.set_fill_color(240, 240, 240) if fill else pdf.set_fill_color(255, 255, 255)
+                        # Define a cor de fundo (zebrado)
+                        if fill:
+                            pdf.set_fill_color(240, 240, 240)
+                        else:
+                            pdf.set_fill_color(255, 255, 255)
                         
-                        # Draw Backgrounds
-                        pdf.rect(x, y, 60, row_height, 'F'); pdf.rect(x, y, 60, row_height)
-                        pdf.rect(x+60, y, 120, row_height, 'F'); pdf.rect(x+60, y, 120, row_height)
+                        # Desenha os retângulos de fundo e as bordas
+                        pdf.rect(x, y, 60, row_height, 'DF') 
+                        pdf.rect(x+60, y, 120, row_height, 'DF')
                         
-                        # Print Left (Centered Vertically and Horizontally)
+                        # Imprime a Coluna Esquerda (Níveis) - Centralizado
                         pdf.set_font("Arial", "B", 9)
                         y_off1 = (row_height - (lines_left * 5)) / 2
                         pdf.set_xy(x, y + y_off1)
                         pdf.multi_cell(60, 5, clean_pdf_text(col1), 0, 'C')
                         
-                        # Print Right (Centered Vertically, Justified)
+                        # Imprime a Coluna Direita (Características) - Justificado
                         pdf.set_font("Arial", "", 9)
                         y_off2 = (row_height - (lines_right * 5)) / 2
                         pdf.set_xy(x+60, y + y_off2)
                         pdf.multi_cell(120, 5, clean_pdf_text(col2), 0, 'J')
                         
+                        # Move o cursor para baixo da linha que acabou de ser desenhada
                         pdf.set_xy(x, y + row_height)
 
                     print_zebra_row_fix(pdf, "Não há necessidade de apoio", "O estudante apresenta autonomia. As ações disponibilizadas aos demais estudantes são suficientes, acrescidas de ações do AEE.", False)
