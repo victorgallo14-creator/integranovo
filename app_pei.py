@@ -4946,23 +4946,39 @@ elif app_mode == "👥 Gestão de Alunos":
                         pdf.ln(1)
 
                     def print_question_options_fix(pdf, question_title, options, selected_value, obs=None):
+                        # 1. Calcula o espaço que a pergunta inteira vai ocupar
+                        # ~8mm pro título + 5mm por opção + 15mm se tiver observação
+                        espaco_necessario = 8 + (len(options) * 5) + (15 if obs else 0)
+                        
+                        # 2. Verifica se a pergunta cabe inteira na página atual
+                        check_page_break(pdf, espaco_necessario)
+                        
                         pdf.set_x(15)
                         pdf.set_font("Arial", "B", 10)
                         pdf.cell(0, 6, clean_pdf_text(question_title), 0, 1)
                         pdf.set_font("Arial", "", 10)
+                        
                         for opt in options:
                             is_checked = (selected_value == opt) or (isinstance(selected_value, list) and opt in selected_value)
+                            
+                            # Trava de segurança extra para cada linha
+                            check_page_break(pdf, 6) 
+                            
                             pdf.set_x(15)
                             x, y = pdf.get_x(), pdf.get_y()
+                            
+                            # Desenha o checkbox
                             pdf.rect(x, y+1, 3, 3)
                             if is_checked:
                                 pdf.line(x, y+1, x+3, y+4)
                                 pdf.line(x, y+4, x+3, y+1)
+                            
+                            # Escreve o texto da opção
                             pdf.set_xy(x + 5, y)
                             pdf.multi_cell(175, 5, clean_pdf_text(opt), 0, 'L')
+                            
                         if obs:
                             pdf.set_x(15)
-                            # Obs uses full width (0) and Justified (J)
                             pdf.multi_cell(0, 5, clean_pdf_text(f"Obs: {obs}"), 0, 'J')
                         pdf.ln(2)
 
