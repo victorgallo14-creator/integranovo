@@ -4741,9 +4741,17 @@ elif app_mode == "👥 Gestão de Alunos":
                 data_aval['defic_outra'] = st.text_input("Outra:", value=data_aval.get('defic_outra', ''), disabled=is_monitor)
                 
                 st.markdown("---")
-                st.markdown("### Aspectos Gerais da Vida Escolar")
-                
-                with st.expander("Parte I - Habilidades de Vida Diária", expanded=True):
+                st.markdown("### Aspectos Gerais da Vida Escolar")
+                
+                # --- CAMPO INSERIDO PARA DIGITAÇÃO MANUAL ---
+                data_aval['aspectos_gerais'] = st.text_area(
+                    "Descrição geral da vida escolar do estudante:", 
+                    value=data_aval.get('aspectos_gerais', ''), 
+                    height=100,
+                    disabled=is_monitor
+                )
+                
+                with st.expander("Parte I - Habilidades de Vida Diária", expanded=True):
                     c_a, c_h = st.columns(2)
                     with c_a:
                         st.markdown("**1. Alimentação**")
