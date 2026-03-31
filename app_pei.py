@@ -140,7 +140,8 @@ def load_db(strict=False):
     except Exception as e:
         if strict:
             raise Exception(f"Erro ao ler Google Sheets (API pode estar sobrecarregada): {e}")
-        return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id"])
+        # Adicionada a coluna "ultima_atualizacao"
+        return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
 
 def safe_read(worksheet_name, columns):
     try:
@@ -223,16 +224,24 @@ def save_student(doc_type, name, data, section="Geral"):
                 data_limpa = serializar_datas(data)
                 novo_json = json.dumps(data_limpa, ensure_ascii=False)
 
+                # 1. GERA A DATA E HORA ATUAL (Fuso de Brasília)
+                fuso_br = timezone(timedelta(hours=-3))
+                data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
+
                 df_final = df_atual.copy()
                 
                 if not df_atual.empty and "id" in df_atual.columns and id_registro in df_atual["id"].values:
                     df_final.loc[df_final["id"] == id_registro, "dados_json"] = novo_json
+                    # 2. SALVA A DATA/HORA NA ATUALIZAÇÃO DE UM DOCUMENTO EXISTENTE
+                    df_final.loc[df_final["id"] == id_registro, "ultima_atualizacao"] = data_hora_agora
                 else:
                     novo_registro = {
                         "id": id_registro,
                         "nome": name,
                         "tipo_doc": doc_type,
-                        "dados_json": novo_json
+                        "dados_json": novo_json,
+                        # 3. SALVA A DATA/HORA NA CRIAÇÃO DE UM NOVO DOCUMENTO
+                        "ultima_atualizacao": data_hora_agora
                     }
                     if df_final.empty:
                         df_final = pd.DataFrame([novo_registro])
