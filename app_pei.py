@@ -9,7 +9,7 @@ import json
 import tempfile
 from PIL import Image
 import pandas as pd
-from supabase import create_client, Client
+from streamlit_gsheets import GSheetsConnection
 import time
 import uuid
 import threading
@@ -73,14 +73,8 @@ def draw_flex_row(pdf, col_data, line_h=6, font_size=9, fill_color=(240, 240, 24
         
     pdf.set_xy(15, y_start + row_h)
 
-# --- CONEXÃO COM SUPABASE ---
-@st.cache_resource
-def init_connection():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
-supabase = init_connection()
+# --- CONEXÃO COM GOOGLE SHEETS ---
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(
@@ -134,25 +128,20 @@ db_lock = get_db_lock()
 
 def load_db(strict=False):
     """
-    Lê os dados da tabela 'alunos' do Supabase.
+    Lê os dados da planilha do Google.
     """
     try:
-        # Puxa todos os registros da tabela 'alunos'
-        resposta = supabase.table("alunos").select("*").execute()
-        
-        # O Supabase retorna os dados em resposta.data, transformamos direto em DataFrame
-        df = pd.DataFrame(resposta.data)
-        
-        # Previne erro caso a tabela esteja vazia na primeira vez
-        if df.empty:
-            return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
-            
+        df = conn.read(worksheet="Alunos", ttl=0)
+        if df.empty and strict:
+            # Tenta ler outra aba leve apenas para testar conexão
+            conn.read(worksheet="Professores", ttl=0)
+        df = df.dropna(how="all")
         return df
     except Exception as e:
         if strict:
-             raise Exception(f"Erro ao ler banco de dados Supabase: {e}")
+            raise Exception(f"Erro ao ler Google Sheets (API pode estar sobrecarregada): {e}")
+        # Adicionada a coluna "ultima_atualizacao"
         return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
-        
 
 def safe_read(worksheet_name, columns):
     try:
