@@ -179,17 +179,15 @@ def create_backup(df_atual):
 
 def log_action(student_name, action, details):
     try:
-        with db_lock:
-            df_hist = safe_read("Historico", ["Data_Hora", "Aluno", "Usuario", "Acao", "Detalhes"])
-            novo_log = {
-                "Data_Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                "Aluno": student_name,
-                "Usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
-                "Acao": action,
-                "Detalhes": details
-            }
-            df_hist = pd.concat([df_hist, pd.DataFrame([novo_log])], ignore_index=True)
-            conn.update(worksheet="Historico", data=df_hist)
+        fuso_br = timezone(timedelta(hours=-3))
+        novo_log = {
+            "data_hora": datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S"),
+            "aluno": student_name,
+            "usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
+            "acao": action,
+            "detalhes": details
+        }
+        supabase.table("historico").insert(novo_log).execute()
     except:
         pass
 
@@ -517,7 +515,9 @@ def login():
                         try:
                             SENHA_MESTRA = st.secrets.get("credentials", {}).get("password", "admin")
                             user_id_limpo = str(user_id).strip()
-                            df_professores = conn.read(worksheet="Professores", ttl=0)
+                            # Busca os dados no Supabase e transforma em DataFrame
+                            res_prof = supabase.table("professores").select("*").execute()
+                            df_professores = pd.DataFrame(res_prof.data)
                             authenticated_as_prof = False
                             
                             if not df_professores.empty:
@@ -533,7 +533,9 @@ def login():
                                     time.sleep(1); st.rerun()
 
                             if not authenticated_as_prof:
-                                df_monitores = safe_read("Monitores", ["matricula", "nome"])
+                                # Busca os dados na tabela de monitores do Supabase
+                                res_mon = supabase.table("monitores").select("*").execute()
+                                df_monitores = pd.DataFrame(res_mon.data)
                                 if not df_monitores.empty:
                                     df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
                                     if password == "123" and user_id_limpo in df_monitores['matricula'].values:
