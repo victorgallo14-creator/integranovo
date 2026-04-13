@@ -515,78 +515,49 @@ def login():
                         try:
                             SENHA_MESTRA = st.secrets.get("credentials", {}).get("password", "admin")
                             user_id_limpo = str(user_id).strip()
-                            # Busca os dados no Supabase e transforma em DataFrame
+                            
+                            # Busca Professores
                             res_prof = supabase.table("professores").select("*").execute()
                             df_professores = pd.DataFrame(res_prof.data)
-                            authenticated_as_prof = False
                             
-                            if not df_professores.empty:
+                            authenticated = False
+                    
+                            # Verifica se o DataFrame não está vazio e se a coluna existe
+                            if not df_professores.empty and 'matricula' in df_professores.columns:
                                 df_professores['matricula'] = df_professores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                                
                                 if password == SENHA_MESTRA and user_id_limpo in df_professores['matricula'].values:
                                     registro = df_professores[df_professores['matricula'] == user_id_limpo]
-                                    nome_prof = registro['nome'].values[0]
                                     st.session_state.authenticated = True
-                                    st.session_state.usuario_nome = nome_prof
+                                    st.session_state.usuario_nome = registro['nome'].values[0]
                                     st.session_state.user_role = 'professor'
-                                    authenticated_as_prof = True
-                                    st.toast(f"Acesso Docente autorizado. Bem-vindo(a), {nome_prof}!", icon="🔓")
+                                    authenticated = True
+                                    st.toast(f"Bem-vindo(a), {st.session_state.usuario_nome}!", icon="🔓")
                                     time.sleep(1); st.rerun()
-
-                            if not authenticated_as_prof:
-                                # Busca os dados na tabela de monitores do Supabase
+                    
+                            if not authenticated:
+                                # Busca Monitores
                                 res_mon = supabase.table("monitores").select("*").execute()
                                 df_monitores = pd.DataFrame(res_mon.data)
-                                st.write("Matrículas encontradas no banco:", df_monitores['matricula'].tolist())
-                                st.write("Matrícula que você digitou:", user_id_limpo)
-                                if not df_monitores.empty:
+                                
+                                if not df_monitores.empty and 'matricula' in df_monitores.columns:
                                     df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                                    
                                     if password == "123" and user_id_limpo in df_monitores['matricula'].values:
                                         registro = df_monitores[df_monitores['matricula'] == user_id_limpo]
-                                        nome_mon = registro['nome'].values[0]
                                         st.session_state.authenticated = True
-                                        st.session_state.usuario_nome = nome_mon
+                                        st.session_state.usuario_nome = registro['nome'].values[0]
                                         st.session_state.user_role = 'monitor'
-                                        st.toast(f"Acesso Monitor autorizado. Bem-vindo(a), {nome_mon}!", icon="🛡️")
+                                        authenticated = True
+                                        st.toast(f"Bem-vindo(a), {st.session_state.usuario_nome}!", icon="🛡️")
                                         time.sleep(1); st.rerun()
                                     else:
                                         st.error("Credenciais inválidas.")
                                 else:
-                                    st.error("Credenciais inválidas.")
+                                    st.error("Erro: Tabela de utilizadores não encontrada ou vazia no banco de dados.")
+                                    
                         except Exception as e:
                             st.error(f"Erro técnico: {e}")
-
-            with tab_validar:
-                st.markdown("### Validação Pública")
-                st.caption("Insira o código UUID presente no rodapé do documento para verificar sua autenticidade e assinaturas.")
-                uuid_input = st.text_input("Código do Documento (UUID)", placeholder="Ex: 7D2B-5135...")
-                if st.button("Verificar Autenticidade", type="primary"):
-                    if uuid_input:
-                        try:
-                            df_alunos = load_db()
-                            encontrado = False
-                            for _, row in df_alunos.iterrows():
-                                try:
-                                    d = json.loads(row['dados_json'])
-                                    if d.get('doc_uuid') == uuid_input.strip():
-                                        encontrado = True
-                                        st.success("✅ DOCUMENTO VÁLIDO E AUTÊNTICO")
-                                        st.markdown(f"**Aluno:** {d.get('nome', 'N/A')}")
-                                        st.markdown(f"**Tipo:** {row['tipo_doc']}")
-                                        
-                                        assinaturas = d.get('signatures', [])
-                                        if assinaturas:
-                                            st.markdown("---")
-                                            st.markdown("### Assinaturas Digitais:")
-                                            for sig in assinaturas:
-                                                st.info(f"✍️ **{sig['name']}** ({sig.get('role', 'Profissional')})\n\n📅 Assinado em: {sig['date']}")
-                                        else:
-                                            st.warning("Este documento ainda não possui assinaturas digitais registradas.")
-                                        break
-                                except: pass
-                            if not encontrado:
-                                st.error("❌ Documento não encontrado ou código inválido.")
-                        except Exception as e:
-                            st.error(f"Erro na busca: {e}")
         
         # Interrompe o carregamento do restante do app até que o login seja feito
         st.stop()
