@@ -536,6 +536,8 @@ def login():
                                 # Busca os dados na tabela de monitores do Supabase
                                 res_mon = supabase.table("monitores").select("*").execute()
                                 df_monitores = pd.DataFrame(res_mon.data)
+                                st.write("Matrículas encontradas no banco:", df_monitores['matricula'].tolist())
+                                st.write("Matrícula que você digitou:", user_id_limpo)
                                 if not df_monitores.empty:
                                     df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
                                     if password == "123" and user_id_limpo in df_monitores['matricula'].values:
