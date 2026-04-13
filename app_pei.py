@@ -9,7 +9,7 @@ import json
 import tempfile
 from PIL import Image
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+from supabase import create_client, Client
 import time
 import uuid
 import threading
@@ -74,7 +74,13 @@ def draw_flex_row(pdf, col_data, line_h=6, font_size=9, fill_color=(240, 240, 24
     pdf.set_xy(15, y_start + row_h)
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-conn = st.connection("gsheets", type=GSheetsConnection)
+@st.cache_resource
+def init_connection():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = init_connection()
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(
@@ -127,27 +133,25 @@ def get_db_lock():
 db_lock = get_db_lock()
 
 def load_db(strict=False):
-    """
-    Lê os dados da planilha do Google.
-    """
     try:
-        df = conn.read(worksheet="Alunos", ttl=0)
-        if df.empty and strict:
-            # Tenta ler outra aba leve apenas para testar conexão
-            conn.read(worksheet="Professores", ttl=0)
-        df = df.dropna(how="all")
+        # Busca todos os dados da tabela alunos
+        response = supabase.table("alunos").select("*").execute()
+        df = pd.DataFrame(response.data)
+        if df.empty:
+            return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
         return df
     except Exception as e:
         if strict:
-            raise Exception(f"Erro ao ler Google Sheets (API pode estar sobrecarregada): {e}")
-        # Adicionada a coluna "ultima_atualizacao"
+            raise Exception(f"Erro ao ler Supabase: {e}")
         return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
 
-def safe_read(worksheet_name, columns):
+def safe_read(table_name, columns):
     try:
-        df = conn.read(worksheet=worksheet_name, ttl=0)
-        if df.empty: return pd.DataFrame(columns=columns)
-        return df.dropna(how="all")
+        response = supabase.table(table_name.lower()).select("*").execute()
+        df = pd.DataFrame(response.data)
+        if df.empty: 
+            return pd.DataFrame(columns=columns)
+        return df
     except:
         return pd.DataFrame(columns=columns)
 
@@ -190,84 +194,43 @@ def log_action(student_name, action, details):
         pass
 
 def save_student(doc_type, name, data, section="Geral"):
-    """Salva ou atualiza com LOCK e LEITURA DE ÚLTIMO MILISSEGUNDO"""
     is_monitor = st.session_state.get('user_role') == 'monitor'
     if is_monitor and doc_type != "DIARIO" and section != "Assinatura":
         st.error("Acesso negado: Monitores não podem editar este documento.")
         return
 
-    MAX_RETRIES = 3
+    id_registro = f"{name} ({doc_type})"
+    
+    if 'doc_uuid' not in data or not data['doc_uuid']:
+        data['doc_uuid'] = str(uuid.uuid4()).upper()
 
-    # O WITH DB_LOCK garante que se 5 pessoas clicarem em salvar ao mesmo tempo,
-    # o Streamlit fará uma fila e salvará um por um, evitando esmagamento de dados.
-    with db_lock:
-        for attempt in range(MAX_RETRIES):
-            try:
-                # 1. LÊ TUDO FRESQUINHO AGORA. Não confia nos dados velhos da tela.
-                df_atual = load_db(strict=True)
-                
-                # 2. BACKUP (Apenas na primeira tentativa)
-                if attempt == 0: 
-                    create_backup(df_atual)
+    def serializar_datas(obj):
+        if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
+        if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
+        if isinstance(obj, list): return [serializar_datas(i) for i in obj]
+        return obj
+        
+    data_limpa = serializar_datas(data)
+    
+    # 1. GERA A DATA E HORA ATUAL
+    fuso_br = timezone(timedelta(hours=-3))
+    data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
 
-                id_registro = f"{name} ({doc_type})"
-                
-                if 'doc_uuid' not in data or not data['doc_uuid']:
-                    data['doc_uuid'] = str(uuid.uuid4()).upper()
+    # Objeto a ser inserido/atualizado
+    novo_registro = {
+        "id": id_registro,
+        "nome": name,
+        "tipo_doc": doc_type,
+        "dados_json": data_limpa, # Supabase aceita o dicionário direto em colunas JSONB
+        "ultima_atualizacao": data_hora_agora
+    }
 
-                def serializar_datas(obj):
-                    if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
-                    if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
-                    if isinstance(obj, list): return [serializar_datas(i) for i in obj]
-                    return obj
-                    
-                data_limpa = serializar_datas(data)
-                novo_json = json.dumps(data_limpa, ensure_ascii=False)
-
-                # 1. GERA A DATA E HORA ATUAL (Fuso de Brasília)
-                fuso_br = timezone(timedelta(hours=-3))
-                data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
-
-                df_final = df_atual.copy()
-                
-                if not df_atual.empty and "id" in df_atual.columns and id_registro in df_atual["id"].values:
-                    df_final.loc[df_final["id"] == id_registro, "dados_json"] = novo_json
-                    # 2. SALVA A DATA/HORA NA ATUALIZAÇÃO DE UM DOCUMENTO EXISTENTE
-                    df_final.loc[df_final["id"] == id_registro, "ultima_atualizacao"] = data_hora_agora
-                else:
-                    novo_registro = {
-                        "id": id_registro,
-                        "nome": name,
-                        "tipo_doc": doc_type,
-                        "dados_json": novo_json,
-                        # 3. SALVA A DATA/HORA NA CRIAÇÃO DE UM NOVO DOCUMENTO
-                        "ultima_atualizacao": data_hora_agora
-                    }
-                    if df_final.empty:
-                        df_final = pd.DataFrame([novo_registro])
-                    else:
-                        df_final = pd.concat([df_final, pd.DataFrame([novo_registro])], ignore_index=True)
-
-                # 3. TRAVA ANTI-WIPE (Se vier vazio da API por erro, ele barra aqui)
-                qtd_antes = len(df_atual)
-                qtd_depois = len(df_final)
-
-                if qtd_antes > 5 and qtd_depois < (qtd_antes * 0.9): 
-                    st.error(f"⛔ BLOQUEIO DE SEGURANÇA: Prevenção de perda de dados. Salvamento cancelado.")
-                    return
-
-                # 4. SALVA
-                conn.update(worksheet="Alunos", data=df_final)
-                
-                # O log agora roda fora do seu próprio lock (já estamos no lock)
-                st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
-                return # Sai do loop se deu certo
-                
-            except Exception as e:
-                if attempt < MAX_RETRIES - 1:
-                    time.sleep(random.uniform(1.5, 3.5)) # Espera e tenta de novo se o Google bloquear
-                else:
-                    st.error(f"❌ Falha ao salvar no banco (API do Google sobrecarregada). Tente novamente em 10 segundos. Erro: {e}")
+    try:
+        # Upsert: Se o ID já existir, atualiza. Se não, insere.
+        supabase.table("alunos").upsert(novo_registro).execute()
+        st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
+    except Exception as e:
+        st.error(f"❌ Falha ao salvar no banco. Erro: {e}")
 
 def delete_student(student_name):
     is_monitor = st.session_state.get('user_role') == 'monitor'
