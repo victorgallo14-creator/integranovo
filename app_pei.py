@@ -762,7 +762,7 @@ if 'data_declaracao' not in st.session_state:
 def carregar_dados_aluno():
     selecao = st.session_state.get('aluno_selecionado')
     
-    # Init empty
+    # Limpa a memória para carregar o novo aluno
     st.session_state.data_pei = {'terapias': {}, 'avaliacao': {}, 'flex': {}, 'plano_ensino': {}, 'comunicacao_tipo': [], 'permanece': []}
     st.session_state.data_case = {'irmaos': [{'nome': '', 'idade': '', 'esc': ''} for _ in range(4)], 'checklist': {}, 'clinicas': []}
     st.session_state.data_conduta = {}
@@ -779,7 +779,7 @@ def carregar_dados_aluno():
 
     try:
         df_db = load_db()
-        # Filter by name
+        
         if "Nome" in df_db.columns:
             rows = df_db[df_db["Nome"] == selecao]
             if rows.empty: return
@@ -794,14 +794,21 @@ def carregar_dados_aluno():
 
             for _, row in rows.iterrows():
                 try:
-                    dados = json.loads(row["Dados_Json"])
-                    # Date conversion
+                    # --- A GRANDE CORREÇÃO ESTÁ AQUI ---
+                    raw_data = row["Dados_Json"]
+                    if isinstance(raw_data, str):
+                        import json
+                        dados = json.loads(raw_data)
+                    else:
+                        dados = raw_data # O Supabase já entrega pronto!
+                        
+                    # Conversão de datas
                     for k, v in dados.items():
                         if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
                             try: dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
                             except: pass
                     
-                    dtype = row["Tipo_Doc"]
+                    dtype = row.get("Tipo_Doc", "")
                     if dtype == "PEI":
                         st.session_state.data_pei.update(dados)
                     elif dtype == "CASO":
@@ -814,9 +821,10 @@ def carregar_dados_aluno():
                         st.session_state.data_diario.update(dados)
                     elif dtype == "PDI":
                         st.session_state.data_pdi.update(dados)
-                except: pass
+                except Exception as inner_e:
+                    print(f"Erro ao processar dados de {dtype}: {inner_e}")
             
-            st.toast(f"✅ {selecao} carregado.")
+            st.toast(f"✅ {selecao} carregado com sucesso!")
             
     except Exception as e:
         st.info("Pronto para novo preenchimento.")
