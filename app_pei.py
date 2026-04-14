@@ -1309,9 +1309,14 @@ if app_mode == "📊 Painel de Gestão":
                         st.rerun()
             else:
                 st.info("Nenhum documento concluído encontrado.")
-            
+# --- MURAL DE AVISOS E AGENDA ---
+    with tab_com:
+        # AQUI: Esta é a linha que estava faltando para criar as variáveis
+        c_aviso, c_agenda = st.columns([1, 1])
         
-        # --- MURAL DE AVISOS ---
+        is_monitor = st.session_state.get('user_role') == 'monitor'            
+   
+
 # --- MURAL DE AVISOS ---
         with c_aviso:
             st.markdown("### 📌 Mural de Avisos")
