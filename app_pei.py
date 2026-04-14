@@ -794,7 +794,6 @@ def carregar_dados_aluno():
 
             for _, row in rows.iterrows():
                 try:
-                    # --- A GRANDE CORREÇÃO ESTÁ AQUI ---
                     raw_data = row["Dados_Json"]
                     if isinstance(raw_data, str):
                         import json
@@ -802,11 +801,15 @@ def carregar_dados_aluno():
                     else:
                         dados = raw_data # O Supabase já entrega pronto!
                         
-                    # Conversão de datas
-                    for k, v in dados.items():
-                        if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
-                            try: dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
-                            except: pass
+                    # === CORREÇÃO DA SINTAXE (ALINHAMENTO SEGURO) ===
+                    if isinstance(dados, dict):
+                        for k, v in dados.items():
+                            if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
+                                try:
+                                    dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
+                                except Exception:
+                                    pass
+                    # ================================================
                     
                     dtype = row.get("Tipo_Doc", "")
                     if dtype == "PEI":
