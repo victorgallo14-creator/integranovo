@@ -1151,45 +1151,41 @@ if app_mode == "📊 Painel de Gestão":
                 prog = calc_progress(row['dados_json'], keys_pdi)
                 pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
                 
-        except: pass
+    except: pass
 
-# --- CÁLCULO DE NOVAS MÉTRICAS DE GESTÃO ---
+    # --- CÁLCULO DAS MÉTRICAS ---
+    total_alunos = len(df_dash)
+    total_pei = len(df_dash[df_dash["Tipo_Doc"] == "PEI"])
+    total_diario = len(df_dash[df_dash["Tipo_Doc"] == "DIARIO"])
     
-    # 1. Total de Alunos Únicos
-    total_alunos = df_dash["Nome"].nunique() if not df_dash.empty and "Nome" in df_dash.columns else 0
+    # Variáveis para contagem
+    qtd_laudos = 0
+    qtd_elaboracao = 0
     
-    # 2. Alunos com Laudo Médico / Diagnóstico Conclusivo (NOVA MÉTRICA)
-    alunos_com_laudo = set()
     if not df_dash.empty:
         for _, row in df_dash.iterrows():
-            try:
-                d_laudo = json.loads(row['Dados_Json'])
-                # Checa no PEI se marcou "Sim" para diagnóstico conclusivo
-                if row['Tipo_Doc'] == "PEI" and d_laudo.get('diag_status') == "Sim":
-                    alunos_com_laudo.add(row['nome'])
-                # Ou checa no Estudo de Caso se o campo "Possui diagnóstico" foi preenchido
-                elif row['Tipo_Doc'] == "CASO" and d_laudo.get('diag_possui') and str(d_laudo.get('diag_possui')).strip():
-                    alunos_com_laudo.add(row['nome'])
-            except: pass
-    total_laudos = len(alunos_com_laudo)
-    
-    # 3. Documentos em Elaboração (PEIs e PDIs abaixo de 100%)
-    docs_em_elaboracao = sum(1 for p in pei_progress_list + pdi_progress_list if p['Progresso'] < 100)
-    
-    # 4. Alunos com necessidade de Profissional de Apoio (Extraído da Avaliação)
-    total_apoio = 0
-    if not df_dash.empty:
-        df_aval = df_dash[df_dash["Tipo_Doc"] == "AVALIACAO"]
-        for _, row in df_aval.iterrows():
-            try:
-                d_aval = json.loads(row['Dados_Json'])
-                nivel = d_aval.get('conclusao_nivel', '')
-                if "Nível 2" in nivel or "Nível 3" in nivel or d_aval.get('apoio_existente'):
-                    total_apoio += 1
-            except: pass
-
-    # 5. Estudos de Caso Realizados 
-    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"]) if not df_dash.empty else 0
+            dados = row.get("Dados_Json", {})
+            
+            # Garante que 'dados' é um dicionário
+            if isinstance(dados, str):
+                try:
+                    import json
+                    dados = json.loads(dados)
+                except:
+                    dados = {}
+            
+            if isinstance(dados, dict):
+                # 1. Contar Laudos: Ajuste 'tem_laudo' para a chave exata da sua pergunta!
+                # Ex: Se a pergunta for "O aluno tem laudo?", use a chave correspondente.
+                laudo_resp = str(dados.get("tem_laudo", "")).lower() 
+                if laudo_resp in ["sim", "true", "com laudo"]:
+                    qtd_laudos += 1
+                
+                # 2. Contar Em Elaboração: Verifica o status
+                # Se não estiver "Concluído" e tiver algum dado, assumimos "Em elaboração"
+                status = dados.get("status_elaboracao", "Em Elaboração")
+                if status != "Concluído":
+                    qtd_elaboracao += 1
 
 
     # --- CARDS DE MÉTRICAS ---
