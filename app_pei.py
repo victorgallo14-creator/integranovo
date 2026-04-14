@@ -1049,9 +1049,9 @@ if app_mode == "📊 Painel de Gestão":
     else:
         total_alunos = 0
         
-    total_pei = len(df_dash[df_dash["tipo_doc"] == "PEI"])
-    total_caso = len(df_dash[df_dash["tipo_doc"] == "CASO"])
-    total_pdi = len(df_dash[df_dash["tipo_doc"] == "PDI"])
+    total_pei = len(df_dash[df_dash["Tipo_Doc"] == "PEI"])
+    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"])
+    total_pdi = len(df_dash[df_dash["Tipo_Doc"] == "PDI"])
     
     # Função Auxiliar de Progresso
     def calc_progress(row_json, keys_check):
