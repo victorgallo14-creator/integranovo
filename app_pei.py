@@ -1318,38 +1318,35 @@ if not df_dash.empty:
                 st.info("Nenhum documento concluído encontrado.")
 # --- MURAL DE AVISOS E AGENDA ---
     with tab_com:
-        # AQUI: Esta é a linha que estava faltando para criar as variáveis
         c_aviso, c_agenda = st.columns([1, 1])
-        
-        is_monitor = st.session_state.get('user_role') == 'monitor'            
-   
+        is_monitor = st.session_state.get('user_role') == 'monitor'
 
-# --- MURAL DE AVISOS ---
+        # --- MURAL DE AVISOS ---
         with c_aviso:
             st.markdown("### 📌 Mural de Avisos")
             if not is_monitor:
-                with st.form("form_recado"):
+                # Formulário isolado e seguro
+                with st.form("form_recado", clear_on_submit=True):
                     txt_recado = st.text_area("Novo Recado", height=80)
-                    if st.form_submit_button("Publicar"):
+                    btn_recado = st.form_submit_button("Publicar")
+                    
+                    if btn_recado and txt_recado:
                         novo_recado = {
                             "Data": datetime.now().strftime("%d/%m %H:%M"),
                             "Autor": st.session_state.get('usuario_nome', 'Admin'),
                             "Mensagem": txt_recado
                         }
-                        # Insere direto no Supabase
                         supabase.table("recados").insert(novo_recado).execute()
-                        
                         st.cache_data.clear()
                         time.sleep(1)
                         st.rerun()
             else:
                 st.info("Apenas Docentes podem publicar avisos.")
             
-            # Listar Recados (Adicionamos o 'id' na leitura para poder excluir)
+            # Listar Recados
             df_recados = safe_read("recados", ["id", "Data", "Autor", "Mensagem"])
             if not df_recados.empty:
                 with st.container(height=300):
-                    # Ordena do mais recente pro mais antigo pelo ID
                     df_recados = df_recados.sort_values(by="id", ascending=False)
                     for index, row in df_recados.iterrows():
                         c_msg, c_del = st.columns([0.85, 0.15])
@@ -1357,8 +1354,7 @@ if not df_dash.empty:
                             st.info(f"**{row['Autor']}** ({row['Data']}):\n\n{row['Mensagem']}")
                         with c_del:
                             if not is_monitor:
-                                # Exclui pelo ID do Supabase
-                                if st.button("🗑️", key=f"del_rec_{row['id']}", help="Excluir recado"):
+                                if st.button("🗑️", key=f"del_rec_{row['id']}", help="Excluir"):
                                     supabase.table("recados").delete().eq("id", row['id']).execute()
                                     st.cache_data.clear()
                                     time.sleep(0.5)
@@ -1367,30 +1363,30 @@ if not df_dash.empty:
                 st.write("Nenhum recado.")
 
         # --- AGENDA DA EQUIPE ---
-# --- AGENDA DA EQUIPE ---
         with c_agenda:
             st.markdown("### 📅 Agenda da Equipe")
             if not is_monitor:
-                with st.form("form_agenda"):
+                # Formulário isolado e seguro
+                with st.form("form_agenda", clear_on_submit=True):
                     c_d, c_e = st.columns([1, 2])
                     data_evento = c_d.date_input("Data", format="DD/MM/YYYY")
                     desc_evento = c_e.text_input("Evento")
-                    if st.form_submit_button("Agendar"):
+                    btn_agenda = st.form_submit_button("Agendar")
+                    
+                    if btn_agenda and desc_evento:
                         novo_evento = {
                             "Data": data_evento.strftime("%Y-%m-%d"),
                             "Evento": desc_evento,
                             "Autor": st.session_state.get('usuario_nome', 'Admin')
                         }
-                        # Insere direto no Supabase
                         supabase.table("agenda").insert(novo_evento).execute()
-                        
                         st.cache_data.clear()
                         time.sleep(1)
                         st.rerun()
             else:
                 st.info("Apenas Docentes podem adicionar eventos.")
             
-            # Listar Agenda (Adicionamos o 'id' na leitura para poder excluir)
+            # Listar Agenda
             df_agenda = safe_read("agenda", ["id", "Data", "Evento", "Autor"])
             if not df_agenda.empty:
                 with st.container(height=300):
@@ -1406,8 +1402,7 @@ if not df_dash.empty:
                             st.write(f"🗓️ **{d_fmt}** - {row['Evento']} _({row['Autor']})_")
                         with c_del_evt:
                             if not is_monitor:
-                                # Exclui pelo ID do Supabase
-                                if st.button("🗑️", key=f"del_agd_{row['id']}", help="Excluir evento"):
+                                if st.button("🗑️", key=f"del_agd_{row['id']}", help="Excluir"):
                                     supabase.table("agenda").delete().eq("id", row['id']).execute()
                                     st.cache_data.clear()
                                     time.sleep(0.5)
