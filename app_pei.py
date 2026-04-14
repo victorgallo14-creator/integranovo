@@ -1148,15 +1148,16 @@ if app_mode == "📊 Painel de Gestão":
             except Exception:
                 pass
 
-    # --- CÁLCULO DAS MÉTRICAS ---
+# --- CÁLCULO DAS MÉTRICAS ---
     total_alunos = len(df_dash)
-    total_pei = len(df_dash[df_dash["Tipo_Doc"] == "PEI"])
-    total_diario = len(df_dash[df_dash["Tipo_Doc"] == "DIARIO"])
-    
-    # Variáveis para contagem
-    qtd_laudos = 0
-    qtd_elaboracao = 0
-    
+    # Conta os outros tipos de documento para não dar erro nos cards
+    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"])
+    total_apoio = len(df_dash[df_dash["Tipo_Doc"] == "AVALIACAO"]) 
+
+    # Variáveis com os Nomes EXATOS que os seus cards usam
+    total_laudos = 0
+    docs_em_elaboracao = 0
+
     if not df_dash.empty:
         for _, row in df_dash.iterrows():
             dados = row.get("Dados_Json", {})
@@ -1170,18 +1171,15 @@ if app_mode == "📊 Painel de Gestão":
                     dados = {}
             
             if isinstance(dados, dict):
-                # 1. Contar Laudos: Ajuste 'tem_laudo' para a chave exata da sua pergunta!
-                # Ex: Se a pergunta for "O aluno tem laudo?", use a chave correspondente.
+                # 1. Contar Laudos
                 laudo_resp = str(dados.get("tem_laudo", "")).lower() 
                 if laudo_resp in ["sim", "true", "com laudo"]:
-                    qtd_laudos += 1
+                    total_laudos += 1
                 
-                # 2. Contar Em Elaboração: Verifica o status
-                # Se não estiver "Concluído" e tiver algum dado, assumimos "Em elaboração"
+                # 2. Contar Em Elaboração
                 status = dados.get("status_elaboracao", "Em Elaboração")
                 if status != "Concluído":
-                    qtd_elaboracao += 1
-
+                    docs_em_elaboracao += 1
 
     # --- CARDS DE MÉTRICAS ---
     # CSS inline para dar destaque aos números que exigem atenção
