@@ -1122,35 +1122,27 @@ if app_mode == "📊 Painel de Gestão":
     pdi_progress_list = []
 
     # --- LOOP DE CÁLCULO GERAL ---
-    for idx, row in df_dash.iterrows():
-        try:
-            d = json.loads(row['dados_json'])
-            
-            # Gráfico de Deficiências
-            for dtype in d.get('diag_tipo', []):
-                deficiencies_count[dtype] = deficiencies_count.get(dtype, 0) + 1
-            if "Deficiência" in d.get('diag_tipo', []) and d.get('defic_txt'):
-                d_txt = d.get('defic_txt').upper().strip()
-                deficiencies_count[d_txt] = deficiencies_count.get(d_txt, 0) + 1
-            
-            # Separação por Tipo de Documento e Cálculo
-            Tipo_Documento = row['Tipo_Doc']
-            nome_aluno = row['nome']
-            
-            if Tipo_Documento == "PEI":
-                prog = calc_progress(row['dados_json'], keys_pei)
-                pei_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                if prog >= 90: concluidos += 1
+# Certifique-se de substituir desde o início do loop 'for' até à secção das Métricas!
+    if not df_dash.empty:
+        for index, row in df_dash.iterrows():
+            try:
+                nome_aluno = row.get('Nome', 'Desconhecido')
+                Tipo_Documento = row.get('Tipo_Doc', '')
                 
-            elif Tipo_Documento == "CASO":
-                prog = calc_progress(row['dados_json'], keys_caso)
-                caso_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                
-            elif Tipo_Documento == "AVALIACAO":
-                prog = calc_progress(row['dados_json'], keys_aval)
-                apoio_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                
-            elif Tipo_Documento == "PDI":
+                if Tipo_Documento == "PEI":
+                    prog = calc_progress(row.get('Dados_Json', {}), keys_pei)
+                    pei_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                    if prog >= 90: concluidos += 1
+                    
+                elif Tipo_Documento == "CASO":
+                    prog = calc_progress(row.get('Dados_Json', {}), keys_caso)
+                    caso_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                    
+                elif Tipo_Documento == "AVALIACAO":
+                    prog = calc_progress(row.get('Dados_Json', {}), keys_aval)
+                    apoio_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                    
+                elif Tipo_Documento == "PDI":
                     prog = calc_progress(row.get('Dados_Json', {}), keys_pdi)
                     pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
             except Exception:
