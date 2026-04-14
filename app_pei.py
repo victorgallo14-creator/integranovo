@@ -1151,14 +1151,14 @@ if app_mode == "📊 Painel de Gestão":
 # --- CÁLCULO DE NOVAS MÉTRICAS DE GESTÃO ---
     
     # 1. Total de Alunos Únicos
-    total_alunos = df_dash["nome"].nunique() if not df_dash.empty and "nome" in df_dash.columns else 0
+    total_alunos = df_dash["Nome"].nunique() if not df_dash.empty and "nome" in df_dash.columns else 0
     
     # 2. Alunos com Laudo Médico / Diagnóstico Conclusivo (NOVA MÉTRICA)
     alunos_com_laudo = set()
     if not df_dash.empty:
         for _, row in df_dash.iterrows():
             try:
-                d_laudo = json.loads(row['dados_json'])
+                d_laudo = json.loads(row['Dados_Json'])
                 # Checa no PEI se marcou "Sim" para diagnóstico conclusivo
                 if row['tipo_doc'] == "PEI" and d_laudo.get('diag_status') == "Sim":
                     alunos_com_laudo.add(row['nome'])
@@ -1174,10 +1174,10 @@ if app_mode == "📊 Painel de Gestão":
     # 4. Alunos com necessidade de Profissional de Apoio (Extraído da Avaliação)
     total_apoio = 0
     if not df_dash.empty:
-        df_aval = df_dash[df_dash["tipo_doc"] == "AVALIACAO"]
+        df_aval = df_dash[df_dash["Tipo_Doc"] == "AVALIACAO"]
         for _, row in df_aval.iterrows():
             try:
-                d_aval = json.loads(row['dados_json'])
+                d_aval = json.loads(row['Dados_Json'])
                 nivel = d_aval.get('conclusao_nivel', '')
                 if "Nível 2" in nivel or "Nível 3" in nivel or d_aval.get('apoio_existente'):
                     total_apoio += 1
