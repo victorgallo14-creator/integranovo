@@ -1207,64 +1207,83 @@ if app_mode == "📊 Painel de Gestão":
     
     with tab_graf:
         c_chart, c_prog = st.columns([1, 1])
+        
+        # --- COLUNA 1: TIPOS DE DEFICIÊNCIA ---
         with c_chart:
             st.subheader("Tipos de Deficiência")
-            if deficiencies_count:
-                df_def = pd.DataFrame(list(deficiencies_count.items()), columns=["Tipo", "Qtd"])
-                st.bar_chart(df_def.set_index("Tipo"), color="#1e3a8a")
+            
+            # Filtramos apenas os PEIs diretamente do DataFrame principal do Supabase
+            df_pei = df_dash[df_dash["Tipo_Doc"] == "PEI"].copy()
+            
+            if not df_pei.empty:
+                # Função segura para extrair a deficiência do dicionário
+                def get_def(x):
+                    if isinstance(x, dict): 
+                        return x.get('deficiencia', 'Não informado') # <--- Mude 'deficiencia' se a chave for outra
+                    return 'Não informado'
+                
+                df_pei['Deficiencia'] = df_pei['Dados_Json'].apply(get_def)
+                contagem_def = df_pei['Deficiencia'].value_counts()
+                st.bar_chart(contagem_def, color="#1e3a8a")
             else:
                 st.info("Sem dados suficientes.")
         
+        # --- COLUNA 2: PROGRESSO DE PREENCHIMENTO ---
         with c_prog:
             st.subheader("Progresso de Preenchimento")
             
             # 1. Cria o seletor de documentos
-            Tipo_Doc = st.selectbox(
+            Tipo_Doc_Selecionado = st.selectbox(
                 "Selecione o documento:",
                 ["PEI", "Estudo de Caso", "Avaliação de Apoio", "PDI"],
-                label_visibility="collapsed" # Esconde o rótulo para ficar mais limpo
+                label_visibility="collapsed"
             )
             
-            # 2. Define qual lista usar baseado na seleção
-            lista_progresso_atual = []
+            # 2. Filtra dinamicamente baseado na seleção
+            df_filtrado = df_dash[df_dash["Tipo_Doc"] == Tipo_Doc_Selecionado].copy()
             
-            if Tipo_Doc == "PEI":
-                # Sua lista original que já funciona
-                lista_progresso_atual = pei_progress_list 
-            elif Tipo_Doc == "Estudo de Caso":
-                # Você precisará ter essa lista calculada no seu backend
-                lista_progresso_atual = caso_progress_list 
-            elif Tipo_Doc == "Avaliação de Apoio":
-                # Você precisará ter essa lista calculada no seu backend
-                lista_progresso_atual = apoio_progress_list 
-            elif Tipo_Doc == "PDI":
-                # Você precisará ter essa lista calculada no seu backend
-                lista_progresso_atual = pdi_progress_list 
-
-            # 3. Renderiza os gráficos da lista escolhida
-            if lista_progresso_atual:
-                # Opcional: ascending=False deixa os mais completos no topo
-                df_prog = pd.DataFrame(lista_progresso_atual).sort_values("Progresso", ascending=False) 
+            # 3. Extrai o progresso do JSON e renderiza
+            if not df_filtrado.empty:
+                def get_progresso(x):
+                    if isinstance(x, dict): 
+                        return float(x.get('progresso_preenchimento', 0)) # <--- Mude se a chave for outra
+                    return 0.0
+                    
+                df_filtrado['Progresso'] = df_filtrado['Dados_Json'].apply(get_progresso)
+                # Ordena os mais completos no topo
+                df_filtrado = df_filtrado.sort_values("Progresso", ascending=False)
+                
                 with st.container(height=300):
-                    for _, row in df_prog.iterrows():
-                        st.caption(f"{row['Aluno']} ({row['Progresso']}%)")
-                        st.progress(row['Progresso'] / 100)
+                    for _, row in df_filtrado.iterrows():
+                        # Usa 'Nome' com a primeira letra maiúscula (padrão do Supabase)
+                        nome_aluno = row.get('Nome', 'Sem Nome')
+                        prog_val = row['Progresso']
+                        st.caption(f"{nome_aluno} ({prog_val}%)")
+                        
+                        # Limita a barra de progresso entre 0.0 e 1.0 para evitar erros
+                        barra_val = max(0.0, min(prog_val / 100.0, 1.0))
+                        st.progress(barra_val)
             else:
-                st.info(f"Nenhum {Tipo_Doc} calculado ainda.")
+                st.info(f"Nenhum {Tipo_Doc_Selecionado} calculado ainda.")
 
-    with tab_com:
-        c_aviso, c_agenda = st.columns([1, 1])
-
-        # --- ABA DE CONCLUÍDOS (Agora dentro da variável correta) ---
+    # --- ABA DE CONCLUÍDOS ---
     with tab_concluidos:
         st.subheader("Documentos Prontos para Emissão")
         
         if not df_dash.empty:
-            # Criamos a tabela visual dos concluídos
             lista_concluidos = []
             for idx, row in df_dash.iterrows():
                 try:
-                    d = json.loads(row['dados_json'])
+                    # CORREÇÃO: Trata o JSON adequadamente seja ele string ou dict
+                    dados_aluno = row['Dados_Json']
+                    if isinstance(dados_aluno, str):
+                        import json
+                        d = json.loads(dados_aluno)
+                    elif isinstance(dados_aluno, dict):
+                        d = dados_aluno
+                    else:
+                        d = {}
+                        
                     if d.get('status_elaboracao') == "Concluído":
                         lista_concluidos.append(row)
                 except: continue
@@ -1273,20 +1292,19 @@ if app_mode == "📊 Painel de Gestão":
                 for row in lista_concluidos:
                     c_nome, c_tipo, c_btn = st.columns([3, 2, 1])
                     
-                    c_nome.write(f"👤 **{row['nome']}**")
+                    # CORREÇÃO: Nomes das colunas com inicial maiúscula (Nome, Tipo_Doc, ID)
+                    c_nome.write(f"👤 **{row['Nome']}**")
                     c_tipo.caption(f"{row['Tipo_Doc']}")
                     
-                    # O TRUQUE: O botão abaixo apenas seleciona o aluno e muda o modo
-                    if c_btn.button("📄 Abrir para Baixar", key=f"go_{row['id']}"):
-                        st.session_state.ee_aluno_confirmado = row['nome']
-                        # Define o tipo de documento correto para o sistema carregar
+                    if c_btn.button("📄 Abrir", key=f"go_{row['ID']}"):
+                        st.session_state.ee_aluno_confirmado = row['Nome']
+                        
                         if row['Tipo_Doc'] == "PEI":
-                            st.session_state.ee_doc_confirmado = "PEI - Ensino Fundamental" # Ou Infantil conforme o banco
+                            st.session_state.ee_doc_confirmado = "PEI - Ensino Fundamental" 
                         else:
                             st.session_state.ee_doc_confirmado = row['Tipo_Doc']
                         
-                        st.session_state.aluno_selecionado = row['nome']
-                        # Força o sistema a ir para a aba de Gestão de Alunos onde o PDF já está pronto
+                        st.session_state.aluno_selecionado = row['Nome']
                         st.session_state.app_mode = "👥 Gestão de Alunos" 
                         st.rerun()
             else:
