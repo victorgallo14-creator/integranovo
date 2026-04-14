@@ -192,41 +192,52 @@ def log_action(student_name, action, details):
         pass
 
 def save_student(doc_type, name, data, section="Geral"):
+    # 1. Mantém a sua regra de segurança para monitores
     is_monitor = st.session_state.get('user_role') == 'monitor'
     if is_monitor and doc_type != "DIARIO" and section != "Assinatura":
         st.error("Acesso negado: Monitores não podem editar este documento.")
         return
 
+    # 2. Prepara o ID único (Chave Primária)
     id_registro = f"{name} ({doc_type})"
     
+    # 3. Garante o UUID do documento
     if 'doc_uuid' not in data or not data['doc_uuid']:
         data['doc_uuid'] = str(uuid.uuid4()).upper()
 
+    # 4. Função para converter datas em texto (evita erro de JSON no banco)
     def serializar_datas(obj):
-        if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
-        if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
-        if isinstance(obj, list): return [serializar_datas(i) for i in obj]
+        if isinstance(obj, (date, datetime)): 
+            return obj.strftime("%Y-%m-%d")
+        if isinstance(obj, dict): 
+            return {k: serializar_datas(v) for k, v in obj.items()}
+        if isinstance(obj, list): 
+            return [serializar_datas(i) for i in obj]
         return obj
         
     data_limpa = serializar_datas(data)
     
-    # 1. GERA A DATA E HORA ATUAL
+    # 5. Gera o carimbo de data/hora
     fuso_br = timezone(timedelta(hours=-3))
     data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
 
-    # Objeto a ser inserido/atualizado
+    # 6. Monta o dicionário com as MAIÚSCULAS conforme seu Supabase
     novo_registro = {
-        "id": id_registro,
-        "nome": name,
-        "tipo_doc": doc_type,
-        "dados_json": data_limpa, # Supabase aceita o dicionário direto em colunas JSONB
-        "ultima_atualizacao": data_hora_agora
+        "ID": id_registro,
+        "Nome": name,
+        "Tipo_Doc": doc_type,
+        "Dados_Json": data_limpa,
+        "Ultima_Atualizacao": data_hora_agora
     }
 
     try:
-        # Upsert: Se o ID já existir, atualiza. Se não, insere.
+        # O .upsert faz o trabalho de atualizar se já existir ou criar se for novo
         supabase.table("alunos").upsert(novo_registro).execute()
-        st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
+        st.toast(f"✅ Alterações em {name} salvas com sucesso!", icon="💾")
+        
+        # Registra a ação no histórico (também usando Supabase)
+        log_action(name, "Edição", f"Documento {doc_type} atualizado via Supabase.")
+        
     except Exception as e:
         st.error(f"❌ Falha ao salvar no banco. Erro: {e}")
 
