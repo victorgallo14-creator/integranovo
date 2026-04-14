@@ -782,7 +782,8 @@ def carregar_dados_aluno():
         
         if "Nome" in df_db.columns:
             rows = df_db[df_db["Nome"] == selecao]
-            if rows.empty: return
+            if rows.empty: 
+                return
             
             st.session_state.nome_original_salvamento = selecao
             st.session_state.data_pei['nome'] = selecao
@@ -799,9 +800,8 @@ def carregar_dados_aluno():
                         import json
                         dados = json.loads(raw_data)
                     else:
-                        dados = raw_data # O Supabase já entrega pronto!
+                        dados = raw_data
                         
-                    # === CORREÇÃO DA SINTAXE (ALINHAMENTO SEGURO) ===
                     if isinstance(dados, dict):
                         for k, v in dados.items():
                             if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
@@ -809,7 +809,6 @@ def carregar_dados_aluno():
                                     dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
                                 except Exception:
                                     pass
-                    # ================================================
                     
                     dtype = row.get("Tipo_Doc", "")
                     if dtype == "PEI":
@@ -825,13 +824,13 @@ def carregar_dados_aluno():
                     elif dtype == "PDI":
                         st.session_state.data_pdi.update(dados)
                 except Exception as inner_e:
-                    print(f"Erro ao processar dados de {dtype}: {inner_e}")
+                    print(f"Erro ao processar dados: {inner_e}")
             
             st.toast(f"✅ {selecao} carregado com sucesso!")
             
     except Exception as e:
         st.info("Pronto para novo preenchimento.")
-
+        
 # --- BARRA LATERAL ULTRA-COMPACTA ---
 with st.sidebar:
     # CSS PARA "ESPREMER" O LAYOUT
