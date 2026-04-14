@@ -149,8 +149,15 @@ def safe_read(table_name, columns):
     try:
         response = supabase.table(table_name.lower()).select("*").execute()
         df = pd.DataFrame(response.data)
-        if df.empty: 
+        
+        if df.empty:
             return pd.DataFrame(columns=columns)
+            
+        # FORÇA AS COLUNAS A FICAREM IGUAIS AO QUE O CÓDIGO ESPERA
+        # Se no banco estiver 'aluno', vira 'Aluno' para o Pandas
+        mapeamento = {col.lower(): col for col in columns}
+        df.columns = [mapeamento.get(c.lower(), c) for c in df.columns]
+        
         return df
     except:
         return pd.DataFrame(columns=columns)
