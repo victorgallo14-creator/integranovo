@@ -794,35 +794,29 @@ def carregar_dados_aluno():
             st.session_state.data_pdi['nome'] = selecao
 
             for _, row in rows.iterrows():
-                try:
-                    raw_data = row["Dados_Json"]
-                    if isinstance(raw_data, str):
-                        import json
-                        dados = json.loads(raw_data)
-                    else:
-                        dados = raw_data
-                        
-                    if isinstance(dados, dict):
-                        for k, v in dados.items():
-                            if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
-                                try:
-                                    dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
-                                except Exception:
-                                    pass
+                # 1. Abre a maleta de dados
+                raw_data = row["Dados_Json"]
+                if isinstance(raw_data, str):
+                    import json
+                    dados = json.loads(raw_data)
+                else:
+                    dados = raw_data
                     
-                    dtype = row.get("Tipo_Doc", "")
-                    if dtype == "PEI":
-                        st.session_state.data_pei.update(dados)
-                    elif dtype == "CASO":
-                        st.session_state.data_case.update(dados)
-                    elif dtype == "CONDUTA":
-                        st.session_state.data_conduta.update(dados)
-                    elif dtype == "AVALIACAO":
-                        st.session_state.data_avaliacao.update(dados)
-                    elif dtype == "DIARIO":
-                        st.session_state.data_diario.update(dados)
-                    elif dtype == "PDI":
-                        st.session_state.data_pdi.update(dados)
+                # 2. Converte as datas (tudo na mesma linha para não dar erro de espaço!)
+                if isinstance(dados, dict):
+                    for k, v in dados.items():
+                        if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
+                            try: dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
+                            except: pass
+                
+                # 3. Distribui para as abas corretas
+                dtype = row.get("Tipo_Doc", "")
+                if dtype == "PEI": st.session_state.data_pei.update(dados)
+                elif dtype == "CASO": st.session_state.data_case.update(dados)
+                elif dtype == "CONDUTA": st.session_state.data_conduta.update(dados)
+                elif dtype == "AVALIACAO": st.session_state.data_avaliacao.update(dados)
+                elif dtype == "DIARIO": st.session_state.data_diario.update(dados)
+                elif dtype == "PDI": st.session_state.data_pdi.update(dados)
                 except Exception as inner_e:
                     print(f"Erro ao processar dados: {inner_e}")
             
