@@ -1151,10 +1151,10 @@ if app_mode == "📊 Painel de Gestão":
                 apoio_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
                 
             elif Tipo_Documento == "PDI":
-                prog = calc_progress(row['dados_json'], keys_pdi)
-                pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                
-    except: pass
+                    prog = calc_progress(row.get('Dados_Json', {}), keys_pdi)
+                    pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+            except Exception:
+                pass
 
     # --- CÁLCULO DAS MÉTRICAS ---
     total_alunos = len(df_dash)
