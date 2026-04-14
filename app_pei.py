@@ -1202,13 +1202,7 @@ if app_mode == "📊 Painel de Gestão":
     
     st.divider()
 
-# --- ABAS DO DASHBOARD ---
-    # COLOQUE ISTO APENAS PARA TESTE LOGO ACIMA DAS ABAS DO DASHBOARD:
-st.warning("🔎 MODO DE DEPURAÇÃO (DEBUG)")
-st.write("Total de alunos/documentos lidos do banco:", len(df_dash))
-if not df_dash.empty:
-    st.write("Tipos de Documentos encontrados:", df_dash['Tipo_Doc'].unique())
-    st.write("Exemplo do JSON do primeiro aluno:", df_dash['Dados_Json'].iloc[0])
+# --- ABAS DO DASHBOARD --
     
     tab_graf, tab_concluidos, tab_com = st.tabs(["📊 Estatísticas & Progresso", "✅ Documentos Concluídos", "📢 Comunicação & Agenda"])
     
