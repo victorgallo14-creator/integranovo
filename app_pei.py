@@ -1184,7 +1184,7 @@ if app_mode == "📊 Painel de Gestão":
             except: pass
 
     # 5. Estudos de Caso Realizados 
-    total_caso = len(df_dash[df_dash["tipo_doc"] == "CASO"]) if not df_dash.empty else 0
+    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"]) if not df_dash.empty else 0
 
 
     # --- CARDS DE MÉTRICAS ---
