@@ -1401,7 +1401,7 @@ elif app_mode == "👥 Gestão de Alunos":
         """, unsafe_allow_html=True)
 
         df_db = load_db()
-        lista_nomes = df_db["nome"].dropna().unique().tolist() if not df_db.empty else []
+        lista_nomes = df_db["Nome"].dropna().unique().tolist() if not df_db.empty else []
         opcoes_nomes = ["-- Novo Registro --"] + lista_nomes
 
         c_aluno, c_doc = st.columns(2)
