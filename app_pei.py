@@ -7193,7 +7193,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
     
 
 # ==============================================================================
-# MÓDULO 4: AGENDAMENTO SALA DE INFORMÁTICA (NOVO)
+# MÓDULO 4: AGENDAMENTO SALA DE INFORMÁTICA (MIGRADO PARA SUPABASE)
 # ==============================================================================
 
     elif app_mode_regular == "💻 Agendamento Informática":
@@ -7202,30 +7202,28 @@ elif modulo_atuacao == "🏫 Ensino Regular":
         st.divider()
 
         # --- GRADE FIXA ANUAL ---
-        # Baseado na tabela oficial da escola. 
-        # Estes horários serão bloqueados automaticamente todas as semanas.
         grade_fixa = {
-            0: [ # Segunda-feira (0)
+            0: [ # Segunda-feira
                 {"Horario": "07:00 - 07:50", "Professor": "Prof. Fernando", "Turma": "1º ANO 1: Linguagens"},
                 {"Horario": "12:30 - 13:20", "Professor": "Prof. Elaine", "Turma": "Etapa 2-2: Linguagens"},
                 {"Horario": "13:20 - 14:10", "Professor": "Prof. Elaine", "Turma": "Etapa 2-3: Linguagens"},
                 {"Horario": "14:10 - 15:00", "Professor": "Prof. Fernando", "Turma": "1º ANO 2: Linguagens"},
                 {"Horario": "15:00 - 15:50", "Professor": "Prof. Fernando", "Turma": "2º ANO 1: Linguagens"}
             ],
-            1: [ # Terça-feira (1)
+            1: [ # Terça-feira
                 {"Horario": "07:00 - 07:50", "Professor": "Prof. Josiane", "Turma": "4º ANO 2: Linguagens"},
                 {"Horario": "07:50 - 08:40", "Professor": "Prof. Fernando", "Turma": "Etapa 1-2: Linguagens"},
                 {"Horario": "09:30 - 10:20", "Professor": "Prof. Josiane", "Turma": "4º ANO 1: Linguagens"},
                 {"Horario": "12:30 - 13:20", "Professor": "Prof. Elaine", "Turma": "Etapa 2-1: Linguagens"},
                 {"Horario": "13:20 - 14:10", "Professor": "Prof. Elaine", "Turma": "Mat. 2-2: Linguagens"}
             ],
-            2: [ # Quarta-feira (2)
+            2: [ # Quarta-feira
                 {"Horario": "07:50 - 08:40", "Professor": "Prof. Karina", "Turma": "Mat. 2-1: Linguagens"},
                 {"Horario": "08:40 - 09:30", "Professor": "Prof. Karina", "Turma": "Etapa 1-1: Linguagens"},
                 {"Horario": "11:10 - 12:00", "Professor": "Prof. Fernando", "Turma": "Etapa 1-3: Linguagens"},
                 {"Horario": "15:50 - 16:40", "Professor": "Prof. Fernando", "Turma": "2º ANO 2: Linguagens"}
             ],
-            3: [ # Quinta-feira (3)
+            3: [ # Quinta-feira
                 {"Horario": "09:30 - 10:20", "Professor": "Prof. Bruna", "Turma": "5º ANO 2: Linguagens"},
                 {"Horario": "10:20 - 11:10", "Professor": "Prof. Josiane", "Turma": "4º ANO 3: Linguagens"},
                 {"Horario": "12:30 - 13:20", "Professor": "Prof. Elaine", "Turma": "3º ANO 2: Linguagens"},
@@ -7233,7 +7231,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 {"Horario": "14:10 - 15:00", "Professor": "Prof. Elaine", "Turma": "3º ANO 3: Linguagens"},
                 {"Horario": "15:00 - 15:50", "Professor": "Prof. Fernando", "Turma": "1º ANO 3: Linguagens"}
             ],
-            4: [ # Sexta-feira (4)
+            4: [ # Sexta-feira
                 {"Horario": "07:00 - 07:50", "Professor": "Prof. Bruna", "Turma": "5º ANO 1: Linguagens"},
                 {"Horario": "07:50 - 08:40", "Professor": "Prof. Bruna", "Turma": "5º ANO 3: Linguagens"},
                 {"Horario": "15:00 - 15:50", "Professor": "Prof. Fernando", "Turma": "2º ANO 3: Linguagens"}
@@ -7241,13 +7239,9 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             5: [], 6: []
         }
 
-        try:
-            df_agendamentos = conn.read(worksheet="Agendamentos", usecols=[0, 1, 2, 3])
-            if df_agendamentos.empty:
-                df_agendamentos = pd.DataFrame(columns=["Data", "Horario", "Professor", "Turma"])
-        except Exception as e:
-            st.warning("⚠️ Aba 'Agendamentos' não encontrada. Crie uma aba na planilha com as colunas: Data, Horario, Professor, Turma.")
-            df_agendamentos = pd.DataFrame(columns=["Data", "Horario", "Professor", "Turma"])
+        # --- LEITURA DO BANCO (SUPABASE) ---
+        # Substituímos o conn.read pelo safe_read configurado no passo anterior
+        df_agendamentos = safe_read("Agendamentos", ["Data", "Horario", "Professor", "Turma"])
 
         col_form, col_view = st.columns([1, 1.2], gap="large")
 
@@ -7255,31 +7249,34 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             st.subheader("📅 Grade do Dia")
             data_selecionada = st.date_input("Escolha a data para visualizar/agendar:", format="DD/MM/YYYY")
             data_str = data_selecionada.strftime("%d/%m/%Y")
-            dia_semana_idx = data_selecionada.weekday() # 0 = Segunda, 4 = Sexta
+            dia_semana_idx = data_selecionada.weekday() 
             
-            # 1. Carregar Agendamentos Fixos do dia da semana escolhido
+            # 1. Carregar Agendamentos Fixos
             lista_fixos = grade_fixa.get(dia_semana_idx, [])
             df_fixos = pd.DataFrame(lista_fixos)
             if not df_fixos.empty:
                 df_fixos["Tipo"] = "Fixo (Anual)"
             
-            # 2. Carregar Agendamentos Avulsos (Google Sheets) para a data específica
-            df_dinamico = df_agendamentos[df_agendamentos["Data"] == data_str].copy()
+            # 2. Carregar Agendamentos Avulsos do Supabase para a data específica
+            # Verificamos se há dados para evitar erro de filtro em DF vazio
+            if not df_agendamentos.empty:
+                df_dinamico = df_agendamentos[df_agendamentos["Data"] == data_str].copy()
+            else:
+                df_dinamico = pd.DataFrame()
+
             if not df_dinamico.empty:
                 df_dinamico["Tipo"] = "Reserva Avulsa"
                 df_dinamico = df_dinamico[["Horario", "Professor", "Turma", "Tipo"]]
             
-            # 3. Juntar tudo para mostrar na tabela
+            # 3. Juntar tudo para a tabela
             frames = []
             if not df_fixos.empty: frames.append(df_fixos)
             if not df_dinamico.empty: frames.append(df_dinamico)
             
             if len(frames) > 0:
                 df_dia_completo = pd.concat(frames, ignore_index=True)
-                # Ordenar visualmente pelos horários
                 df_dia_completo = df_dia_completo.sort_values(by="Horario")
                 
-                # Exibir tabela 
                 st.dataframe(df_dia_completo[["Horario", "Professor", "Turma", "Tipo"]], use_container_width=True, hide_index=True)
                 horarios_ocupados = df_dia_completo["Horario"].tolist()
             else:
@@ -7293,11 +7290,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 "12:30 - 13:20", "13:20 - 14:10", "14:10 - 15:00", "15:00 - 15:50", "15:50 - 16:40", "16:40 - 17:30"
             ]
             
-            # Subtrai os ocupados (fixos + avulsos) da lista de disponíveis
             horarios_disponiveis = [h for h in horarios_escola if h not in horarios_ocupados]
 
             with st.form("form_agendamento", clear_on_submit=True):
-                professor = st.text_input("Nome do Professor(a)", placeholder="Ex: Prof. Silva")
+                # Pegamos o nome do professor logado se disponível para facilitar
+                default_prof = st.session_state.get('usuario_nome', "")
+                professor = st.text_input("Nome do Professor(a)", value=default_prof, placeholder="Ex: Prof. Silva")
                 turma = st.text_input("Turma", placeholder="Ex: 6º Ano A")
                 
                 if not horarios_disponiveis:
@@ -7316,14 +7314,13 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                     else:
                         novo_registro = pd.DataFrame([{"Data": data_str, "Horario": horario_escolhido, "Professor": professor, "Turma": turma}])
                         df_atualizado = pd.concat([df_agendamentos, novo_registro], ignore_index=True)
-                        try:
-                            conn.update(worksheet="Agendamentos", data=df_atualizado)
+                        
+                        # Substituímos o conn.update pelo safe_update para persistir no Supabase
+                        if safe_update("Agendamentos", df_atualizado):
                             st.success(f"✅ Sala reservada com sucesso para {turma} às {horario_escolhido}!")
                             st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao salvar: {e}")
-
-
+                        else:
+                            st.error("Erro ao salvar o agendamento no Supabase.")
 # ==============================================================================
     # NOVO MÓDULO: CARÔMETRO INTERATIVO (COM UPLOAD RÁPIDO)
     # ==============================================================================
