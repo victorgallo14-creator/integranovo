@@ -1,7 +1,5 @@
 streamlit
 fpdf2
-st-gsheets-connection
 pandas
 streamlit-autorefresh
-google-api-python-client
-google-auth
+supabase
