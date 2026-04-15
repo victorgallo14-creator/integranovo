@@ -9,7 +9,7 @@ import json
 import tempfile
 from PIL import Image
 import pandas as pd
-from supabase import create_client, Client
+from streamlit_gsheets import GSheetsConnection
 import time
 import uuid
 import threading
@@ -74,13 +74,7 @@ def draw_flex_row(pdf, col_data, line_h=6, font_size=9, fill_color=(240, 240, 24
     pdf.set_xy(15, y_start + row_h)
 
 # --- CONEXÃO COM GOOGLE SHEETS ---
-@st.cache_resource
-def init_connection():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    return create_client(url, key)
-
-supabase = init_connection()
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- CONFIGURAÇÃO INICIAL ---
 st.set_page_config(
@@ -133,32 +127,27 @@ def get_db_lock():
 db_lock = get_db_lock()
 
 def load_db(strict=False):
+    """
+    Lê os dados da planilha do Google.
+    """
     try:
-        # Busca todos os dados da tabela alunos
-        response = supabase.table("alunos").select("*").execute()
-        df = pd.DataFrame(response.data)
-        if df.empty:
-            return pd.DataFrame(columns=["Nome", "Tipo_Doc", "Dados_Json", "ID", "Ultima_Atualizacao"])
+        df = conn.read(worksheet="Alunos", ttl=0)
+        if df.empty and strict:
+            # Tenta ler outra aba leve apenas para testar conexão
+            conn.read(worksheet="Professores", ttl=0)
+        df = df.dropna(how="all")
         return df
     except Exception as e:
         if strict:
-            raise Exception(f"Erro ao ler Supabase: {e}")
-        return pd.DataFrame(columns=["Nome", "Tipo_Doc", "Dados_Json", "ID", "Ultima_Atualizacao"])
+            raise Exception(f"Erro ao ler Google Sheets (API pode estar sobrecarregada): {e}")
+        # Adicionada a coluna "ultima_atualizacao"
+        return pd.DataFrame(columns=["nome", "tipo_doc", "dados_json", "id", "ultima_atualizacao"])
 
-def safe_read(table_name, columns):
+def safe_read(worksheet_name, columns):
     try:
-        response = supabase.table(table_name.lower()).select("*").execute()
-        df = pd.DataFrame(response.data)
-        
-        if df.empty:
-            return pd.DataFrame(columns=columns)
-            
-        # FORÇA AS COLUNAS A FICAREM IGUAIS AO QUE O CÓDIGO ESPERA
-        # Se no banco estiver 'aluno', vira 'Aluno' para o Pandas
-        mapeamento = {col.lower(): col for col in columns}
-        df.columns = [mapeamento.get(c.lower(), c) for c in df.columns]
-        
-        return df
+        df = conn.read(worksheet=worksheet_name, ttl=0)
+        if df.empty: return pd.DataFrame(columns=columns)
+        return df.dropna(how="all")
     except:
         return pd.DataFrame(columns=columns)
 
@@ -186,83 +175,125 @@ def create_backup(df_atual):
 
 def log_action(student_name, action, details):
     try:
-        fuso_br = timezone(timedelta(hours=-3))
-        novo_log = {
-            "data_hora": datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S"),
-            "aluno": student_name,
-            "usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
-            "acao": action,
-            "detalhes": details
-        }
-        supabase.table("historico").insert(novo_log).execute()
+        with db_lock:
+            df_hist = safe_read("Historico", ["Data_Hora", "Aluno", "Usuario", "Acao", "Detalhes"])
+            novo_log = {
+                "Data_Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "Aluno": student_name,
+                "Usuario": st.session_state.get('usuario_nome', 'Desconhecido'),
+                "Acao": action,
+                "Detalhes": details
+            }
+            df_hist = pd.concat([df_hist, pd.DataFrame([novo_log])], ignore_index=True)
+            conn.update(worksheet="Historico", data=df_hist)
     except:
         pass
 
 def save_student(doc_type, name, data, section="Geral"):
-    # 1. Mantém a sua regra de segurança para monitores
+    """Salva ou atualiza com LOCK e LEITURA DE ÚLTIMO MILISSEGUNDO"""
     is_monitor = st.session_state.get('user_role') == 'monitor'
     if is_monitor and doc_type != "DIARIO" and section != "Assinatura":
         st.error("Acesso negado: Monitores não podem editar este documento.")
         return
 
-    # 2. Prepara o ID único (Chave Primária)
-    id_registro = f"{name} ({doc_type})"
-    
-    # 3. Garante o UUID do documento
-    if 'doc_uuid' not in data or not data['doc_uuid']:
-        data['doc_uuid'] = str(uuid.uuid4()).upper()
+    MAX_RETRIES = 3
 
-    # 4. Função para converter datas em texto (evita erro de JSON no banco)
-    def serializar_datas(obj):
-        if isinstance(obj, (date, datetime)): 
-            return obj.strftime("%Y-%m-%d")
-        if isinstance(obj, dict): 
-            return {k: serializar_datas(v) for k, v in obj.items()}
-        if isinstance(obj, list): 
-            return [serializar_datas(i) for i in obj]
-        return obj
-        
-    data_limpa = serializar_datas(data)
-    
-    # 5. Gera o carimbo de data/hora
-    fuso_br = timezone(timedelta(hours=-3))
-    data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
+    # O WITH DB_LOCK garante que se 5 pessoas clicarem em salvar ao mesmo tempo,
+    # o Streamlit fará uma fila e salvará um por um, evitando esmagamento de dados.
+    with db_lock:
+        for attempt in range(MAX_RETRIES):
+            try:
+                # 1. LÊ TUDO FRESQUINHO AGORA. Não confia nos dados velhos da tela.
+                df_atual = load_db(strict=True)
+                
+                # 2. BACKUP (Apenas na primeira tentativa)
+                if attempt == 0: 
+                    create_backup(df_atual)
 
-    # 6. Monta o dicionário com as MAIÚSCULAS conforme seu Supabase
-    novo_registro = {
-        "ID": id_registro,
-        "Nome": name,
-        "Tipo_Doc": doc_type,
-        "Dados_Json": data_limpa,
-        "Ultima_Atualizacao": data_hora_agora
-    }
+                id_registro = f"{name} ({doc_type})"
+                
+                if 'doc_uuid' not in data or not data['doc_uuid']:
+                    data['doc_uuid'] = str(uuid.uuid4()).upper()
 
-    try:
-        # O .upsert faz o trabalho de atualizar se já existir ou criar se for novo
-        supabase.table("alunos").upsert(novo_registro).execute()
-        st.toast(f"✅ Alterações em {name} salvas com sucesso!", icon="💾")
-        
-        # Registra a ação no histórico (também usando Supabase)
-        log_action(name, "Edição", f"Documento {doc_type} atualizado via Supabase.")
-        
-    except Exception as e:
-        st.error(f"❌ Falha ao salvar no banco. Erro: {e}")
+                def serializar_datas(obj):
+                    if isinstance(obj, (date, datetime)): return obj.strftime("%Y-%m-%d")
+                    if isinstance(obj, dict): return {k: serializar_datas(v) for k, v in obj.items()}
+                    if isinstance(obj, list): return [serializar_datas(i) for i in obj]
+                    return obj
+                    
+                data_limpa = serializar_datas(data)
+                novo_json = json.dumps(data_limpa, ensure_ascii=False)
+
+                # 1. GERA A DATA E HORA ATUAL (Fuso de Brasília)
+                fuso_br = timezone(timedelta(hours=-3))
+                data_hora_agora = datetime.now(fuso_br).strftime("%d/%m/%Y %H:%M:%S")
+
+                df_final = df_atual.copy()
+                
+                if not df_atual.empty and "id" in df_atual.columns and id_registro in df_atual["id"].values:
+                    df_final.loc[df_final["id"] == id_registro, "dados_json"] = novo_json
+                    # 2. SALVA A DATA/HORA NA ATUALIZAÇÃO DE UM DOCUMENTO EXISTENTE
+                    df_final.loc[df_final["id"] == id_registro, "ultima_atualizacao"] = data_hora_agora
+                else:
+                    novo_registro = {
+                        "id": id_registro,
+                        "nome": name,
+                        "tipo_doc": doc_type,
+                        "dados_json": novo_json,
+                        # 3. SALVA A DATA/HORA NA CRIAÇÃO DE UM NOVO DOCUMENTO
+                        "ultima_atualizacao": data_hora_agora
+                    }
+                    if df_final.empty:
+                        df_final = pd.DataFrame([novo_registro])
+                    else:
+                        df_final = pd.concat([df_final, pd.DataFrame([novo_registro])], ignore_index=True)
+
+                # 3. TRAVA ANTI-WIPE (Se vier vazio da API por erro, ele barra aqui)
+                qtd_antes = len(df_atual)
+                qtd_depois = len(df_final)
+
+                if qtd_antes > 5 and qtd_depois < (qtd_antes * 0.9): 
+                    st.error(f"⛔ BLOQUEIO DE SEGURANÇA: Prevenção de perda de dados. Salvamento cancelado.")
+                    return
+
+                # 4. SALVA
+                conn.update(worksheet="Alunos", data=df_final)
+                
+                # O log agora roda fora do seu próprio lock (já estamos no lock)
+                st.toast(f"✅ Alterações em {name} salvas com segurança!", icon="💾")
+                return # Sai do loop se deu certo
+                
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(random.uniform(1.5, 3.5)) # Espera e tenta de novo se o Google bloquear
+                else:
+                    st.error(f"❌ Falha ao salvar no banco (API do Google sobrecarregada). Tente novamente em 10 segundos. Erro: {e}")
 
 def delete_student(student_name):
     is_monitor = st.session_state.get('user_role') == 'monitor'
-    if is_monitor: 
-        return False
+    if is_monitor: return False
         
-    try:
-        # No Supabase, excluímos diretamente onde o Nome for igual ao do aluno selecionado
-        supabase.table("alunos").delete().eq("Nome", student_name).execute()
-        
-        st.toast(f"🗑️ Registro de {student_name} excluído!", icon="🔥")
-        log_action(student_name, "Exclusão", "Aluno excluído do sistema.")
-        return True
-    except Exception as e:
-        st.error(f"Erro ao excluir no banco de dados: {e}")
-        return False
+    with db_lock:
+        try:
+            df = load_db(strict=True)
+            create_backup(df)
+
+            if "nome" in df.columns:
+                df_new = df[df["nome"] != student_name]
+                qtd_antes = len(df)
+                qtd_depois = len(df_new)
+
+                if qtd_antes > 0 and qtd_depois == 0 and qtd_antes > 5: 
+                    st.error("⛔ BLOQUEIO: Tentativa de exclusão em massa cancelada.")
+                    return False
+
+                if qtd_depois < qtd_antes:
+                    conn.update(worksheet="Alunos", data=df_new)
+                    st.toast(f"🗑️ Registro de {student_name} excluído!", icon="🔥")
+                    return True
+        except Exception as e:
+            st.error(f"Erro ao excluir: {e}")
+    return False
 
 # --- FIM DAS FUNÇÕES DE BANCO DE DADOS ---
 
@@ -523,49 +554,72 @@ def login():
                         try:
                             SENHA_MESTRA = st.secrets.get("credentials", {}).get("password", "admin")
                             user_id_limpo = str(user_id).strip()
+                            df_professores = conn.read(worksheet="Professores", ttl=0)
+                            authenticated_as_prof = False
                             
-                            # Busca Professores
-                            res_prof = supabase.table("professores").select("*").execute()
-                            df_professores = pd.DataFrame(res_prof.data)
-                            
-                            authenticated = False
-                    
-                            # Verifica se o DataFrame não está vazio e se a coluna existe
-                            if not df_professores.empty and 'matricula' in df_professores.columns:
+                            if not df_professores.empty:
                                 df_professores['matricula'] = df_professores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                                
                                 if password == SENHA_MESTRA and user_id_limpo in df_professores['matricula'].values:
                                     registro = df_professores[df_professores['matricula'] == user_id_limpo]
+                                    nome_prof = registro['nome'].values[0]
                                     st.session_state.authenticated = True
-                                    st.session_state.usuario_nome = registro['nome'].values[0]
+                                    st.session_state.usuario_nome = nome_prof
                                     st.session_state.user_role = 'professor'
-                                    authenticated = True
-                                    st.toast(f"Bem-vindo(a), {st.session_state.usuario_nome}!", icon="🔓")
+                                    authenticated_as_prof = True
+                                    st.toast(f"Acesso Docente autorizado. Bem-vindo(a), {nome_prof}!", icon="🔓")
                                     time.sleep(1); st.rerun()
-                    
-                            if not authenticated:
-                                # Busca Monitores
-                                res_mon = supabase.table("monitores").select("*").execute()
-                                df_monitores = pd.DataFrame(res_mon.data)
-                                
-                                if not df_monitores.empty and 'matricula' in df_monitores.columns:
+
+                            if not authenticated_as_prof:
+                                df_monitores = safe_read("Monitores", ["matricula", "nome"])
+                                if not df_monitores.empty:
                                     df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                                    
                                     if password == "123" and user_id_limpo in df_monitores['matricula'].values:
                                         registro = df_monitores[df_monitores['matricula'] == user_id_limpo]
+                                        nome_mon = registro['nome'].values[0]
                                         st.session_state.authenticated = True
-                                        st.session_state.usuario_nome = registro['nome'].values[0]
+                                        st.session_state.usuario_nome = nome_mon
                                         st.session_state.user_role = 'monitor'
-                                        authenticated = True
-                                        st.toast(f"Bem-vindo(a), {st.session_state.usuario_nome}!", icon="🛡️")
+                                        st.toast(f"Acesso Monitor autorizado. Bem-vindo(a), {nome_mon}!", icon="🛡️")
                                         time.sleep(1); st.rerun()
                                     else:
                                         st.error("Credenciais inválidas.")
                                 else:
-                                    st.error("Erro: Tabela de utilizadores não encontrada ou vazia no banco de dados.")
-                                    
+                                    st.error("Credenciais inválidas.")
                         except Exception as e:
                             st.error(f"Erro técnico: {e}")
+
+            with tab_validar:
+                st.markdown("### Validação Pública")
+                st.caption("Insira o código UUID presente no rodapé do documento para verificar sua autenticidade e assinaturas.")
+                uuid_input = st.text_input("Código do Documento (UUID)", placeholder="Ex: 7D2B-5135...")
+                if st.button("Verificar Autenticidade", type="primary"):
+                    if uuid_input:
+                        try:
+                            df_alunos = load_db()
+                            encontrado = False
+                            for _, row in df_alunos.iterrows():
+                                try:
+                                    d = json.loads(row['dados_json'])
+                                    if d.get('doc_uuid') == uuid_input.strip():
+                                        encontrado = True
+                                        st.success("✅ DOCUMENTO VÁLIDO E AUTÊNTICO")
+                                        st.markdown(f"**Aluno:** {d.get('nome', 'N/A')}")
+                                        st.markdown(f"**Tipo:** {row['tipo_doc']}")
+                                        
+                                        assinaturas = d.get('signatures', [])
+                                        if assinaturas:
+                                            st.markdown("---")
+                                            st.markdown("### Assinaturas Digitais:")
+                                            for sig in assinaturas:
+                                                st.info(f"✍️ **{sig['name']}** ({sig.get('role', 'Profissional')})\n\n📅 Assinado em: {sig['date']}")
+                                        else:
+                                            st.warning("Este documento ainda não possui assinaturas digitais registradas.")
+                                        break
+                                except: pass
+                            if not encontrado:
+                                st.error("❌ Documento não encontrado ou código inválido.")
+                        except Exception as e:
+                            st.error(f"Erro na busca: {e}")
         
         # Interrompe o carregamento do restante do app até que o login seja feito
         st.stop()
@@ -762,6 +816,7 @@ if 'data_declaracao' not in st.session_state:
 def carregar_dados_aluno():
     selecao = st.session_state.get('aluno_selecionado')
     
+    # Init empty
     st.session_state.data_pei = {'terapias': {}, 'avaliacao': {}, 'flex': {}, 'plano_ensino': {}, 'comunicacao_tipo': [], 'permanece': []}
     st.session_state.data_case = {'irmaos': [{'nome': '', 'idade': '', 'esc': ''} for _ in range(4)], 'checklist': {}, 'clinicas': []}
     st.session_state.data_conduta = {}
@@ -778,60 +833,48 @@ def carregar_dados_aluno():
 
     try:
         df_db = load_db()
-        
-        if "Nome" not in df_db.columns:
-            return
+        # Filter by name
+        if "nome" in df_db.columns:
+            rows = df_db[df_db["nome"] == selecao]
+            if rows.empty: return
             
-        rows = df_db[df_db["Nome"] == selecao]
-        if rows.empty:
-            return
-            
-        st.session_state.nome_original_salvamento = selecao
-        st.session_state.data_pei['nome'] = selecao
-        st.session_state.data_case['nome'] = selecao
-        st.session_state.data_conduta['nome'] = selecao
-        st.session_state.data_avaliacao['nome'] = selecao
-        st.session_state.data_diario['nome'] = selecao
-        st.session_state.data_pdi['nome'] = selecao
+            st.session_state.nome_original_salvamento = selecao
+            st.session_state.data_pei['nome'] = selecao
+            st.session_state.data_case['nome'] = selecao
+            st.session_state.data_conduta['nome'] = selecao
+            st.session_state.data_avaliacao['nome'] = selecao
+            st.session_state.data_diario['nome'] = selecao
+            st.session_state.data_pdi['nome'] = selecao
 
-        for _, row in rows.iterrows():
-            try:
-                raw_data = row["Dados_Json"]
-                if isinstance(raw_data, str):
-                    import json
-                    dados = json.loads(raw_data)
-                else:
-                    dados = raw_data
-                    
-                if isinstance(dados, dict):
+            for _, row in rows.iterrows():
+                try:
+                    dados = json.loads(row["dados_json"])
+                    # Date conversion
                     for k, v in dados.items():
                         if isinstance(v, str) and len(v) == 10 and v.count('-') == 2:
-                            try:
-                                dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
-                            except Exception:
-                                pass
-                
-                dtype = row.get("Tipo_Doc", "")
-                if dtype == "PEI":
-                    st.session_state.data_pei.update(dados)
-                elif dtype == "CASO":
-                    st.session_state.data_case.update(dados)
-                elif dtype == "CONDUTA":
-                    st.session_state.data_conduta.update(dados)
-                elif dtype == "AVALIACAO":
-                    st.session_state.data_avaliacao.update(dados)
-                elif dtype == "DIARIO":
-                    st.session_state.data_diario.update(dados)
-                elif dtype == "PDI":
-                    st.session_state.data_pdi.update(dados)
-            except Exception as inner_e:
-                print(f"Erro ao ler linha: {inner_e}")
-                
-        st.toast(f"✅ {selecao} carregado com sucesso!")
-        
+                            try: dados[k] = datetime.strptime(v, '%Y-%m-%d').date()
+                            except: pass
+                    
+                    dtype = row["tipo_doc"]
+                    if dtype == "PEI":
+                        st.session_state.data_pei.update(dados)
+                    elif dtype == "CASO":
+                        st.session_state.data_case.update(dados)
+                    elif dtype == "CONDUTA":
+                        st.session_state.data_conduta.update(dados)
+                    elif dtype == "AVALIACAO":
+                        st.session_state.data_avaliacao.update(dados)
+                    elif dtype == "DIARIO":
+                        st.session_state.data_diario.update(dados)
+                    elif dtype == "PDI":
+                        st.session_state.data_pdi.update(dados)
+                except: pass
+            
+            st.toast(f"✅ {selecao} carregado.")
+            
     except Exception as e:
         st.info("Pronto para novo preenchimento.")
-        
+
 # --- BARRA LATERAL ULTRA-COMPACTA ---
 with st.sidebar:
     # CSS PARA "ESPREMER" O LAYOUT
@@ -1040,7 +1083,7 @@ if app_mode == "📊 Painel de Gestão":
                         break
                 
                 if found_role and user_name_lower not in signed_names:
-                    pending_docs.append(f"{row['nome']} - {row['Tipo_Doc']}")
+                    pending_docs.append(f"{row['nome']} - {row['tipo_doc']}")
             except: pass
 
     if pending_docs:
@@ -1052,14 +1095,14 @@ if app_mode == "📊 Painel de Gestão":
     
     # --- CÁLCULO DE MÉTRICAS ---
     # Contagem de alunos únicos
-    if not df_dash.empty and "Nome" in df_dash.columns:
-        total_alunos = df_dash["Nome"].nunique()
+    if not df_dash.empty and "nome" in df_dash.columns:
+        total_alunos = df_dash["nome"].nunique()
     else:
         total_alunos = 0
         
-    total_pei = len(df_dash[df_dash["Tipo_Doc"] == "PEI"])
-    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"])
-    total_pdi = len(df_dash[df_dash["Tipo_Doc"] == "PDI"])
+    total_pei = len(df_dash[df_dash["tipo_doc"] == "PEI"])
+    total_caso = len(df_dash[df_dash["tipo_doc"] == "CASO"])
+    total_pdi = len(df_dash[df_dash["tipo_doc"] == "PDI"])
     
     # Função Auxiliar de Progresso
     def calc_progress(row_json, keys_check):
@@ -1122,64 +1165,78 @@ if app_mode == "📊 Painel de Gestão":
     pdi_progress_list = []
 
     # --- LOOP DE CÁLCULO GERAL ---
-# Certifique-se de substituir desde o início do loop 'for' até à secção das Métricas!
-    if not df_dash.empty:
-        for index, row in df_dash.iterrows():
-            try:
-                nome_aluno = row.get('Nome', 'Desconhecido')
-                Tipo_Documento = row.get('Tipo_Doc', '')
+    for idx, row in df_dash.iterrows():
+        try:
+            d = json.loads(row['dados_json'])
+            
+            # Gráfico de Deficiências
+            for dtype in d.get('diag_tipo', []):
+                deficiencies_count[dtype] = deficiencies_count.get(dtype, 0) + 1
+            if "Deficiência" in d.get('diag_tipo', []) and d.get('defic_txt'):
+                d_txt = d.get('defic_txt').upper().strip()
+                deficiencies_count[d_txt] = deficiencies_count.get(d_txt, 0) + 1
+            
+            # Separação por Tipo de Documento e Cálculo
+            tipo_documento = row['tipo_doc']
+            nome_aluno = row['nome']
+            
+            if tipo_documento == "PEI":
+                prog = calc_progress(row['dados_json'], keys_pei)
+                pei_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                if prog >= 90: concluidos += 1
                 
-                if Tipo_Documento == "PEI":
-                    prog = calc_progress(row.get('Dados_Json', {}), keys_pei)
-                    pei_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                    if prog >= 90: concluidos += 1
-                    
-                elif Tipo_Documento == "CASO":
-                    prog = calc_progress(row.get('Dados_Json', {}), keys_caso)
-                    caso_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                    
-                elif Tipo_Documento == "AVALIACAO":
-                    prog = calc_progress(row.get('Dados_Json', {}), keys_aval)
-                    apoio_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-                    
-                elif Tipo_Documento == "PDI":
-                    prog = calc_progress(row.get('Dados_Json', {}), keys_pdi)
-                    pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
-            except Exception:
-                pass
+            elif tipo_documento == "CASO":
+                prog = calc_progress(row['dados_json'], keys_caso)
+                caso_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                
+            elif tipo_documento == "AVALIACAO":
+                prog = calc_progress(row['dados_json'], keys_aval)
+                apoio_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                
+            elif tipo_documento == "PDI":
+                prog = calc_progress(row['dados_json'], keys_pdi)
+                pdi_progress_list.append({"Aluno": nome_aluno, "Progresso": prog})
+                
+        except: pass
 
-# --- CÁLCULO DAS MÉTRICAS ---
-    total_alunos = len(df_dash)
-    # Conta os outros tipos de documento para não dar erro nos cards
-    total_caso = len(df_dash[df_dash["Tipo_Doc"] == "CASO"])
-    total_apoio = len(df_dash[df_dash["Tipo_Doc"] == "AVALIACAO"]) 
-
-    # Variáveis com os Nomes EXATOS que os seus cards usam
-    total_laudos = 0
-    docs_em_elaboracao = 0
-
+# --- CÁLCULO DE NOVAS MÉTRICAS DE GESTÃO ---
+    
+    # 1. Total de Alunos Únicos
+    total_alunos = df_dash["nome"].nunique() if not df_dash.empty and "nome" in df_dash.columns else 0
+    
+    # 2. Alunos com Laudo Médico / Diagnóstico Conclusivo (NOVA MÉTRICA)
+    alunos_com_laudo = set()
     if not df_dash.empty:
         for _, row in df_dash.iterrows():
-            dados = row.get("Dados_Json", {})
-            
-            # Garante que 'dados' é um dicionário
-            if isinstance(dados, str):
-                try:
-                    import json
-                    dados = json.loads(dados)
-                except:
-                    dados = {}
-            
-            if isinstance(dados, dict):
-                # 1. Contar Laudos
-                laudo_resp = str(dados.get("tem_laudo", "")).lower() 
-                if laudo_resp in ["sim", "true", "com laudo"]:
-                    total_laudos += 1
-                
-                # 2. Contar Em Elaboração
-                status = dados.get("status_elaboracao", "Em Elaboração")
-                if status != "Concluído":
-                    docs_em_elaboracao += 1
+            try:
+                d_laudo = json.loads(row['dados_json'])
+                # Checa no PEI se marcou "Sim" para diagnóstico conclusivo
+                if row['tipo_doc'] == "PEI" and d_laudo.get('diag_status') == "Sim":
+                    alunos_com_laudo.add(row['nome'])
+                # Ou checa no Estudo de Caso se o campo "Possui diagnóstico" foi preenchido
+                elif row['tipo_doc'] == "CASO" and d_laudo.get('diag_possui') and str(d_laudo.get('diag_possui')).strip():
+                    alunos_com_laudo.add(row['nome'])
+            except: pass
+    total_laudos = len(alunos_com_laudo)
+    
+    # 3. Documentos em Elaboração (PEIs e PDIs abaixo de 100%)
+    docs_em_elaboracao = sum(1 for p in pei_progress_list + pdi_progress_list if p['Progresso'] < 100)
+    
+    # 4. Alunos com necessidade de Profissional de Apoio (Extraído da Avaliação)
+    total_apoio = 0
+    if not df_dash.empty:
+        df_aval = df_dash[df_dash["tipo_doc"] == "AVALIACAO"]
+        for _, row in df_aval.iterrows():
+            try:
+                d_aval = json.loads(row['dados_json'])
+                nivel = d_aval.get('conclusao_nivel', '')
+                if "Nível 2" in nivel or "Nível 3" in nivel or d_aval.get('apoio_existente'):
+                    total_apoio += 1
+            except: pass
+
+    # 5. Estudos de Caso Realizados 
+    total_caso = len(df_dash[df_dash["tipo_doc"] == "CASO"]) if not df_dash.empty else 0
+
 
     # --- CARDS DE MÉTRICAS ---
     # CSS inline para dar destaque aos números que exigem atenção
@@ -1199,89 +1256,69 @@ if app_mode == "📊 Painel de Gestão":
     
     st.divider()
 
-# --- ABAS DO DASHBOARD --
-    
+# --- ABAS DO DASHBOARD ---
     tab_graf, tab_concluidos, tab_com = st.tabs(["📊 Estatísticas & Progresso", "✅ Documentos Concluídos", "📢 Comunicação & Agenda"])
     
     with tab_graf:
         c_chart, c_prog = st.columns([1, 1])
-        
-        # --- COLUNA 1: TIPOS DE DEFICIÊNCIA ---
         with c_chart:
             st.subheader("Tipos de Deficiência")
-            
-            # Filtramos apenas os PEIs diretamente do DataFrame principal do Supabase
-            df_pei = df_dash[df_dash["Tipo_Doc"] == "PEI"].copy()
-            
-            if not df_pei.empty:
-                # Função segura para extrair a deficiência do dicionário
-                def get_def(x):
-                    if isinstance(x, dict): 
-                        return x.get('deficiencia', 'Não informado') # <--- Mude 'deficiencia' se a chave for outra
-                    return 'Não informado'
-                
-                df_pei['Deficiencia'] = df_pei['Dados_Json'].apply(get_def)
-                contagem_def = df_pei['Deficiencia'].value_counts()
-                st.bar_chart(contagem_def, color="#1e3a8a")
+            if deficiencies_count:
+                df_def = pd.DataFrame(list(deficiencies_count.items()), columns=["Tipo", "Qtd"])
+                st.bar_chart(df_def.set_index("Tipo"), color="#1e3a8a")
             else:
                 st.info("Sem dados suficientes.")
         
-        # --- COLUNA 2: PROGRESSO DE PREENCHIMENTO ---
         with c_prog:
             st.subheader("Progresso de Preenchimento")
             
             # 1. Cria o seletor de documentos
-            Tipo_Doc_Selecionado = st.selectbox(
+            tipo_doc = st.selectbox(
                 "Selecione o documento:",
                 ["PEI", "Estudo de Caso", "Avaliação de Apoio", "PDI"],
-                label_visibility="collapsed"
+                label_visibility="collapsed" # Esconde o rótulo para ficar mais limpo
             )
             
-            # 2. Filtra dinamicamente baseado na seleção
-            df_filtrado = df_dash[df_dash["Tipo_Doc"] == Tipo_Doc_Selecionado].copy()
+            # 2. Define qual lista usar baseado na seleção
+            lista_progresso_atual = []
             
-            # 3. Extrai o progresso do JSON e renderiza
-            if not df_filtrado.empty:
-                def get_progresso(x):
-                    if isinstance(x, dict): 
-                        return float(x.get('progresso_preenchimento', 0)) # <--- Mude se a chave for outra
-                    return 0.0
-                    
-                df_filtrado['Progresso'] = df_filtrado['Dados_Json'].apply(get_progresso)
-                # Ordena os mais completos no topo
-                df_filtrado = df_filtrado.sort_values("Progresso", ascending=False)
-                
-                with st.container(height=300):
-                    for _, row in df_filtrado.iterrows():
-                        # Usa 'Nome' com a primeira letra maiúscula (padrão do Supabase)
-                        nome_aluno = row.get('Nome', 'Sem Nome')
-                        prog_val = row['Progresso']
-                        st.caption(f"{nome_aluno} ({prog_val}%)")
-                        
-                        # Limita a barra de progresso entre 0.0 e 1.0 para evitar erros
-                        barra_val = max(0.0, min(prog_val / 100.0, 1.0))
-                        st.progress(barra_val)
-            else:
-                st.info(f"Nenhum {Tipo_Doc_Selecionado} calculado ainda.")
+            if tipo_doc == "PEI":
+                # Sua lista original que já funciona
+                lista_progresso_atual = pei_progress_list 
+            elif tipo_doc == "Estudo de Caso":
+                # Você precisará ter essa lista calculada no seu backend
+                lista_progresso_atual = caso_progress_list 
+            elif tipo_doc == "Avaliação de Apoio":
+                # Você precisará ter essa lista calculada no seu backend
+                lista_progresso_atual = apoio_progress_list 
+            elif tipo_doc == "PDI":
+                # Você precisará ter essa lista calculada no seu backend
+                lista_progresso_atual = pdi_progress_list 
 
-    # --- ABA DE CONCLUÍDOS ---
+            # 3. Renderiza os gráficos da lista escolhida
+            if lista_progresso_atual:
+                # Opcional: ascending=False deixa os mais completos no topo
+                df_prog = pd.DataFrame(lista_progresso_atual).sort_values("Progresso", ascending=False) 
+                with st.container(height=300):
+                    for _, row in df_prog.iterrows():
+                        st.caption(f"{row['Aluno']} ({row['Progresso']}%)")
+                        st.progress(row['Progresso'] / 100)
+            else:
+                st.info(f"Nenhum {tipo_doc} calculado ainda.")
+
+    with tab_com:
+        c_aviso, c_agenda = st.columns([1, 1])
+
+        # --- ABA DE CONCLUÍDOS (Agora dentro da variável correta) ---
     with tab_concluidos:
         st.subheader("Documentos Prontos para Emissão")
         
         if not df_dash.empty:
+            # Criamos a tabela visual dos concluídos
             lista_concluidos = []
             for idx, row in df_dash.iterrows():
                 try:
-                    # CORREÇÃO: Trata o JSON adequadamente seja ele string ou dict
-                    dados_aluno = row['Dados_Json']
-                    if isinstance(dados_aluno, str):
-                        import json
-                        d = json.loads(dados_aluno)
-                    elif isinstance(dados_aluno, dict):
-                        d = dados_aluno
-                    else:
-                        d = {}
-                        
+                    d = json.loads(row['dados_json'])
                     if d.get('status_elaboracao') == "Concluído":
                         lista_concluidos.append(row)
                 except: continue
@@ -1290,63 +1327,60 @@ if app_mode == "📊 Painel de Gestão":
                 for row in lista_concluidos:
                     c_nome, c_tipo, c_btn = st.columns([3, 2, 1])
                     
-                    # CORREÇÃO: Nomes das colunas com inicial maiúscula (Nome, Tipo_Doc, ID)
-                    c_nome.write(f"👤 **{row['Nome']}**")
-                    c_tipo.caption(f"{row['Tipo_Doc']}")
+                    c_nome.write(f"👤 **{row['nome']}**")
+                    c_tipo.caption(f"{row['tipo_doc']}")
                     
-                    if c_btn.button("📄 Abrir", key=f"go_{row['ID']}"):
-                        st.session_state.ee_aluno_confirmado = row['Nome']
-                        
-                        if row['Tipo_Doc'] == "PEI":
-                            st.session_state.ee_doc_confirmado = "PEI - Ensino Fundamental" 
+                    # O TRUQUE: O botão abaixo apenas seleciona o aluno e muda o modo
+                    if c_btn.button("📄 Abrir para Baixar", key=f"go_{row['id']}"):
+                        st.session_state.ee_aluno_confirmado = row['nome']
+                        # Define o tipo de documento correto para o sistema carregar
+                        if row['tipo_doc'] == "PEI":
+                            st.session_state.ee_doc_confirmado = "PEI - Ensino Fundamental" # Ou Infantil conforme o banco
                         else:
-                            st.session_state.ee_doc_confirmado = row['Tipo_Doc']
+                            st.session_state.ee_doc_confirmado = row['tipo_doc']
                         
-                        st.session_state.aluno_selecionado = row['Nome']
+                        st.session_state.aluno_selecionado = row['nome']
+                        # Força o sistema a ir para a aba de Gestão de Alunos onde o PDF já está pronto
                         st.session_state.app_mode = "👥 Gestão de Alunos" 
                         st.rerun()
             else:
                 st.info("Nenhum documento concluído encontrado.")
-# --- MURAL DE AVISOS E AGENDA ---
-    with tab_com:
-        c_aviso, c_agenda = st.columns([1, 1])
-        is_monitor = st.session_state.get('user_role') == 'monitor'
-
+            
+        
         # --- MURAL DE AVISOS ---
         with c_aviso:
             st.markdown("### 📌 Mural de Avisos")
             if not is_monitor:
-                # Formulário isolado e seguro
-                with st.form("form_recado", clear_on_submit=True):
+                with st.form("form_recado"):
                     txt_recado = st.text_area("Novo Recado", height=80)
-                    btn_recado = st.form_submit_button("Publicar")
-                    
-                    if btn_recado and txt_recado:
+                    if st.form_submit_button("Publicar"):
+                        df_recados = safe_read("Recados", ["Data", "Autor", "Mensagem"])
                         novo_recado = {
                             "Data": datetime.now().strftime("%d/%m %H:%M"),
                             "Autor": st.session_state.get('usuario_nome', 'Admin'),
                             "Mensagem": txt_recado
                         }
-                        supabase.table("recados").insert(novo_recado).execute()
-                        st.cache_data.clear()
-                        time.sleep(1)
+                        df_recados = pd.concat([pd.DataFrame([novo_recado]), df_recados], ignore_index=True)
+                        safe_update("Recados", df_recados)
+                        st.cache_data.clear() # Limpa cache para atualizar
+                        time.sleep(1) # Aguarda propagação
                         st.rerun()
             else:
                 st.info("Apenas Docentes podem publicar avisos.")
             
             # Listar Recados
-            df_recados = safe_read("recados", ["id", "Data", "Autor", "Mensagem"])
+            df_recados = safe_read("Recados", ["Data", "Autor", "Mensagem"])
             if not df_recados.empty:
                 with st.container(height=300):
-                    df_recados = df_recados.sort_values(by="id", ascending=False)
                     for index, row in df_recados.iterrows():
                         c_msg, c_del = st.columns([0.85, 0.15])
                         with c_msg:
                             st.info(f"**{row['Autor']}** ({row['Data']}):\n\n{row['Mensagem']}")
                         with c_del:
                             if not is_monitor:
-                                if st.button("🗑️", key=f"del_rec_{row['id']}", help="Excluir"):
-                                    supabase.table("recados").delete().eq("id", row['id']).execute()
+                                if st.button("🗑️", key=f"del_rec_{index}", help="Excluir recado"):
+                                    df_recados = df_recados.drop(index)
+                                    safe_update("Recados", df_recados)
                                     st.cache_data.clear()
                                     time.sleep(0.5)
                                     st.rerun()
@@ -1357,31 +1391,31 @@ if app_mode == "📊 Painel de Gestão":
         with c_agenda:
             st.markdown("### 📅 Agenda da Equipe")
             if not is_monitor:
-                # Formulário isolado e seguro
-                with st.form("form_agenda", clear_on_submit=True):
+                with st.form("form_agenda"):
                     c_d, c_e = st.columns([1, 2])
                     data_evento = c_d.date_input("Data", format="DD/MM/YYYY")
                     desc_evento = c_e.text_input("Evento")
-                    btn_agenda = st.form_submit_button("Agendar")
-                    
-                    if btn_agenda and desc_evento:
+                    if st.form_submit_button("Agendar"):
+                        df_agenda = safe_read("Agenda", ["Data", "Evento", "Autor"])
                         novo_evento = {
                             "Data": data_evento.strftime("%Y-%m-%d"),
                             "Evento": desc_evento,
                             "Autor": st.session_state.get('usuario_nome', 'Admin')
                         }
-                        supabase.table("agenda").insert(novo_evento).execute()
-                        st.cache_data.clear()
-                        time.sleep(1)
+                        df_agenda = pd.concat([df_agenda, pd.DataFrame([novo_evento])], ignore_index=True)
+                        # Ordenar por data
+                        df_agenda = df_agenda.sort_values(by="Data", ascending=False)
+                        safe_update("Agenda", df_agenda)
+                        st.cache_data.clear() # Limpa cache para atualizar
+                        time.sleep(1) # Aguarda propagação
                         st.rerun()
             else:
                 st.info("Apenas Docentes podem adicionar eventos.")
             
             # Listar Agenda
-            df_agenda = safe_read("agenda", ["id", "Data", "Evento", "Autor"])
+            df_agenda = safe_read("Agenda", ["Data", "Evento", "Autor"])
             if not df_agenda.empty:
                 with st.container(height=300):
-                    df_agenda = df_agenda.sort_values(by="Data", ascending=False)
                     for index, row in df_agenda.iterrows():
                         try:
                             d_fmt = datetime.strptime(str(row['Data']), "%Y-%m-%d").strftime("%d/%m")
@@ -1393,8 +1427,9 @@ if app_mode == "📊 Painel de Gestão":
                             st.write(f"🗓️ **{d_fmt}** - {row['Evento']} _({row['Autor']})_")
                         with c_del_evt:
                             if not is_monitor:
-                                if st.button("🗑️", key=f"del_agd_{row['id']}", help="Excluir"):
-                                    supabase.table("agenda").delete().eq("id", row['id']).execute()
+                                if st.button("🗑️", key=f"del_agd_{index}", help="Excluir evento"):
+                                    df_agenda = df_agenda.drop(index)
+                                    safe_update("Agenda", df_agenda)
                                     st.cache_data.clear()
                                     time.sleep(0.5)
                                     st.rerun()
@@ -1417,7 +1452,7 @@ elif app_mode == "👥 Gestão de Alunos":
         """, unsafe_allow_html=True)
 
         df_db = load_db()
-        lista_nomes = df_db["Nome"].dropna().unique().tolist() if not df_db.empty else []
+        lista_nomes = df_db["nome"].dropna().unique().tolist() if not df_db.empty else []
         opcoes_nomes = ["-- Novo Registro --"] + lista_nomes
 
         c_aluno, c_doc = st.columns(2)
@@ -6099,12 +6134,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
                             id_ata = f"{data_ata.get('turma', 'SemTurma')} - {data_ata.get('trimestre', 'SemTri')} ({modalidade_ata})"
-                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "Dados_Json"])
+                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
                             
                             if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
-                                df_atas.loc[df_atas["id_ata"] == id_ata, "Dados_Json"] = novo_json
+                                df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
                             else:
-                                novo_registro = {"id_ata": id_ata, "modalidade": modalidade_ata, "turma": data_ata.get('turma', ''), "Dados_Json": novo_json}
+                                novo_registro = {"id_ata": id_ata, "modalidade": modalidade_ata, "turma": data_ata.get('turma', ''), "dados_json": novo_json}
                                 df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
                             
                             safe_update("Atas_Conselho", df_atas)
@@ -6749,12 +6784,12 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                             
                             novo_json = json.dumps(dados_para_salvar, ensure_ascii=False)
                             id_ata = f"{data_inf.get('turma', 'SemTurma')} - {data_inf.get('trimestre', 'SemTri')} (Infantil)"
-                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "Dados_Json"])
+                            df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
                             
                             if not df_atas.empty and "id_ata" in df_atas.columns and id_ata in df_atas["id_ata"].values:
-                                df_atas.loc[df_atas["id_ata"] == id_ata, "Dados_Json"] = novo_json
+                                df_atas.loc[df_atas["id_ata"] == id_ata, "dados_json"] = novo_json
                             else:
-                                novo_registro = {"id_ata": id_ata, "modalidade": "Educação Infantil", "turma": data_inf.get('turma', ''), "Dados_Json": novo_json}
+                                novo_registro = {"id_ata": id_ata, "modalidade": "Educação Infantil", "turma": data_inf.get('turma', ''), "dados_json": novo_json}
                                 df_atas = pd.concat([df_atas, pd.DataFrame([novo_registro])], ignore_index=True)
                             
                             safe_update("Atas_Conselho", df_atas)
@@ -7121,7 +7156,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
     # ==============================================================================
     if app_mode_regular == "📂 Histórico de Atas":
         st.markdown('<div class="header-box"><div class="header-title">Histórico de Atas</div></div>', unsafe_allow_html=True)
-        df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "Dados_Json"])
+        df_atas = safe_read("Atas_Conselho", ["id_ata", "modalidade", "turma", "dados_json"])
         
         if df_atas.empty:
             st.info("Nenhuma ata salva ainda.")
@@ -7138,7 +7173,7 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             if c_btn.button("Carregar Dados", type="primary", use_container_width=True):
                 dados_row = df_atas[df_atas["id_ata"] == ata_selecionada].iloc[0]
                 try:
-                    dados_json = json.loads(dados_row["Dados_Json"])
+                    dados_json = json.loads(dados_row["dados_json"])
                     for key in ['abaixo_basico', 'basico', 'mat_tardia', 'obs_especiais', 'encaminhamentos', 'assinaturas']:
                         if key in dados_json and isinstance(dados_json[key], list):
                             dados_json[key] = pd.DataFrame(dados_json[key])
@@ -7424,11 +7459,11 @@ elif modulo_atuacao == "🏫 Ensino Regular":
             # 2. Lógica para evitar duplicidade de nomes (Pega apenas um registro por aluno)
             # Criamos uma cópia para não afetar o original e definimos a prioridade
             df_temp = df_full.copy()
-            df_temp['prioridade'] = df_temp['Tipo_Doc'].map({'CASO': 1, 'PEI': 2}).fillna(3)
+            df_temp['prioridade'] = df_temp['tipo_doc'].map({'CASO': 1, 'PEI': 2}).fillna(3)
             
             # Remove duplicados mantendo o registro com melhor prioridade (CASO > PEI)
             df_display = df_temp.sort_values(by=['nome', 'prioridade']).drop_duplicates(subset=['nome'], keep='first')
-            df_display = df_display.sort_values(by="Nome")
+            df_display = df_display.sort_values(by="nome")
             
             if df_display.empty:
                 st.info("Nenhum registro de PEI ou Estudo de Caso encontrado para exibir.")
@@ -7484,8 +7519,8 @@ elif modulo_atuacao == "🏫 Ensino Regular":
                 for _, row in df_display.iterrows():
                     with cols[idx_col]:
                         try:
-                            nome_aluno = row["Nome"]
-                            dados = json.loads(row["Dados_Json"])
+                            nome_aluno = row["nome"]
+                            dados = json.loads(row["dados_json"])
                             foto_b64 = dados.get("foto_base64")
                             
                             # Tenta pegar o nome da professora polivalente ou AEE
