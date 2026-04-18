@@ -271,7 +271,7 @@ class OfficialPDF(FPDF):
         self.cell(width, 8, clean_pdf_text(title), 1, 1, 'L', 1)
 
 # --- FUNÇÃO DE LOGIN COMPLETA E ROBUSTA (SME LIMEIRA) ---
-def login_repaginado():
+def login():
     # Inicializa estados
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
