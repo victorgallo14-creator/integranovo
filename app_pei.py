@@ -430,7 +430,10 @@ def login_repaginado():
                 uuid_input = st.text_input("Código UUID")
                 st.button("Verificar Autenticidade", use_container_width=True)
 
-       st.stop()
+# Interrompe a execução para não mostrar o resto do portal antes do login
+        st.stop()
+
+# Para testar:
 
 # --- INICIALIZAÇÃO DO CONTROLE DE MÓDULO (PORTAL) ---
 if "modulo_atuacao" not in st.session_state:
