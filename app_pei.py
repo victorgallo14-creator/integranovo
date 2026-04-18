@@ -280,10 +280,15 @@ def login():
         st.session_state.user_role = None
 
     if not st.session_state.authenticated:
-        # --- CSS DA TELA DE LOGIN (NO-SCROLL LAYOUT) ---
+        # --- CSS DA TELA DE LOGIN (RESPONSIVO E SEGURO) ---
         st.markdown("""
             <style>
-                /* Remove padding padrão do Streamlit para ocupar a tela toda */
+                /* Importação de fonte moderna */
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+                
+                html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+                
+                /* Remove padding padrão e centraliza verticalmente */
                 .block-container {
                     padding-top: 0rem !important;
                     padding-bottom: 0rem !important;
@@ -299,11 +304,12 @@ def login():
                     background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
                 }
                 
-                /* Painel Esquerdo (Arte) */
+                /* Container da Arte Azul */
                 .login-art-box {
                     background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
-                    min-height: 600px; /* Altura ajustada */
-                    border-radius: 16px 0 0 16px; /* Arredondado apenas na esquerda */
+                    height: 100%;
+                    min-height: 600px;
+                    border-radius: 16px 0 0 16px;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
@@ -311,113 +317,103 @@ def login():
                     color: white;
                     padding: 40px;
                     text-align: center;
-                    box-shadow: -5px 10px 25px rgba(37, 99, 235, 0.2);
+                    box-shadow: -5px 10px 25px rgba(37, 99, 235, 0.15);
                 }
                 
-                /* Painel Direito (Formulário) - Target the specific column wrapper (3rd column) */
-                div[data-testid="column"]:nth-of-type(3),
-                div[data-testid="stColumn"]:nth-of-type(3) {
+                /* Container do Formulário Branco (Tática mais segura usando classes do Streamlit) */
+                [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(3) {
                     background-color: white;
-                    padding: 2rem 3rem !important;
-                    border-radius: 0 16px 16px 0; /* Arredondado apenas na direita */
-                    min-height: 600px; /* Mesma altura da arte */
+                    padding: 3rem 3rem !important;
+                    border-radius: 0 16px 16px 0;
+                    min-height: 600px;
+                    box-shadow: 5px 10px 25px rgba(0,0,0,0.08);
                     display: flex;
                     flex-direction: column;
-                    justify-content: flex-start; /* Alinhado ao topo para abas */
-                    box-shadow: 5px 10px 25px rgba(0,0,0,0.05);
                 }
 
-                /* Tipografia */
-                .welcome-title {
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                    color: #1e293b;
-                    margin-bottom: 5px;
-                }
-                .welcome-sub {
-                    font-size: 0.95rem;
-                    color: #64748b;
-                    margin-bottom: 20px;
-                }
+                /* Tipografia e Inputs */
+                .welcome-title { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; letter-spacing: -0.5px;}
+                .welcome-sub { font-size: 0.95rem; color: #64748b; margin-bottom: 25px; }
                 
-                /* Inputs Customizados */
-                .stTextInput label {
-                    font-size: 0.85rem;
-                    color: #475569;
+                .stTextInput label { font-size: 0.85rem !important; color: #475569 !important; font-weight: 600 !important; }
+                
+                /* Botão de Login */
+                button[kind="primary"] {
                     font-weight: 600;
+                    letter-spacing: 0.5px;
+                    border-radius: 8px;
+                    padding-top: 0.5rem;
+                    padding-bottom: 0.5rem;
+                    transition: all 0.3s ease;
+                }
+                button[kind="primary"]:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
                 }
                 
-                /* Aviso LGPD */
+                /* Aviso LGPD - Ajuste Fino */
                 .lgpd-box {
                     background-color: #fff7ed;
-                    border-left: 4px solid #f97316;
-                    padding: 10px;
-                    margin-top: 15px;
-                    margin-bottom: 15px;
-                    border-radius: 6px;
+                    border-left: 4px solid #ea580c;
+                    padding: 12px 16px;
+                    margin: 20px 0;
+                    border-radius: 0 6px 6px 0;
                 }
-                .lgpd-title {
-                    color: #9a3412;
-                    font-weight: 700;
-                    font-size: 0.75rem;
-                    display: flex; 
-                    align-items: center; 
-                    gap: 6px;
-                }
-                .lgpd-text {
-                    color: #9a3412;
-                    font-size: 0.7rem;
-                    margin-top: 2px;
-                    line-height: 1.2;
-                    text-align: justify; /* Texto justificado */
+                .lgpd-title { color: #9a3412; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+                .lgpd-text { color: #9a3412; font-size: 0.7rem; margin-top: 4px; line-height: 1.4; text-align: justify; }
+                
+                /* --- MEDIA QUERIES PARA MOBILE (O SEGREDOS PARA NÃO QUEBRAR) --- */
+                @media (max-width: 991px) {
+                    /* Empilha e ajusta as bordas quando vira uma coluna só */
+                    .login-art-box {
+                        border-radius: 16px 16px 0 0 !important;
+                        min-height: auto !important;
+                        padding: 30px 20px !important;
+                    }
+                    [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(3) {
+                        border-radius: 0 0 16px 16px !important;
+                        min-height: auto !important;
+                        padding: 2rem 1.5rem !important;
+                    }
+                    .welcome-title { font-size: 1.6rem; }
                 }
             </style>
         """, unsafe_allow_html=True)
         
-        # Espaçamento para centralizar verticalmente na tela
-        st.write("")
-        st.write("")
+        st.write("") # Margem superior para o flexbox trabalhar
 
-        # Layout em Colunas: Spacer, Arte, Form, Spacer
-        # Ajuste de proporção para ficar elegante
+        # Estrutura mantida, mas agora blindada pelo CSS responsivo
         c_pad1, c_art, c_form, c_pad2 = st.columns([1, 4, 4, 1])
         
-        # --- LADO ESQUERDO (ARTE AZUL) ---
         with c_art:
-            # Atenção: HTML sem indentação para evitar renderização de bloco de código
             st.markdown("""
-<div class="login-art-box">
-    <div style="font-size: 6rem; margin-bottom: 1rem; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.2));">🧠</div>
-    <h1 style="color: white; font-weight: 800; font-size: 3.5rem; margin: 0; line-height: 1;">INTEGRA</h1>
-    <p style="font-size: 1.2rem; opacity: 0.9; font-weight: 300; margin-top: 10px;">Gestão de Educação<br>Especial Inclusiva</p>
-    <div style="margin-top: 40px; width: 100%;">
-        <hr style="border-color: rgba(255,255,255,0.3); margin-bottom: 20px;">
-        <p style="font-style: italic; font-size: 1rem; opacity: 0.9;">
-            "A inclusão acontece quando se aprende com as diferenças e não com as igualdades."
-        </p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+            <div class="login-art-box">
+                <div style="font-size: 5rem; margin-bottom: 0.5rem; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.2));">🧠</div>
+                <h1 style="color: white; font-weight: 800; font-size: 3rem; margin: 0; line-height: 1.1; letter-spacing: 1px;">INTEGRA</h1>
+                <p style="font-size: 1.1rem; opacity: 0.9; font-weight: 400; margin-top: 5px;">Gestão de Educação<br>Especial Inclusiva</p>
+                <div style="margin-top: 30px; width: 100%;">
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin-bottom: 20px;">
+                    <p style="font-style: italic; font-size: 0.95rem; opacity: 0.85; line-height: 1.4;">
+                        "A inclusão acontece quando se aprende com as diferenças e não com as igualdades."
+                    </p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-        # --- LADO DIREITO (FORMULÁRIO BRANCO) ---
         with c_form:
-            # Abas de Login e Validação
             tab_login, tab_validar = st.tabs(["🔐 Acesso ao Sistema", "✅ Validar Documento"])
             
             with tab_login:
-                with st.form("login_form"):
-                    # Layout Header: Texto à esquerda, Logo à direita (menor)
-                    c_head_txt, c_head_logo = st.columns([3, 1.2])
+                with st.form("login_form", clear_on_submit=False):
+                    c_head_txt, c_head_logo = st.columns([3, 1])
                     
                     with c_head_txt:
-                        st.markdown('<div class="welcome-title" style="margin-top: 0px;">Bem-vindo(a)</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="welcome-title">Bem-vindo(a)</div>', unsafe_allow_html=True)
                         st.markdown('<div class="welcome-sub">Insira suas credenciais para acessar o sistema.</div>', unsafe_allow_html=True)
                     
                     with c_head_logo:
                         if os.path.exists("logo_escola.png"):
                             st.image("logo_escola.png", use_container_width=True)
-                    
-                    st.write("") # Espaço
                     
                     user_id = st.text_input("Matrícula Funcional", placeholder="Ex: 12345")
                     password = st.text_input("Senha", type="password", placeholder="••••••")
@@ -434,42 +430,55 @@ def login():
                     submit = st.form_submit_button("ACESSAR SISTEMA", type="primary")
                     
                     if submit:
-                        try:
-                            SENHA_MESTRA = st.secrets.get("credentials", {}).get("password", "admin")
-                            user_id_limpo = str(user_id).strip()
-                            df_professores = safe_read("Professores", ["matricula", "nome"])
-                            authenticated_as_prof = False
-                            
-                            if not df_professores.empty:
-                                df_professores['matricula'] = df_professores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                                if password == SENHA_MESTRA and user_id_limpo in df_professores['matricula'].values:
-                                    registro = df_professores[df_professores['matricula'] == user_id_limpo]
-                                    nome_prof = registro['nome'].values[0]
-                                    st.session_state.authenticated = True
-                                    st.session_state.usuario_nome = nome_prof
-                                    st.session_state.user_role = 'professor'
-                                    authenticated_as_prof = True
-                                    st.toast(f"Acesso Docente autorizado. Bem-vindo(a), {nome_prof}!", icon="🔓")
-                                    time.sleep(1); st.rerun()
-
-                            if not authenticated_as_prof:
-                                df_monitores = safe_read("Monitores", ["matricula", "nome"])
-                                if not df_monitores.empty:
-                                    df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                                    if password == "123" and user_id_limpo in df_monitores['matricula'].values:
-                                        registro = df_monitores[df_monitores['matricula'] == user_id_limpo]
-                                        nome_mon = registro['nome'].values[0]
+                        # Pequeno truque de UX para mostrar que está carregando
+                        with st.spinner("Autenticando..."):
+                            time.sleep(0.5) 
+                            try:
+                                SENHA_MESTRA = st.secrets.get("credentials", {}).get("password", "admin")
+                                user_id_limpo = str(user_id).strip()
+                                
+                                df_professores = safe_read("Professores", ["matricula", "nome"])
+                                authenticated_as_prof = False
+                                
+                                if not df_professores.empty:
+                                    df_professores['matricula'] = df_professores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                                    if password == SENHA_MESTRA and user_id_limpo in df_professores['matricula'].values:
+                                        registro = df_professores[df_professores['matricula'] == user_id_limpo]
+                                        nome_prof = registro['nome'].values[0]
+                                        
                                         st.session_state.authenticated = True
-                                        st.session_state.usuario_nome = nome_mon
-                                        st.session_state.user_role = 'monitor'
-                                        st.toast(f"Acesso Monitor autorizado. Bem-vindo(a), {nome_mon}!", icon="🛡️")
-                                        time.sleep(1); st.rerun()
+                                        st.session_state.usuario_nome = nome_prof
+                                        st.session_state.user_role = 'professor'
+                                        authenticated_as_prof = True
+                                        
+                                        st.toast(f"Acesso Docente autorizado. Bem-vindo(a), {nome_prof}!", icon="🔓")
+                                        time.sleep(0.5)
+                                        st.rerun()
+
+                                if not authenticated_as_prof:
+                                    df_monitores = safe_read("Monitores", ["matricula", "nome"])
+                                    if not df_monitores.empty:
+                                        df_monitores['matricula'] = df_monitores['matricula'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
+                                        if password == "123" and user_id_limpo in df_monitores['matricula'].values:
+                                            registro = df_monitores[df_monitores['matricula'] == user_id_limpo]
+                                            nome_mon = registro['nome'].values[0]
+                                            
+                                            st.session_state.authenticated = True
+                                            st.session_state.usuario_nome = nome_mon
+                                            st.session_state.user_role = 'monitor'
+                                            
+                                            st.toast(f"Acesso Monitor autorizado. Bem-vindo(a), {nome_mon}!", icon="🛡️")
+                                            time.sleep(0.5)
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ Credenciais inválidas.")
                                     else:
-                                        st.error("Credenciais inválidas.")
-                                else:
-                                    st.error("Credenciais inválidas.")
-                        except Exception as e:
-                            st.error(f"Erro técnico: {e}")
+                                        st.error("❌ Credenciais inválidas.")
+                            except Exception as e:
+                                st.error(f"Erro técnico ao processar login: {e}")
+
+            with tab_validar:
+                st.markdown("### Validação Pública")
 
             with tab_validar:
                 st.markdown("### Validação Pública")
